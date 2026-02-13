@@ -1,0 +1,82 @@
+:root {
+  --primary-color: #007aff;
+  --secondary-color: #5ac8fa;
+  --danger-color: #ff3b30;
+  --success-color: #34c759;
+  --warning-color: #ff9500;
+
+  --text-primary: #000000;
+  --text-secondary: #666666;
+
+  --bg-color: #ffffff;
+  --bg-secondary: #f5f5f5;
+
+  --border-color: #e0e0e0;
+
+  --message-user: #007aff;
+  --message-other: #e5e5ea;
+
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-dark: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dark-theme {
+  --text-primary: #ffffff;
+  --text-secondary: #8e8e93;
+
+  --bg-color: #1c1c1e;
+  --bg-secondary: #2c2c2e;
+
+  --border-color: #3a3a3c;
+
+  --message-other: #3a3a3c;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 20px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+html {
+  overflow: hidden;
+}
+
+body {
+  overflow: hidden;
+}

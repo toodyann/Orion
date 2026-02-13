@@ -1,0 +1,102 @@
+<div class="settings-section" id="messenger-settings">
+  <div class="settings-header">
+    <button>← Назад</button>
+    <h2>Налаштування месенджера</h2>
+  </div>
+
+  <div class="settings-content">
+    <div class="settings-group">
+      <h3>Сповіщення</h3>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Звукові сповіщення</span>
+          <p class="settings-item-desc">
+            Відтворювати звук при новому повідомленні
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="soundNotifications" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Десктоп сповіщення</span>
+          <p class="settings-item-desc">
+            Показувати сповіщення на робочому столі
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="desktopNotifications" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>Конфіденційність</h3>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Показувати статус онлайн</span>
+          <p class="settings-item-desc">
+            Дозволити іншим бачити, коли ви онлайн
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="showOnlineStatus" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Показувати індикатор набору</span>
+          <p class="settings-item-desc">
+            Показувати, коли користувач пише повідомлення
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="showTypingIndicator" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>Інтерфейс</h3>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Розмір шрифту</span>
+          <p class="settings-item-desc">Виберіть зручний розмір шрифту</p>
+        </div>
+        <select class="form-select" id="fontSize">
+          <option value="small">Малий</option>
+          <option value="medium" selected>Середній</option>
+          <option value="large">Великий</option>
+        </select>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Тема оформлення</span>
+          <p class="settings-item-desc">Вибір між світлою та темною темою</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="themeToggleCheckbox" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-buttons">
+      <button class="btn btn-primary btn-save-messenger">
+        Зберегти налаштування
+      </button>
+      <button class="btn btn-secondary">Скасувати</button>
+    </div>
+  </div>
+</div>

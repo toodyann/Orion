@@ -1,0 +1,217 @@
+.date-separator {
+  display: block;
+  margin: 12px auto;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-secondary);
+  font-size: 13px;
+  border-radius: 999px;
+  text-align: center;
+  max-width: 260px;
+}
+
+.chat-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-secondary);
+  gap: 16px;
+  padding: 32px 24px;
+  animation: fadeIn 0.3s ease;
+  background: linear-gradient(
+    135deg,
+    var(--bg-color) 0%,
+    var(--bg-secondary) 100%
+  );
+}
+
+.chat-empty-emoji {
+  font-size: 72px;
+  line-height: 1;
+  animation: floatEmoji 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.chat-empty-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.chat-empty-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+@keyframes floatEmoji {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-12px) scale(1.05);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.message.own {
+  justify-content: flex-end;
+}
+
+.message.own .message-content {
+  background-color: var(--message-user);
+  color: white;
+}
+
+.message.other .message-content {
+  background-color: var(--message-other);
+  color: var(--text-primary);
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9500, #ff6b6b);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.message.own .message-avatar {
+  display: none;
+}
+
+.message-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 60%;
+}
+
+.message-sender-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.message-content {
+  padding: 8px 50px 20px 12px;
+  border-radius: 16px;
+  word-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.4;
+  position: relative;
+}
+
+.message-content.edited {
+  min-width: 140px;
+}
+
+.message.other .message-content {
+  border-radius: 16px 16px 16px 4px;
+}
+
+.message.own .message-content {
+  border-radius: 16px 16px 4px 16px;
+}
+
+.message-meta {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+
+.message.own .message-content .message-meta {
+  right: 10px;
+}
+
+.message-meta .message-time,
+.message-meta .message-edited {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.message-input-area {
+  padding: 7px 16px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-color);
+  flex-shrink: 0;
+}
+
+.message-reply {
+  border-left: 3px solid var(--primary-color);
+  background: rgba(0, 0, 0, 0.04);
+  padding: 6px 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.message-reply-name {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.message-reply-text {
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  position: relative; /* anchor for emoji picker */
+}
+
+.message-input {
+  flex: 1;
+  padding: 0px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  resize: none;
+  max-height: 100px;
+  outline: none;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.message-input:focus {
+  border-color: var(--primary-color);
+  background-color: var(--bg-color);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.message-input::placeholder {
+  color: var(--text-secondary);
+}
