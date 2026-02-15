@@ -18,6 +18,19 @@
     letter-spacing: 0.6px;
     padding: 0px;
     margin: 0;
+    background: linear-gradient(135deg, #000);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .dark-theme .sidebar .brand .app-title {
+    background: linear-gradient(135deg, #fff);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .sidebar .brand {
