@@ -173,6 +173,9 @@ document.addEventListener('DOMContentLoaded', () => {
             class="message-input" 
             placeholder="Напишіть повідомлення..."
             autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
           >
           <button type="button" class="btn-emoji">😊</button>
           <button type="button" class="btn-send" id="sendBtn">
