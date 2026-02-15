@@ -57,10 +57,26 @@
   color: var(--text-primary);
 }
 
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+#newChatModal .modal-header h3 {
+  color: #f5f5f7;
+}
+
+.modal-body {
+  color: var(--text-primary);
+}
+
 .modal-body {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .modal-footer {

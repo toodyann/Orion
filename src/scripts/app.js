@@ -183,13 +183,14 @@ class ChatApp {
 
       if (!active) {
         if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+        if (dx < 0) return; // Ignore swipe left
         active = true;
         chatContainer.classList.add('swiping');
         sidebar.classList.add('revealed');
       }
 
       const maxReveal = getMaxReveal();
-      const distance = Math.min(Math.max(0, -dx), maxReveal);
+      const distance = Math.min(Math.max(0, dx), maxReveal);
       lastTranslate = distance;
 
       chatContainer.style.transform = `translateX(${distance}px)`;
@@ -1295,7 +1296,11 @@ class ChatApp {
     this.saveChats();
     input.value = '';
     this.clearReplyTarget();
-    this.appendMessage(newMessage, ' new-message');
+    if (this.currentChat.messages.length === 1) {
+      this.renderChat(newMessage.id);
+    } else {
+      this.appendMessage(newMessage, ' new-message');
+    }
     this.renderChatsList();
   }
 

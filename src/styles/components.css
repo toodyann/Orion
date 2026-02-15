@@ -164,10 +164,42 @@
 }
 
 .group-toggle input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
-  accent-color: var(--primary-color);
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  display: grid;
+  place-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.group-toggle input[type="checkbox"]::after {
+  content: "";
+  width: 10px;
+  height: 6px;
+  border: 2px solid #fff;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(-45deg) scale(0);
+  transition: transform 0.2s ease;
+}
+
+.group-toggle input[type="checkbox"]:checked {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.group-toggle input[type="checkbox"]:checked::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+.group-toggle input[type="checkbox"]:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
 }
 
 .group-toggle span {
