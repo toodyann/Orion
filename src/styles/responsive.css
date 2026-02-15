@@ -1,4 +1,21 @@
 @media (max-width: 768px) {
+  * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .chats-list .chat-item:hover {
+    background-color: unset;
+    transform: none;
+  }
+
+  .chats-list .chat-item:hover .chat-item-actions {
+    display: none;
+  }
+
   .bridge-app {
     position: relative;
     flex-direction: column;

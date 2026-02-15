@@ -71,7 +71,7 @@
   color: var(--text-primary);
   background-color: var(--bg-secondary);
   outline: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -81,6 +81,7 @@
   border-color: var(--primary-color);
   background-color: var(--bg-color);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  transform: scale(1.02);
 }
 
 .search-input::placeholder {
@@ -157,7 +158,7 @@
   margin: 4px 8px;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -166,10 +167,15 @@
   width: calc(100% - 16px);
   text-align: left;
   position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .chat-item:hover {
   background-color: var(--bg-secondary);
+  transform: translateX(2px);
 }
 
 .chat-item.pinned {
@@ -191,6 +197,7 @@
 .chat-item.active {
   background-color: rgba(0, 122, 255, 0.1);
   color: var(--primary-color);
+  transform: scale(0.98);
 }
 
 .chat-item-actions {
