@@ -652,7 +652,7 @@ class ChatApp {
         dateLabel = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
         const sep = document.createElement('div');
         sep.className = 'date-separator';
-        sep.textContent = dateLabel;
+        sep.innerHTML = `<span class="date-separator-text">${dateLabel}</span>`;
         messagesContainer.appendChild(sep);
       }
 

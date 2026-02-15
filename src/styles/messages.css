@@ -1,6 +1,13 @@
 .date-separator {
-  display: block;
-  margin: 12px auto;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 12px 0;
+  position: relative;
+  z-index: 2;
+}
+
+.date-separator-text {
   padding: 6px 12px;
   background: rgba(0, 0, 0, 0.06);
   color: var(--text-secondary);

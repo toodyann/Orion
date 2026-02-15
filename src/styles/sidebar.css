@@ -1,10 +1,16 @@
 .sidebar-header {
-  padding: 16px;
+  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border-color);
   min-width: 0;
+}
+
+.new-chat-action {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px 0 16px;
 }
 
 .brand {
@@ -21,7 +27,7 @@
 }
 
 .app-title {
-  font-size: 32px;
+  font-size: 11px;
   font-weight: 700;
   font-family:
     "SN Pro",
@@ -29,11 +35,7 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, #fff);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -62,7 +64,7 @@
 
 .search-input {
   width: 100%;
-  padding: 10px 12px 10px 36px;
+  padding: 10px 44px 10px 14px;
   border: 1px solid var(--border-color);
   border-radius: 20px;
   font-size: 13px;
@@ -71,6 +73,8 @@
   outline: none;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .search-input:focus {
@@ -90,11 +94,16 @@
   transform: translateY(-50%);
   color: var(--text-secondary);
   pointer-events: none;
+  opacity: 0;
 }
 
-.btn-new-chat {
-  width: 36px;
-  height: 36px;
+.search-box .btn-new-chat {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-60%);
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: none;
   background-color: var(--primary-color);
@@ -103,18 +112,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
+  transition: all 0.2s ease;
+  z-index: 2;
 }
 
-.btn-new-chat:hover {
+.search-box .btn-new-chat:hover {
   background-color: #0066dd;
-  transform: scale(1.1);
-  box-shadow: var(--shadow);
+  transform: translateY(-50%) scale(1.05);
 }
 
-.btn-new-chat:active {
-  transform: scale(0.95);
+.search-box .btn-new-chat:active {
+  transform: translateY(-50%) scale(0.96);
 }
 
 .chats-list {

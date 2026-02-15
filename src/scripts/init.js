@@ -13,11 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <img src="./src/Assets/Orion_logo.png" alt="Orion" class="app-logo">
         <h1 class="app-title">ORION</h1>
       </div>
-      <button class="btn-new-chat" id="newChatBtn">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 2V18M2 10H18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
     </div>
 
     <!-- Пошук контактів -->
@@ -26,9 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
         type="text" 
         id="searchInput" 
         class="search-input" 
-        placeholder="Пошук контактів..."
+        placeholder="Пошук чатів..."
         autocomplete="off"
       >
+      <button class="btn-new-chat" id="newChatBtn" aria-label="Новий чат">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
       <svg class="search-icon" width="16" height="16" viewBox="0 0 20 20" fill="none">
         <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M19 19L14.65 14.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -99,11 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Заголовок чату -->
       <div class="chat-header" id="chatHeader">
         <div class="chat-header-left">
-          <button class="btn-menu-toggle" id="menuToggleBtn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
           <button class="btn-back" id="backBtn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
