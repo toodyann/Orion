@@ -1,23 +1,8 @@
 .message {
   display: flex;
   margin-bottom: 8px;
-  animation: fadeIn 0.3s ease-out;
 }
 
-.message.new-message {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
 .message.own {
   justify-content: flex-end;
