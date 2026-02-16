@@ -30,6 +30,32 @@ class ChatApp {
   saveUserProfile(userData) {
     this.user = userData;
     localStorage.setItem('bridge_user', JSON.stringify(userData));
+    this.updateProfileMenuButton();
+  }
+
+  updateProfileMenuButton() {
+    const btn = document.getElementById('profileMenuBtn');
+    if (!btn) return;
+
+    const nameEl = btn.querySelector('.profile-menu-name');
+    const avatarEl = btn.querySelector('.profile-menu-avatar');
+
+    const name = this.user?.name || 'Користувач Orion';
+    if (nameEl) {
+      nameEl.textContent = name;
+      nameEl.title = name;
+    }
+
+    if (avatarEl) {
+      const initials = name
+        .split(' ')
+        .map(word => word[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+      avatarEl.textContent = initials;
+      avatarEl.style.background = this.user?.avatarColor || this.getContactColor(name);
+    }
   }
 
   loadSettings() {
@@ -146,6 +172,7 @@ class ChatApp {
     this.setupModalEnterHandlers();
     this.renderChatsList();
     this.applyFontSize(this.settings.fontSize);
+    this.updateProfileMenuButton();
     this.setupMobileSwipeBack();
   }
 
@@ -167,6 +194,10 @@ class ChatApp {
     const onStart = (e) => {
       if (window.innerWidth > 768 || !this.currentChat) return;
       if (e.touches.length !== 1) return;
+      
+      // Don't start drag if touch is on messages container
+      if (e.target.closest('#messagesContainer')) return;
+      
       const touch = e.touches[0];
       startX = touch.clientX;
       startY = touch.clientY;
@@ -177,6 +208,10 @@ class ChatApp {
 
     const onMove = (e) => {
       if (!dragging || window.innerWidth > 768 || !this.currentChat) return;
+      
+      // Don't prevent scrolling on messages container
+      if (e.target.closest('#messagesContainer')) return;
+      
       const touch = e.touches[0];
       const dx = touch.clientX - startX;
       const dy = touch.clientY - startY;
@@ -256,6 +291,19 @@ class ChatApp {
         profileMenu.classList.remove('active');
       });
     });
+    
+    const messengerSettingsBtn = document.getElementById('messengerSettingsBtn');
+    if (messengerSettingsBtn) {
+      messengerSettingsBtn.addEventListener('click', () => {
+        const svg = messengerSettingsBtn.querySelector('svg');
+        if (svg) {
+          svg.classList.add('spinning');
+          setTimeout(() => svg.classList.remove('spinning'), 600);
+        }
+        this.showSettings('messenger-settings');
+        if (profileMenu) profileMenu.classList.remove('active');
+      });
+    }
     
     document.getElementById('sendBtn').addEventListener('click', (e) => {
       e.preventDefault();
@@ -929,6 +977,7 @@ class ChatApp {
 
     this.bindMessageContextMenu();
 
+    // Auto-scroll to bottom
     setTimeout(() => {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }, 0);
@@ -1400,30 +1449,376 @@ class ChatApp {
     return div.innerHTML;
   }
 
+  getSettingsTemplate(sectionName) {
+    const templates = {
+      'profile-settings': `
+<div class="settings-section" id="profile-settings">
+  <div class="settings-header">
+    <button>← Назад</button>
+    <h2>Налаштування профілю</h2>
+  </div>
+
+  <div class="settings-content">
+    <div class="profile-avatar-section">
+      <div class="profile-avatar-large">
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="12" cy="8" r="4" />
+          <path d="M12 14c-5 0-8 2.5-8 5v4h16v-4c0-2.5-3-5-8-5z" />
+        </svg>
+      </div>
+      <button class="btn btn-primary btn-change-avatar">Змінити аватар</button>
+    </div>
+
+    <div class="form-group">
+      <label for="profileName">Ім'я:</label>
+      <input
+        type="text"
+        id="profileName"
+        class="form-input"
+        placeholder="Введіть ваше ім'я"
+        value="Користувач Orion"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="profileEmail">Email:</label>
+      <input
+        type="email"
+        id="profileEmail"
+        class="form-input"
+        placeholder="example@email.com"
+        value="user@example.com"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="profileStatus">Статус:</label>
+      <input
+        type="text"
+        id="profileStatus"
+        class="form-input"
+        placeholder="Ваш статус"
+        value="Доступний"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="profileBio">Біографія:</label>
+      <textarea
+        id="profileBio"
+        class="form-textarea"
+        placeholder="Розкажіть про себе"
+        rows="4"
+      >
+Привіт! Я користувач Orion месенджера.</textarea>
+    </div>
+
+    <div class="settings-buttons">
+      <button class="btn btn-primary btn-save-profile">Зберегти зміни</button>
+      <button class="btn btn-secondary">Скасувати</button>
+    </div>
+  </div>
+</div>
+      `.trim(),
+      'messenger-settings': `
+<div class="settings-section" id="messenger-settings">
+  <div class="settings-header">
+    <button>← Назад</button>
+    <h2>Налаштування месенджера</h2>
+  </div>
+
+  <div class="settings-content">
+    <div class="settings-group">
+      <h3>Сповіщення</h3>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Звукові сповіщення</span>
+          <p class="settings-item-desc">
+            Відтворювати звук при новому повідомленні
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="soundNotifications" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Десктоп сповіщення</span>
+          <p class="settings-item-desc">
+            Показувати сповіщення на робочому столі
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="desktopNotifications" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>Конфіденційність</h3>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Показувати статус онлайн</span>
+          <p class="settings-item-desc">
+            Дозволити іншим бачити, коли ви онлайн
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="showOnlineStatus" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Показувати індикатор набору</span>
+          <p class="settings-item-desc">
+            Показувати, коли користувач пише повідомлення
+          </p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="showTypingIndicator" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>Інтерфейс</h3>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Розмір шрифту</span>
+          <p class="settings-item-desc">Виберіть зручний розмір шрифту</p>
+        </div>
+        <select class="form-select" id="fontSize">
+          <option value="small">Малий</option>
+          <option value="medium" selected>Середній</option>
+          <option value="large">Великий</option>
+        </select>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Тема оформлення</span>
+          <p class="settings-item-desc">Вибір між світлою та темною темою</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="themeToggleCheckbox" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-buttons">
+      <button class="btn btn-primary btn-save-messenger">
+        Зберегти налаштування
+      </button>
+      <button class="btn btn-secondary">Скасувати</button>
+    </div>
+  </div>
+</div>
+      `.trim(),
+      'about': `
+<div class="settings-section" id="about">
+  <div class="settings-header">
+    <button>← Назад</button>
+    <h2>Про додаток</h2>
+  </div>
+
+  <div class="settings-content">
+    <div class="about-header">
+      <div class="about-logo">
+        <svg
+          width="80"
+          height="80"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
+          />
+        </svg>
+      </div>
+      <h1>Orion</h1>
+      <p class="version">Версія 1.0.0</p>
+    </div>
+
+    <div class="about-section">
+      <h3>Опис</h3>
+      <p>
+        Orion - це сучасний та зручний месенджер для спілкування з вашими
+        контактами. З простим інтерфейсом та потужними функціями, Orion робить
+        спілкування легким та приємним.
+      </p>
+    </div>
+
+    <div class="about-section">
+      <h3>Особливості</h3>
+      <ul class="features-list">
+        <li>💬 Миттєвий обмін повідомленнями</li>
+        <li>🎨 Темна та світла тема</li>
+        <li>⚙️ Гнучкі налаштування</li>
+        <li>📱 Адаптивний дизайн</li>
+        <li>🔒 Локальне зберігання даних</li>
+        <li>🚀 Швидка та надійна робота</li>
+      </ul>
+    </div>
+
+    <div class="about-section">
+      <h3>Розробник</h3>
+      <p>
+        Orion розроблено як проєкт, який демонструє можливості сучасної
+        веб-розробки. Ваш Orion Team
+      </p>
+    </div>
+
+    <div class="about-section">
+      <h3>Ліцензія</h3>
+      <p>MIT License © 2026 Orion Project. Всі права захищені.</p>
+    </div>
+
+    <div class="about-buttons">
+      <button class="btn btn-secondary">Закрити</button>
+    </div>
+  </div>
+</div>
+      `.trim(),
+      'help': `
+<div class="settings-section" id="help">
+  <div class="settings-header">
+    <button>← Назад</button>
+    <h2>Допомога</h2>
+  </div>
+
+  <div class="settings-content">
+    <div class="help-section">
+      <h3>Часто задавані питання</h3>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-question">Як почати нову розмову?</summary>
+          <div class="faq-answer">
+            <p>
+              Натисніть на кнопку "+" у верхній частині списку контактів.
+              Введіть ім'я контакту та натисніть "Створити". Новий чат з'явиться
+              у списку контактів.
+            </p>
+          </div>
+        </details>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-question">Як видалити чат?</summary>
+          <div class="faq-answer">
+            <p>
+              Наведіть мишу на чат у списку контактів. З'явиться кнопка
+              видалення (смітник). Натисніть її, підтвердіть видалення, і чат
+              буде видалений.
+            </p>
+          </div>
+        </details>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-question">Як змінити тему оформлення?</summary>
+          <div class="faq-answer">
+            <p>
+              Натисніть на кнопку з іконкою місяця у верхній частині вікна чату.
+              Тема буде змінена з світлої на темну і навпаки.
+            </p>
+          </div>
+        </details>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-question">
+            Де зберігаються мої повідомлення?
+          </summary>
+          <div class="faq-answer">
+            <p>
+              Всі ваші повідомлення зберігаються локально у браузері. Вони не
+              передаються на сервери і залишаються приватними.
+            </p>
+          </div>
+        </details>
+      </div>
+
+      <div class="faq-item">
+        <details>
+          <summary class="faq-question">Як здійснити пошук контакту?</summary>
+          <div class="faq-answer">
+            <p>
+              Скористайтеся полем пошуку у верхній частині списку контактів.
+              Почніть вводити ім'я контакту, і список буде автоматично
+              фільтруватися.
+            </p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>Клавіатурні скорочення</h3>
+      <table class="shortcuts-table">
+        <tr>
+          <td class="shortcut-key">Enter</td>
+          <td class="shortcut-desc">Відправити повідомлення</td>
+        </tr>
+        <tr>
+          <td class="shortcut-key">Shift + Enter</td>
+          <td class="shortcut-desc">Перейти на новий рядок</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="help-section">
+      <h3>Контактна інформація</h3>
+      <p>
+        Якщо у вас виникли проблеми або вам потрібна додаткова допомога,
+        зверніться до нашої служби підтримки:
+      </p>
+      <ul class="contact-list">
+        <li>
+          📧 Email:
+          <a href="mailto:support@orion.local">support@orion.local</a>
+        </li>
+        <li>💬 Форум: <a href="#">orion-forum.local</a></li>
+      </ul>
+    </div>
+
+    <div class="help-buttons">
+      <button class="btn btn-secondary">Закрити</button>
+    </div>
+  </div>
+</div>
+      `.trim()
+    };
+
+    return templates[sectionName] || '';
+  }
+
   async showSettings(sectionName) {
     const settingsContainer = document.getElementById('settingsContainer');
     
     try {
-      let htmlContent = '';
-      
-      switch(sectionName) {
-        case 'profile-settings':
-          const profileResponse = await fetch('./src/html/profile-settings.html');
-          htmlContent = await profileResponse.text();
-          break;
-        case 'messenger-settings':
-          const messengerResponse = await fetch('./src/html/messenger-settings.html');
-          htmlContent = await messengerResponse.text();
-          break;
-        case 'about':
-          const aboutResponse = await fetch('./src/html/about.html');
-          htmlContent = await aboutResponse.text();
-          break;
-        case 'help':
-          const helpResponse = await fetch('./src/html/help.html');
-          htmlContent = await helpResponse.text();
-          break;
-      }
+      const htmlContent = this.getSettingsTemplate(sectionName);
+      if (!htmlContent) return;
       
       settingsContainer.innerHTML = htmlContent;
       settingsContainer.classList.add('active');

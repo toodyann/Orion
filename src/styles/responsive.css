@@ -7,6 +7,16 @@
     -webkit-touch-callout: none;
   }
 
+  input,
+  textarea,
+  .messages-container {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+
   .chats-list .chat-item:hover {
     background-color: unset;
     transform: none;
@@ -219,8 +229,15 @@
     scrollbar-width: none;
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 12px;
     background-color: var(--bg-color);
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .message-input-area {
