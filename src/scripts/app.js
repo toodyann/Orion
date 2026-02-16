@@ -263,16 +263,11 @@ class ChatApp {
     const navSettings = document.getElementById('navSettings');
     const navCalls = document.getElementById('navCalls');
     const navChats = document.getElementById('navChats');
-    const closeMenuBtn = document.getElementById('closeMenuBtn');
-    const profileMenu = document.getElementById('profileMenu');
     
-    if (navProfile && closeMenuBtn && profileMenu) {
+    if (navProfile) {
       navProfile.addEventListener('click', () => {
-        profileMenu.classList.toggle('active');
-      });
-      
-      closeMenuBtn.addEventListener('click', () => {
-        profileMenu.classList.remove('active');
+        this.setActiveNavButton(navProfile);
+        this.showSettings('profile');
       });
     }
     
@@ -280,7 +275,6 @@ class ChatApp {
       navSettings.addEventListener('click', () => {
         this.setActiveNavButton(navSettings);
         this.showSettings('messenger-settings');
-        if (profileMenu) profileMenu.classList.remove('active');
       });
     }
     
@@ -288,26 +282,40 @@ class ChatApp {
       navCalls.addEventListener('click', () => {
         this.setActiveNavButton(navCalls);
         this.showSettings('calls');
-        if (profileMenu) profileMenu.classList.remove('active');
       });
     }
     
     if (navChats) {
       navChats.addEventListener('click', () => {
         this.setActiveNavButton(navChats);
-        this.hideWelcomeScreen();
+        // Show chats list and hide settings
+        const settingsContainer = document.getElementById('settingsContainer');
+        const settingsContainerMobile = document.getElementById('settingsContainerMobile');
+        const chatsList = document.getElementById('chatsList');
+        const chatContainer = document.getElementById('chatContainer');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        
+        if (settingsContainer) {
+          settingsContainer.classList.remove('active');
+          settingsContainer.style.display = 'none';
+        }
+        if (settingsContainerMobile) {
+          settingsContainerMobile.classList.remove('active');
+          settingsContainerMobile.style.display = 'none';
+        }
+        if (chatsList) chatsList.classList.remove('hidden');
+        
+        // Clear current chat and show welcome screen
+        this.currentChat = null;
+        if (chatContainer) {
+          chatContainer.classList.remove('active');
+          chatContainer.style.display = 'none';
+        }
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        
         this.renderChatsList();
-        if (profileMenu) profileMenu.classList.remove('active');
       });
     }
-    
-    document.querySelectorAll('.menu-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        const section = e.currentTarget.dataset.section;
-        this.showSettings(section);
-        profileMenu.classList.remove('active');
-      });
-    });
     
     document.getElementById('sendBtn').addEventListener('click', (e) => {
       e.preventDefault();
@@ -654,6 +662,10 @@ class ChatApp {
 
   renderChatsList() {
     const chatsList = document.getElementById('chatsList');
+    
+    // On mobile, show chats list when rendering
+    chatsList.classList.remove('hidden-on-settings');
+    
     chatsList.innerHTML = '';
 
     const sortedChats = this.getSortedChats();
@@ -846,6 +858,26 @@ class ChatApp {
   selectChat(chatId) {
     this.currentChat = this.chats.find(c => c.id === chatId);
     document.getElementById('newContactInput').value = '';
+    
+    // Hide settings sections completely
+    const settingsContainer = document.getElementById('settingsContainer');
+    const settingsContainerMobile = document.getElementById('settingsContainerMobile');
+    if (settingsContainer) {
+      settingsContainer.classList.remove('active');
+      settingsContainer.style.display = 'none';
+    }
+    if (settingsContainerMobile) {
+      settingsContainerMobile.classList.remove('active');
+      settingsContainerMobile.style.display = 'none';
+    }
+    
+    // Show chat container
+    const chatContainer = document.getElementById('chatContainer');
+    if (chatContainer) {
+      chatContainer.classList.add('active');
+      chatContainer.style.display = 'flex';
+    }
+    
     this.renderChatsList();
     this.renderChat();
     this.updateChatHeader();
@@ -1455,10 +1487,55 @@ class ChatApp {
 
   getSettingsTemplate(sectionName) {
     const templates = {
+      'profile': `
+<div class="settings-section" id="profile">
+  <div class="settings-header">
+    <h2>Мій профіль</h2>
+  </div>
+
+  <div class="settings-content">
+    <div class="profile-avatar-section">
+      <div class="profile-avatar-large">
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="12" cy="8" r="4" />
+          <path d="M12 14c-5 0-8 2.5-8 5v4h16v-4c0-2.5-3-5-8-5z" />
+        </svg>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Ім'я:</label>
+      <p id="profileName" style="font-weight: 600; color: var(--text-primary);">Користувач Orion</p>
+    </div>
+
+    <div class="form-group">
+      <label>Email:</label>
+      <p id="profileEmail" style="color: var(--text-secondary);">user@example.com</p>
+    </div>
+
+    <div class="form-group">
+      <label>Статус:</label>
+      <p id="profileStatus" style="color: var(--text-secondary);">Онлайн</p>
+    </div>
+
+    <div class="form-group">
+      <label>Біографія:</label>
+      <p id="profileBio" style="color: var(--text-secondary); white-space: pre-wrap;">Добро пожалувати!</p>
+    </div>
+
+    <button class="btn btn-primary" style="width: 100%; margin-top: 16px;">Редагувати профіль</button>
+  </div>
+</div>
+      `.trim(),
       'profile-settings': `
 <div class="settings-section" id="profile-settings">
   <div class="settings-header">
-    <button>← Назад</button>
     <h2>Налаштування профілю</h2>
   </div>
 
@@ -1533,7 +1610,6 @@ class ChatApp {
       'messenger-settings': `
 <div class="settings-section" id="messenger-settings">
   <div class="settings-header">
-    <button>← Назад</button>
     <h2>Налаштування месенджера</h2>
   </div>
 
@@ -1634,188 +1710,9 @@ class ChatApp {
   </div>
 </div>
       `.trim(),
-      'about': `
-<div class="settings-section" id="about">
-  <div class="settings-header">
-    <button>← Назад</button>
-    <h2>Про додаток</h2>
-  </div>
-
-  <div class="settings-content">
-    <div class="about-header">
-      <div class="about-logo">
-        <svg
-          width="80"
-          height="80"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
-          />
-        </svg>
-      </div>
-      <h1>Orion</h1>
-      <p class="version">Версія 1.0.0</p>
-    </div>
-
-    <div class="about-section">
-      <h3>Опис</h3>
-      <p>
-        Orion - це сучасний та зручний месенджер для спілкування з вашими
-        контактами. З простим інтерфейсом та потужними функціями, Orion робить
-        спілкування легким та приємним.
-      </p>
-    </div>
-
-    <div class="about-section">
-      <h3>Особливості</h3>
-      <ul class="features-list">
-        <li>💬 Миттєвий обмін повідомленнями</li>
-        <li>🎨 Темна та світла тема</li>
-        <li>⚙️ Гнучкі налаштування</li>
-        <li>📱 Адаптивний дизайн</li>
-        <li>🔒 Локальне зберігання даних</li>
-        <li>🚀 Швидка та надійна робота</li>
-      </ul>
-    </div>
-
-    <div class="about-section">
-      <h3>Розробник</h3>
-      <p>
-        Orion розроблено як проєкт, який демонструє можливості сучасної
-        веб-розробки. Ваш Orion Team
-      </p>
-    </div>
-
-    <div class="about-section">
-      <h3>Ліцензія</h3>
-      <p>MIT License © 2026 Orion Project. Всі права захищені.</p>
-    </div>
-
-    <div class="about-buttons">
-      <button class="btn btn-secondary">Закрити</button>
-    </div>
-  </div>
-</div>
-      `.trim(),
-      'help': `
-<div class="settings-section" id="help">
-  <div class="settings-header">
-    <button>← Назад</button>
-    <h2>Допомога</h2>
-  </div>
-
-  <div class="settings-content">
-    <div class="help-section">
-      <h3>Часто задавані питання</h3>
-
-      <div class="faq-item">
-        <details>
-          <summary class="faq-question">Як почати нову розмову?</summary>
-          <div class="faq-answer">
-            <p>
-              Натисніть на кнопку "+" у верхній частині списку контактів.
-              Введіть ім'я контакту та натисніть "Створити". Новий чат з'явиться
-              у списку контактів.
-            </p>
-          </div>
-        </details>
-      </div>
-
-      <div class="faq-item">
-        <details>
-          <summary class="faq-question">Як видалити чат?</summary>
-          <div class="faq-answer">
-            <p>
-              Наведіть мишу на чат у списку контактів. З'явиться кнопка
-              видалення (смітник). Натисніть її, підтвердіть видалення, і чат
-              буде видалений.
-            </p>
-          </div>
-        </details>
-      </div>
-
-      <div class="faq-item">
-        <details>
-          <summary class="faq-question">Як змінити тему оформлення?</summary>
-          <div class="faq-answer">
-            <p>
-              Натисніть на кнопку з іконкою місяця у верхній частині вікна чату.
-              Тема буде змінена з світлої на темну і навпаки.
-            </p>
-          </div>
-        </details>
-      </div>
-
-      <div class="faq-item">
-        <details>
-          <summary class="faq-question">
-            Де зберігаються мої повідомлення?
-          </summary>
-          <div class="faq-answer">
-            <p>
-              Всі ваші повідомлення зберігаються локально у браузері. Вони не
-              передаються на сервери і залишаються приватними.
-            </p>
-          </div>
-        </details>
-      </div>
-
-      <div class="faq-item">
-        <details>
-          <summary class="faq-question">Як здійснити пошук контакту?</summary>
-          <div class="faq-answer">
-            <p>
-              Скористайтеся полем пошуку у верхній частині списку контактів.
-              Почніть вводити ім'я контакту, і список буде автоматично
-              фільтруватися.
-            </p>
-          </div>
-        </details>
-      </div>
-    </div>
-
-    <div class="help-section">
-      <h3>Клавіатурні скорочення</h3>
-      <table class="shortcuts-table">
-        <tr>
-          <td class="shortcut-key">Enter</td>
-          <td class="shortcut-desc">Відправити повідомлення</td>
-        </tr>
-        <tr>
-          <td class="shortcut-key">Shift + Enter</td>
-          <td class="shortcut-desc">Перейти на новий рядок</td>
-        </tr>
-      </table>
-    </div>
-
-    <div class="help-section">
-      <h3>Контактна інформація</h3>
-      <p>
-        Якщо у вас виникли проблеми або вам потрібна додаткова допомога,
-        зверніться до нашої служби підтримки:
-      </p>
-      <ul class="contact-list">
-        <li>
-          📧 Email:
-          <a href="mailto:support@orion.local">support@orion.local</a>
-        </li>
-        <li>💬 Форум: <a href="#">orion-forum.local</a></li>
-      </ul>
-    </div>
-
-    <div class="help-buttons">
-      <button class="btn btn-secondary">Закрити</button>
-    </div>
-  </div>
-</div>
-      `.trim(),
       'calls': `
 <div class="settings-section" id="calls">
   <div class="settings-header">
-    <button>← Назад</button>
     <h2>Дзвінки</h2>
   </div>
 
@@ -1845,18 +1742,86 @@ class ChatApp {
   }
 
   async showSettings(sectionName) {
-    const settingsContainer = document.getElementById('settingsContainer');
+    // На мобільному використовуємо settingsContainerMobile, на ПК - settingsContainer
+    const isMobile = window.innerWidth <= 768;
+    const settingsContainerId = isMobile ? 'settingsContainerMobile' : 'settingsContainer';
+    const settingsContainer = document.getElementById(settingsContainerId);
+    
+    const chatContainer = document.getElementById('chatContainer');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const chatsList = document.getElementById('chatsList');
+    
+    // Hide chat and welcome screen
+    if (chatContainer) chatContainer.classList.remove('active');
+    if (welcomeScreen) welcomeScreen.classList.add('hidden');
+    
+    // On mobile, hide chats list when showing settings
+    if (chatsList) {
+      if (isMobile) {
+        chatsList.classList.add('hidden');
+      } else {
+        chatsList.classList.remove('hidden-on-settings');
+      }
+    }
     
     try {
       const htmlContent = this.getSettingsTemplate(sectionName);
-      if (!htmlContent) return;
+      if (!htmlContent) {
+        console.error('Template not found for:', sectionName);
+        return;
+      }
       
       settingsContainer.innerHTML = htmlContent;
       settingsContainer.classList.add('active');
       
+      // Очищаємо всі попередні секції
+      document.querySelectorAll('.settings-section').forEach(section => {
+        if (section !== settingsContainer.querySelector('.settings-section')) {
+          section.classList.remove('active');
+        }
+      });
+      
+      if (isMobile) {
+        // На мобільному видаляємо всі позиційні стилі
+        settingsContainer.style.cssText = `
+          display: flex !important;
+          position: relative !important;
+          top: auto !important;
+          left: auto !important;
+          right: auto !important;
+          bottom: auto !important;
+          width: 100% !important;
+          height: auto !important;
+          z-index: auto !important;
+          background-color: transparent !important;
+          flex-direction: column !important;
+          overflow: visible !important;
+          flex: 1;
+        `;
+      } else {
+        // На ПК просто показуємо контейнер як flex item в chat-area (займає місце welcomeScreen)
+        settingsContainer.style.cssText = `
+          display: flex !important;
+          flex: 1 !important;
+          flex-direction: column !important;
+          width: auto !important;
+          height: auto !important;
+          position: static !important;
+          overflow: hidden !important;
+          background-color: var(--bg-color) !important;
+        `;
+      }
+      
       const settingsSection = settingsContainer.querySelector('.settings-section');
+      
       if (settingsSection) {
         settingsSection.classList.add('active');
+        
+        // Force inline styles for section
+        settingsSection.style.display = 'flex';
+        settingsSection.style.flexDirection = 'column';
+        settingsSection.style.height = '100%';
+        settingsSection.style.width = '100%';
       }
       
       if (sectionName === 'profile-settings') {

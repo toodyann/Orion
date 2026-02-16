@@ -122,6 +122,47 @@
     transition: none;
   }
 
+  /* Desktop settings container (in chat-area) - NOT used on mobile */
+  /* Settings container styles moved to desktop-only media queries if needed */
+
+  /* Mobile settings container in sidebar */
+  #settingsContainerMobile {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    background-color: var(--bg-color);
+    position: relative;
+    min-height: 0;
+  }
+
+  #settingsContainerMobile.active {
+    display: flex !important;
+  }
+
+  #chatsList.hidden {
+    display: none !important;
+  }
+
+  /* Hide settings header on mobile */
+  #settingsContainerMobile .settings-header {
+    display: none !important;
+  }
+
+  .welcome-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+  }
+
+  .welcome-screen.hidden {
+    display: none !important;
+  }
+
   .sidebar-header {
     display: flex;
     justify-content: center;
@@ -163,6 +204,10 @@
     overflow-y: auto;
   }
 
+  .chats-list.hidden-on-settings {
+    display: none;
+  }
+
   .chats-list .chat-item {
     width: calc(100% - 24px);
     min-width: auto;
@@ -196,6 +241,7 @@
     overflow: hidden;
     height: 100vh;
     height: 100dvh;
+    position: relative;
   }
 
   .chat-header {

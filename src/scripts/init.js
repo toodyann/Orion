@@ -40,6 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Чати динамічно додаватимуться тут -->
     </div>
 
+    <!-- Розділи налаштувань (мобільна версія) -->
+    <div class="settings-container" id="settingsContainerMobile">
+      <!-- Розділи динамічно завантажуватимуться сюди -->
+    </div>
+
     <!-- Меню профілю -->
     <div class="profile-menu-wrapper">
       <div class="bottom-nav">
@@ -63,40 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="nav-avatar" aria-hidden="true"></span>
           <span>Профіль</span>
         </button>
-      </div>
-      
-      <div class="profile-menu" id="profileMenu">
-        <div class="profile-menu-header">
-          <h3>Меню</h3>
-          <button class="btn-close-menu" id="closeMenuBtn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
-        <nav class="profile-menu-nav">
-          <button class="menu-item" data-section="profile-settings">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="2"/>
-              <path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span>Налаштування профілю</span>
-          </button>
-          <button class="menu-item" data-section="about">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-              <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span>Про додаток</span>
-          </button>
-          <button class="menu-item" data-section="help">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-              <path d="M9 10c0-1.657 1.34-3 3-3s3 1.343 3 3c0 1-1 2-2 2.5M12 19v-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span>Допомога</span>
-          </button>
-        </nav>
       </div>
     </div>
   </aside>
@@ -206,6 +177,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <p>Виберіть контакт зі списку, щоб почати спілкування</p>
       </div>
     </div>
+
+    <!-- Розділи налаштувань -->
+    <div class="settings-container" id="settingsContainer">
+      <!-- Розділи динамічно завантажуватимуться сюди -->
+    </div>
   </main>
 </div>
 
@@ -314,11 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
   <button class="message-menu-item" id="messageMenuEdit">Редагувати</button>
   <button class="message-menu-item" id="messageMenuDelete">Видалити</button>
   <button class="message-menu-item" id="messageMenuCopy">Копіювати</button>
-</div>
-
-<!-- Розділи налаштувань -->
-<div class="settings-container" id="settingsContainer">
-  <!-- Розділи динамічно завантажуватимуться сюди -->
 </div>`;
 
   const extraUi = `
