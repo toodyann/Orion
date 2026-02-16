@@ -7,14 +7,19 @@
     -webkit-touch-callout: none;
   }
 
-  input,
-  textarea,
   .messages-container {
+    scrollbar-width: none;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px;
+    background-color: var(--bg-color);
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
-    -webkit-touch-callout: default;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .chats-list .chat-item:hover {
@@ -115,6 +120,7 @@
 
   .chat-container.active.swiping {
     transition: none;
+    background-color: transparent;
   }
 
   .sidebar-header {
@@ -225,22 +231,16 @@
     color: var(--text-primary);
   }
 
-  .messages-container {
-    scrollbar-width: none;
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 12px;
-    background-color: var(--bg-color);
+  input,
+  textarea {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
-    touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
+    -webkit-touch-callout: default;
   }
 
-  .message-input-area {
+  .messages-container {
     padding: 8px 12px 12px 12px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
     background-color: var(--bg-color);
@@ -477,10 +477,6 @@
 
   .app-title {
     font-size: 20px;
-  }
-
-  .messages-container {
-    padding: 8px;
   }
 
   .chat-header {
