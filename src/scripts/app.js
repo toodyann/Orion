@@ -34,17 +34,12 @@ class ChatApp {
   }
 
   updateProfileMenuButton() {
-    const btn = document.getElementById('profileMenuBtn');
-    if (!btn) return;
+    const navProfile = document.getElementById('navProfile');
+    if (!navProfile) return;
 
-    const nameEl = btn.querySelector('.profile-menu-name');
-    const avatarEl = btn.querySelector('.profile-menu-avatar');
+    const avatarEl = navProfile.querySelector('.nav-avatar');
 
     const name = this.user?.name || 'Користувач Orion';
-    if (nameEl) {
-      nameEl.textContent = name;
-      nameEl.title = name;
-    }
 
     if (avatarEl) {
       const initials = name
@@ -195,9 +190,6 @@ class ChatApp {
       if (window.innerWidth > 768 || !this.currentChat) return;
       if (e.touches.length !== 1) return;
       
-      // Don't start drag if touch is on messages container
-      if (e.target.closest('#messagesContainer')) return;
-      
       const touch = e.touches[0];
       startX = touch.clientX;
       startY = touch.clientY;
@@ -208,9 +200,6 @@ class ChatApp {
 
     const onMove = (e) => {
       if (!dragging || window.innerWidth > 768 || !this.currentChat) return;
-      
-      // Don't prevent scrolling on messages container
-      if (e.target.closest('#messagesContainer')) return;
       
       const touch = e.touches[0];
       const dx = touch.clientX - startX;
@@ -231,7 +220,7 @@ class ChatApp {
       chatContainer.style.transform = `translateX(${distance}px)`;
       sidebar.style.setProperty('--sidebar-reveal', `${distance}px`);
 
-      if (active) e.preventDefault();
+      if (active && !e.target.closest('#messagesContainer')) e.preventDefault();
     };
 
     const onEnd = () => {
@@ -270,17 +259,45 @@ class ChatApp {
     document.getElementById('confirmBtn').addEventListener('click', () => this.createNewChat());
     document.getElementById('modalOverlay').addEventListener('click', () => this.closeNewChatModal());
     
-    const profileMenuBtn = document.getElementById('profileMenuBtn');
+    const navProfile = document.getElementById('navProfile');
+    const navSettings = document.getElementById('navSettings');
+    const navCalls = document.getElementById('navCalls');
+    const navChats = document.getElementById('navChats');
     const closeMenuBtn = document.getElementById('closeMenuBtn');
     const profileMenu = document.getElementById('profileMenu');
     
-    if (profileMenuBtn && closeMenuBtn && profileMenu) {
-      profileMenuBtn.addEventListener('click', () => {
+    if (navProfile && closeMenuBtn && profileMenu) {
+      navProfile.addEventListener('click', () => {
         profileMenu.classList.toggle('active');
       });
       
       closeMenuBtn.addEventListener('click', () => {
         profileMenu.classList.remove('active');
+      });
+    }
+    
+    if (navSettings) {
+      navSettings.addEventListener('click', () => {
+        this.setActiveNavButton(navSettings);
+        this.showSettings('messenger-settings');
+        if (profileMenu) profileMenu.classList.remove('active');
+      });
+    }
+    
+    if (navCalls) {
+      navCalls.addEventListener('click', () => {
+        this.setActiveNavButton(navCalls);
+        this.showSettings('calls');
+        if (profileMenu) profileMenu.classList.remove('active');
+      });
+    }
+    
+    if (navChats) {
+      navChats.addEventListener('click', () => {
+        this.setActiveNavButton(navChats);
+        this.hideWelcomeScreen();
+        this.renderChatsList();
+        if (profileMenu) profileMenu.classList.remove('active');
       });
     }
     
@@ -291,19 +308,6 @@ class ChatApp {
         profileMenu.classList.remove('active');
       });
     });
-    
-    const messengerSettingsBtn = document.getElementById('messengerSettingsBtn');
-    if (messengerSettingsBtn) {
-      messengerSettingsBtn.addEventListener('click', () => {
-        const svg = messengerSettingsBtn.querySelector('svg');
-        if (svg) {
-          svg.classList.add('spinning');
-          setTimeout(() => svg.classList.remove('spinning'), 600);
-        }
-        this.showSettings('messenger-settings');
-        if (profileMenu) profileMenu.classList.remove('active');
-      });
-    }
     
     document.getElementById('sendBtn').addEventListener('click', (e) => {
       e.preventDefault();
@@ -1807,10 +1811,37 @@ class ChatApp {
     </div>
   </div>
 </div>
+      `.trim(),
+      'calls': `
+<div class="settings-section" id="calls">
+  <div class="settings-header">
+    <button>← Назад</button>
+    <h2>Дзвінки</h2>
+  </div>
+
+  <div class="settings-content">
+    <div class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" fill="none"/>
+      </svg>
+      <h3>Немає дзвінків</h3>
+      <p>Поки що історія дзвінків порожня. Зробіть перший дзвінок контакту!</p>
+    </div>
+  </div>
+</div>
       `.trim()
     };
 
     return templates[sectionName] || '';
+  }
+
+  setActiveNavButton(btn) {
+    document.querySelectorAll('.bottom-nav-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    if (btn) {
+      btn.classList.add('active');
+    }
   }
 
   async showSettings(sectionName) {

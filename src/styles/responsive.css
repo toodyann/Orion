@@ -74,7 +74,6 @@
 
   .bridge-app.mobile-chat-open .sidebar.hidden.revealed {
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
-    background-color: var(--bg-color);
   }
 
   .sidebar.mobile-menu {
@@ -121,8 +120,6 @@
 
   .chat-container.active.swiping {
     transition: none;
-    background-color: transparent;
-    pointer-events: none;
   }
 
   .sidebar-header {
