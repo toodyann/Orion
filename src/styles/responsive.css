@@ -145,9 +145,45 @@
     display: none !important;
   }
 
-  /* Hide settings header on mobile */
+  /* Settings header on mobile - show with back button */
   #settingsContainerMobile .settings-header {
-    display: none !important;
+    display: flex !important;
+    padding: 0 !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    flex-shrink: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    position: relative !important;
+    background-color: var(--bg-color) !important;
+    min-height: 56px !important;
+  }
+
+  #settingsContainerMobile .settings-header button {
+    position: absolute !important;
+    left: 16px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 10 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px 12px !important;
+    font-size: 24px !important;
+    line-height: 1 !important;
+    color: var(--primary-color) !important;
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+
+  #settingsContainerMobile .settings-header h2 {
+    margin: 0 !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    color: var(--text-primary) !important;
   }
 
   .welcome-screen {
@@ -171,7 +207,7 @@
   }
 
   .app-title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
   }
 
@@ -185,7 +221,7 @@
 
   .search-input {
     padding-right: 46px;
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .search-box .btn-new-chat {
@@ -467,6 +503,65 @@
 
   .menu-item {
     padding: 16px;
+  }
+
+  /* Mobile font size increases (except messages) */
+  .chat-name {
+    font-size: 17px !important;
+  }
+
+  .chat-preview {
+    font-size: 15px !important;
+  }
+
+  .chat-time {
+    font-size: 13px !important;
+  }
+
+  .bottom-nav-item span {
+    font-size: 12px !important;
+  }
+
+  .chat-header-title {
+    font-size: 18px !important;
+  }
+
+  .contact-details .status {
+    font-size: 14px !important;
+  }
+
+  .settings-item-label span {
+    font-size: 17px !important;
+  }
+
+  .settings-item-desc {
+    font-size: 14px !important;
+  }
+
+  .settings-menu-label span {
+    font-size: 17px !important;
+  }
+
+  .settings-menu-item .settings-item-desc {
+    font-size: 14px !important;
+  }
+
+  .settings-group h3 {
+    font-size: 14px !important;
+  }
+
+  .btn-save-messenger,
+  .btn-save-profile,
+  .btn-secondary {
+    font-size: 16px !important;
+  }
+
+  .form-select {
+    font-size: 16px !important;
+  }
+
+  .font-size-value span {
+    font-size: 15px !important;
   }
 }
 

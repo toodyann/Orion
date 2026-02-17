@@ -305,11 +305,15 @@ class ChatApp {
         }
         if (chatsList) chatsList.classList.remove('hidden');
         
+        // Show search box back
+        const searchBox = document.querySelector('.search-box');
+        if (searchBox) searchBox.style.display = '';
+        
         // Clear current chat and show welcome screen
         this.currentChat = null;
         if (chatContainer) {
+          chatContainer.style.display = '';
           chatContainer.classList.remove('active');
-          chatContainer.style.display = 'none';
         }
         if (welcomeScreen) welcomeScreen.classList.remove('hidden');
         
@@ -1610,6 +1614,7 @@ class ChatApp {
       'messenger-settings': `
 <div class="settings-section" id="messenger-settings">
   <div class="settings-header">
+    <button class="btn-back-settings">‹</button>
     <h2>Налаштування</h2>
   </div>
 
@@ -1689,7 +1694,7 @@ class ChatApp {
       'notifications-settings': `
 <div class="settings-section" id="notifications-settings">
   <div class="settings-header">
-    <button class="btn-back-subsection">← Назад</button>
+    <button class="btn-back-subsection">‹</button>
     <h2>Сповіщення</h2>
   </div>
 
@@ -1750,7 +1755,7 @@ class ChatApp {
       'privacy-settings': `
 <div class="settings-section" id="privacy-settings">
   <div class="settings-header">
-    <button class="btn-back-subsection">← Назад</button>
+    <button class="btn-back-subsection">‹</button>
     <h2>Конфіденційність</h2>
   </div>
 
@@ -1811,7 +1816,7 @@ class ChatApp {
       'messages-settings': `
 <div class="settings-section" id="messages-settings">
   <div class="settings-header">
-    <button class="btn-back-subsection">← Назад</button>
+    <button class="btn-back-subsection">‹</button>
     <h2>Повідомлення</h2>
   </div>
 
@@ -1861,7 +1866,7 @@ class ChatApp {
       'appearance-settings': `
 <div class="settings-section" id="appearance-settings">
   <div class="settings-header">
-    <button class="btn-back-subsection">← Назад</button>
+    <button class="btn-back-subsection">‹</button>
     <h2>Інтерфейс</h2>
   </div>
 
@@ -1938,7 +1943,7 @@ class ChatApp {
       'language-settings': `
 <div class="settings-section" id="language-settings">
   <div class="settings-header">
-    <button class="btn-back-subsection">← Назад</button>
+    <button class="btn-back-subsection">‹</button>
     <h2>Мова</h2>
   </div>
 
@@ -2054,6 +2059,13 @@ class ChatApp {
       if (window.innerWidth > 768) return;
       if (e.touches.length !== 1) return;
       
+      // Ігноруємо якщо дотик на слайдері або інтерактивному елементі
+      const target = e.target;
+      if (target.closest('input[type="range"]') || target.closest('.font-size-slider-wrapper') || target.closest('.font-size-slider-container') || target.closest('.toggle-switch') || target.closest('select') || target.closest('input')) {
+        dragging = false;
+        return;
+      }
+      
       const touch = e.touches[0];
       startX = touch.clientX;
       startY = touch.clientY;
@@ -2071,16 +2083,15 @@ class ChatApp {
 
       if (!active) {
         if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
-        if (dx < 0) return; // Ігноруємо свайп вліво
+        if (dx < 0) return;
         active = true;
       }
 
-      const distance = Math.min(Math.max(0, dx), window.innerWidth * 0.5);
+      const maxReveal = window.innerWidth;
+      const distance = Math.min(Math.max(0, dx), maxReveal);
       lastTranslate = distance;
 
-      settingsContainer.style.transition = 'none';
       settingsContainer.style.transform = `translateX(${distance}px)`;
-      settingsContainer.style.opacity = 1 - (distance / (window.innerWidth * 0.5)) * 0.3;
 
       if (active) e.preventDefault();
     };
@@ -2091,23 +2102,12 @@ class ChatApp {
 
       if (!active) return;
 
-      settingsContainer.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-
       const shouldGoBack = lastTranslate > window.innerWidth * 0.25;
 
+      settingsContainer.style.transform = '';
+      
       if (shouldGoBack) {
-        settingsContainer.style.transform = `translateX(${window.innerWidth}px)`;
-        settingsContainer.style.opacity = '0';
-        setTimeout(() => {
-          settingsContainer.style.transition = '';
-          this.showSettings('messenger-settings');
-        }, 300);
-      } else {
-        settingsContainer.style.transform = '';
-        settingsContainer.style.opacity = '';
-        setTimeout(() => {
-          settingsContainer.style.transition = '';
-        }, 300);
+        this.showSettings('messenger-settings');
       }
     };
 
@@ -2134,13 +2134,20 @@ class ChatApp {
     if (chatContainer) chatContainer.classList.remove('active');
     if (welcomeScreen) welcomeScreen.classList.add('hidden');
     
-    // On mobile, hide chats list when showing settings
+    // On mobile, hide chats list and search when showing settings
+    const searchBox = document.querySelector('.search-box');
     if (chatsList) {
       if (isMobile) {
         chatsList.classList.add('hidden');
+        if (searchBox) searchBox.style.display = 'none';
       } else {
         chatsList.classList.remove('hidden-on-settings');
       }
+    }
+
+    // On desktop, hide chat container display
+    if (!isMobile && chatContainer) {
+      chatContainer.style.display = 'none';
     }
     
     try {
@@ -2322,6 +2329,27 @@ class ChatApp {
       if (backSubsectionBtn) {
         backSubsectionBtn.addEventListener('click', () => {
           this.showSettings('messenger-settings');
+        });
+      }
+
+      // Обробник кнопки назад для головного меню налаштувань
+      const backSettingsBtn = settingsContainer.querySelector('.btn-back-settings');
+      if (backSettingsBtn) {
+        backSettingsBtn.addEventListener('click', () => {
+          settingsContainer.classList.remove('active');
+          settingsContainer.style.display = 'none';
+          const section = settingsContainer.querySelector('.settings-section');
+          if (section) {
+            section.classList.remove('active');
+          }
+          // Restore chat area
+          const chatContainer = document.getElementById('chatContainer');
+          const welcomeScreen = document.getElementById('welcomeScreen');
+          if (chatContainer) chatContainer.style.display = '';
+          if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+          // Set nav back to chats
+          const navChats = document.getElementById('navChats');
+          if (navChats) this.setActiveNavButton(navChats);
         });
       }
       
