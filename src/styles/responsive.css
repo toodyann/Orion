@@ -115,11 +115,24 @@
     height: 100%;
     z-index: 2;
     background-color: var(--bg-color);
+    animation: slideInChat 0.3s ease-out;
     transition: transform 0.25s ease;
   }
 
   .chat-container.active.swiping {
     transition: none;
+    animation: none;
+  }
+
+  @keyframes slideInChat {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 
   /* Desktop settings container (in chat-area) - NOT used on mobile */
