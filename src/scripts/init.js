@@ -35,6 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
       </svg>
     </div>
 
+    <!-- Заголовок списку чатів -->
+    <div class="chats-list-header">
+      <h2>Повідомлення</h2>
+    </div>
+
     <!-- Список чатів -->
     <div class="chats-list" id="chatsList">
       <!-- Чати динамічно додаватимуться тут -->

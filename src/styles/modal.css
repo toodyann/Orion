@@ -309,10 +309,17 @@
   padding: 4px;
   display: none;
   z-index: 1001;
+  transform-origin: center;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: scale(0.85) translateY(-10px);
 }
 
 .message-menu.active {
   display: block;
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  animation: popupAppear 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .message-menu-date {
@@ -350,10 +357,17 @@
   padding: 4px;
   display: none;
   z-index: 1001;
+  transform-origin: center;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: scale(0.85) translateY(-10px);
 }
 
 .chat-list-menu.active {
   display: block;
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  animation: popupAppear 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .chat-list-menu-item {
@@ -371,4 +385,15 @@
 
 .chat-list-menu-item:hover {
   background-color: var(--bg-secondary);
+}
+
+@keyframes popupAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
