@@ -294,6 +294,7 @@ class ChatApp {
         const chatsList = document.getElementById('chatsList');
         const chatContainer = document.getElementById('chatContainer');
         const welcomeScreen = document.getElementById('welcomeScreen');
+        const chatsListHeader = document.querySelector('.chats-list-header');
         
         if (settingsContainer) {
           settingsContainer.classList.remove('active');
@@ -304,6 +305,9 @@ class ChatApp {
           settingsContainerMobile.style.display = 'none';
         }
         if (chatsList) chatsList.classList.remove('hidden');
+        
+        // Show chats list header
+        if (chatsListHeader) chatsListHeader.style.display = '';
         
         // Show search box back
         const searchBox = document.querySelector('.search-box');
@@ -2134,10 +2138,14 @@ class ChatApp {
     const chatContainer = document.getElementById('chatContainer');
     const welcomeScreen = document.getElementById('welcomeScreen');
     const chatsList = document.getElementById('chatsList');
+    const chatsListHeader = document.querySelector('.chats-list-header');
     
     // Hide chat and welcome screen
     if (chatContainer) chatContainer.classList.remove('active');
     if (welcomeScreen) welcomeScreen.classList.add('hidden');
+    
+    // Hide chats list header when showing settings
+    if (chatsListHeader) chatsListHeader.style.display = 'none';
     
     // On mobile, hide chats list and search when showing settings
     const searchBox = document.querySelector('.search-box');
