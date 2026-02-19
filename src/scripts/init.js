@@ -6,13 +6,52 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const htmlContent = `<div class="bridge-app">
-  <!-- Sidebar з контактами -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="brand">
+  <header class="app-header">
+    <div class="app-header-left">
+      <div class="chat-brand">
+        <img class="app-logo" src="./src/Assets/Orion_logo.png" alt="Orion" />
         <h1 class="app-title">ORION</h1>
       </div>
+      <div class="app-chat-info" id="appChatInfo">
+        <div class="app-chat-avatar" id="appChatAvatar"></div>
+        <div class="app-chat-meta">
+          <div class="app-chat-name" id="contactName">Виберіть контакт</div>
+          <div class="app-chat-status" id="contactStatus">онлайн</div>
+        </div>
+      </div>
     </div>
+    <div class="app-header-right">
+      <button class="btn-icon" id="callBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" fill="none"/>
+        </svg>
+      </button>
+      <button class="btn-icon" id="historyBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M23 12a11 11 0 1 1-22 0 11 11 0 0 1 22 0z" stroke="currentColor" stroke-width="2" fill="none"/>
+          <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="chat-menu-wrapper">
+        <button class="btn-icon" id="chatMenuBtn" aria-haspopup="true" aria-expanded="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="1" fill="currentColor"/>
+            <circle cx="12" cy="5" r="1" fill="currentColor"/>
+            <circle cx="12" cy="19" r="1" fill="currentColor"/>
+          </svg>
+        </button>
+        <div class="chat-menu" id="chatMenu">
+          <button class="chat-menu-item" data-action="clear">Очистити чат</button>
+          <button class="chat-menu-item" data-action="delete">Видалити чат</button>
+          <button class="chat-menu-item" data-action="info">Інформація</button>
+          <button class="chat-menu-item" data-action="group-info">Деталі групи</button>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="main-layout">
+  <!-- Sidebar з контактами -->
+  <aside class="sidebar">
 
     <!-- Пошук контактів -->
     <div class="search-box">
@@ -53,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <!-- Меню профілю -->
     <div class="profile-menu-wrapper">
       <div class="bottom-nav">
+        <div class="bottom-nav-indicator" aria-hidden="true"></div>
         <button class="bottom-nav-item active" id="navChats" title="Чати">
           <svg width="24" height="24" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M232.07,186.76a80,80,0,0,0-62.5-114.17A80,80,0,1,0,23.93,138.76l-7.27,24.71a16,16,0,0,0,19.87,19.87l24.71-7.27a80.39,80.39,0,0,0,25.18,7.35,80,80,0,0,0,108.34,40.65l24.71,7.27a16,16,0,0,0,19.87-19.86ZM62,159.5a8.28,8.28,0,0,0-2.26.32L32,168l8.17-27.76a8,8,0,0,0-.63-6,64,64,0,1,1,26.26,26.26A8,8,0,0,0,62,159.5Zm153.79,28.73L224,216l-27.76-8.17a8,8,0,0,0-6,.63,64.05,64.05,0,0,1-85.87-24.88A79.93,79.93,0,0,0,174.7,89.71a64,64,0,0,1,41.75,92.48A8,8,0,0,0,215.82,188.23Z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
@@ -67,63 +107,31 @@ document.addEventListener('DOMContentLoaded', () => {
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Zm-16.1-6.5a73.93,73.93,0,0,1,0,8.68,8,8,0,0,0,1.74,5.48l14.19,17.73a91.57,91.57,0,0,1-6.23,15L187,173.11a8,8,0,0,0-5.1,2.64,74.11,74.11,0,0,1-6.14,6.14,8,8,0,0,0-2.64,5.1l-2.51,22.58a91.32,91.32,0,0,1-15,6.23l-17.74-14.19a8,8,0,0,0-5-1.75h-.48a73.93,73.93,0,0,1-8.68,0,8,8,0,0,0-5.48,1.74L100.45,215.8a91.57,91.57,0,0,1-15-6.23L82.89,187a8,8,0,0,0-2.64-5.1,74.11,74.11,0,0,1-6.14-6.14,8,8,0,0,0-5.1-2.64L46.43,170.6a91.32,91.32,0,0,1-6.23-15l14.19-17.74a8,8,0,0,0,1.74-5.48,73.93,73.93,0,0,1,0-8.68,8,8,0,0,0-1.74-5.48L40.2,100.45a91.57,91.57,0,0,1,6.23-15L69,82.89a8,8,0,0,0,5.1-2.64,74.11,74.11,0,0,1,6.14-6.14A8,8,0,0,0,82.89,69L85.4,46.43a91.32,91.32,0,0,1,15-6.23l17.74,14.19a8,8,0,0,0,5.48,1.74,73.93,73.93,0,0,1,8.68,0,8,8,0,0,0,5.48-1.74L155.55,40.2a91.57,91.57,0,0,1,15,6.23L173.11,69a8,8,0,0,0,2.64,5.1,74.11,74.11,0,0,1,6.14,6.14,8,8,0,0,0,5.1,2.64l22.58,2.51a91.32,91.32,0,0,1,6.23,15l-14.19,17.74A8,8,0,0,0,199.87,123.66Z"></path></svg>
           <span>Налаштування</span>
         </button>
+        <button class="bottom-nav-item" id="navGames" title="Міні-ігри">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256"><path d="M208,144H136V95.19a40,40,0,1,0-16,0V144H48a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V160A16,16,0,0,0,208,144ZM104,56a24,24,0,1,1,24,24A24,24,0,0,1,104,56ZM208,208H48V160H208v48Zm-40-96h32a8,8,0,0,1,0,16H168a8,8,0,0,1,0-16Z"></path></svg>
+          <span>Ігри</span>
+        </button>
         <button class="bottom-nav-item" id="navProfile" title="Профіль">
           <span class="nav-avatar" aria-hidden="true"></span>
           <span>Профіль</span>
         </button>
       </div>
     </div>
+    <button class="nav-reveal-handle" id="navRevealHandle" aria-label="Показати меню" type="button">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+        <path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z"></path>
+      </svg>
+    </button>
+    <button class="nav-hide-handle" id="navHideHandle" aria-label="Приховати меню" type="button">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+        <path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path>
+      </svg>
+    </button>
   </aside>
 
   <!-- Основна область чату -->
   <main class="chat-area">
     <div class="chat-container" id="chatContainer">
-      <!-- Заголовок чату -->
-      <div class="chat-header" id="chatHeader">
-        <div class="chat-header-left">
-          <button class="btn-back" id="backBtn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-          <div class="contact-info">
-            <div class="avatar"></div>
-            <div class="contact-details">
-              <h2 id="contactName">Виберіть контакт</h2>
-              <p id="contactStatus" class="status">онлайн</p>
-            </div>
-          </div>
-        </div>
-        <div class="chat-header-actions">
-          <button class="btn-icon" id="callBtn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" fill="none"/>
-            </svg>
-          </button>
-          <button class="btn-icon" id="historyBtn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M23 12a11 11 0 1 1-22 0 11 11 0 0 1 22 0z" stroke="currentColor" stroke-width="2" fill="none"/>
-              <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
-          <div class="chat-menu-wrapper">
-            <button class="btn-icon" id="chatMenuBtn" aria-haspopup="true" aria-expanded="false">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="1" fill="currentColor"/>
-                <circle cx="12" cy="5" r="1" fill="currentColor"/>
-                <circle cx="12" cy="19" r="1" fill="currentColor"/>
-              </svg>
-            </button>
-            <div class="chat-menu" id="chatMenu">
-              <button class="chat-menu-item" data-action="clear">Очистити чат</button>
-              <button class="chat-menu-item" data-action="delete">Видалити чат</button>
-              <button class="chat-menu-item" data-action="info">Інформація</button>
-              <button class="chat-menu-item" data-action="group-info">Деталі групи</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Область повідомлень -->
       <div class="messages-container" id="messagesContainer">
         <!-- Повідомлення будуть додаватися динамічно -->
@@ -186,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Розділи динамічно завантажуватимуться сюди -->
     </div>
   </main>
+  </div>
 </div>
 
 <!-- Sidebar overlay для мобільного -->

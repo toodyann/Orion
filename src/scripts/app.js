@@ -22,21 +22,35 @@ class ChatApp {
     this.messageMenuState = { id: null, from: null, text: '' };
     this.chatListMenuState = { id: null, name: '' };
     this.addToGroupTarget = null;
+    this.bottomNavHidden = false;
+    this.navRevealTimeout = null;
     this.loadTheme();
+    this.profileMenuPlaceholder = null;
     this.init();
   }
 
   loadUserProfile() {
     const saved = localStorage.getItem('bridge_user');
     if (saved) {
-      return JSON.parse(saved);
+      const data = JSON.parse(saved);
+      return {
+        name: data.name || 'Користувач Orion',
+        email: data.email || 'user@example.com',
+        status: data.status || 'online',
+        bio: data.bio || 'Вітаю!',
+        birthDate: data.birthDate || '',
+        avatarColor: data.avatarColor || '',
+        avatarImage: data.avatarImage || ''
+      };
     }
     return {
       name: 'Користувач Orion',
       email: 'user@example.com',
-      status: 'Доступний',
-      bio: 'Привіт! Я користувач Orion месенджера.',
-      avatarColor: 'linear-gradient(135deg, #ff9500, #ff6b6b)'
+      status: 'online',
+      bio: 'Вітаю!',
+      birthDate: '',
+      avatarColor: 'linear-gradient(135deg, #ff9500, #ff6b6b)',
+      avatarImage: ''
     };
   }
 
@@ -44,6 +58,7 @@ class ChatApp {
     this.user = userData;
     localStorage.setItem('bridge_user', JSON.stringify(userData));
     this.updateProfileMenuButton();
+    this.updateProfileDisplay();
   }
 
   updateProfileMenuButton() {
@@ -54,16 +69,136 @@ class ChatApp {
 
     const name = this.user?.name || 'Користувач Orion';
 
-    if (avatarEl) {
-      const initials = name
-        .split(' ')
-        .map(word => word[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-      avatarEl.textContent = initials;
-      avatarEl.style.background = this.user?.avatarColor || this.getContactColor(name);
+    this.applyUserAvatarToElement(avatarEl, name);
+  }
+
+  getInitials(name) {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+
+  getRandomAvatarGradient() {
+    const colors = [
+      'linear-gradient(135deg, #ff9500, #ff6b6b)',
+      'linear-gradient(135deg, #667eea, #764ba2)',
+      'linear-gradient(135deg, #f093fb, #f5576c)',
+      'linear-gradient(135deg, #4facfe, #00f2fe)',
+      'linear-gradient(135deg, #43e97b, #38f9d7)',
+      'linear-gradient(135deg, #fa709a, #fee140)',
+      'linear-gradient(135deg, #30cfd0, #330867)',
+      'linear-gradient(135deg, #a8edea, #fed6e3)'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  escapeAttr(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  applyUserAvatarToElement(avatarEl, name = '') {
+    if (!avatarEl) return;
+    const displayName = name || this.user?.name || 'Користувач Orion';
+    if (!this.user?.avatarColor) {
+      this.user.avatarColor = this.getRandomAvatarGradient();
     }
+
+    if (this.user?.avatarImage) {
+      avatarEl.textContent = '';
+      avatarEl.style.backgroundImage = `url("${this.escapeAttr(this.user.avatarImage)}")`;
+      avatarEl.style.backgroundColor = 'transparent';
+    } else {
+      avatarEl.style.backgroundImage = '';
+      avatarEl.textContent = this.getInitials(displayName);
+      avatarEl.style.background = this.user.avatarColor || this.getContactColor(displayName);
+    }
+  }
+
+  getUserAvatarHtml() {
+    if (this.user?.avatarImage) {
+      const safeUrl = this.escapeAttr(this.user.avatarImage);
+      return `<div class="message-avatar is-image" style="background-image: url(&quot;${safeUrl}&quot;);"></div>`;
+    }
+    const initials = this.getInitials(this.user?.name || 'Користувач Orion');
+    return `<div class="message-avatar" style="background: ${this.user.avatarColor}">${initials}</div>`;
+  }
+
+  renderProfileAvatar(avatarEl) {
+    if (!avatarEl) return;
+    const name = this.user?.name || 'Користувач Orion';
+    if (!this.user?.avatarColor) {
+      this.user.avatarColor = this.getRandomAvatarGradient();
+    }
+    const imageEl = avatarEl.querySelector('.profile-avatar-image');
+    const initialsEl = avatarEl.querySelector('.profile-avatar-initials');
+
+    if (this.user?.avatarImage) {
+      if (imageEl) {
+        imageEl.src = this.user.avatarImage;
+        imageEl.style.display = 'block';
+      }
+      if (initialsEl) initialsEl.style.display = 'none';
+      avatarEl.style.background = 'transparent';
+    } else {
+      if (imageEl) imageEl.style.display = 'none';
+      if (initialsEl) {
+        initialsEl.textContent = this.getInitials(name);
+        initialsEl.style.display = 'flex';
+      }
+      avatarEl.style.background = this.user.avatarColor;
+    }
+  }
+
+  updateProfileDisplay() {
+    const profileSection = document.getElementById('profile');
+    if (!profileSection) return;
+
+    const profileName = profileSection.querySelector('#profileName');
+    const profileStatus = profileSection.querySelector('#profileStatus');
+    const profileBio = profileSection.querySelector('#profileBio');
+    const profileEmail = profileSection.querySelector('#profileEmail');
+    const profileDob = profileSection.querySelector('#profileDob');
+    const avatarDiv = profileSection.querySelector('.profile-avatar-large');
+
+    if (profileName) profileName.textContent = this.user.name;
+    if (profileStatus) this.renderStatusIndicator(profileStatus);
+    if (profileBio) profileBio.textContent = this.user.bio || '';
+    if (profileEmail) profileEmail.textContent = this.user.email || '';
+    if (profileDob) profileDob.textContent = this.formatBirthDate(this.user.birthDate);
+
+    this.renderProfileAvatar(avatarDiv);
+  }
+
+  renderStatusIndicator(container) {
+    if (!container) return;
+    const dot = container.querySelector('.status-dot');
+    const showStatus = this.settings?.showOnlineStatus ?? true;
+    const isOnline = showStatus;
+
+    if (dot) {
+      dot.classList.toggle('online', isOnline);
+    }
+    container.setAttribute('aria-label', isOnline ? 'Онлайн' : 'Офлайн');
+  }
+
+  formatBirthDate(value) {
+    if (!value) return '—';
+    const dateObj = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(dateObj.getTime())) return '—';
+    return new Intl.DateTimeFormat('uk-UA', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(dateObj);
   }
 
   loadSettings() {
@@ -93,11 +228,12 @@ class ChatApp {
 
   loadTheme() {
     const savedTheme = localStorage.getItem('bridge_theme');
-    if (savedTheme === 'dark') {
-      document.documentElement.classList.add('dark-theme');
-    } else {
+    if (savedTheme === 'light') {
       document.documentElement.classList.remove('dark-theme');
       localStorage.setItem('bridge_theme', 'light');
+    } else {
+      document.documentElement.classList.add('dark-theme');
+      localStorage.setItem('bridge_theme', 'dark');
     }
   }
 
@@ -159,7 +295,13 @@ class ChatApp {
     this.renderChatsList();
     this.applyFontSize(this.settings.fontSize);
     this.updateProfileMenuButton();
+    this.updateBottomNavIndicator();
     this.setupMobileSwipeBack();
+    this.setupBottomNavReveal();
+    window.addEventListener('resize', () => {
+      this.updateBottomNavIndicator();
+      this.handleBottomNavResize();
+    });
   }
 
   // Метод-обгортка для імпортованої функції setupMobileSwipeBack
@@ -178,6 +320,7 @@ class ChatApp {
     const navSettings = document.getElementById('navSettings');
     const navCalls = document.getElementById('navCalls');
     const navChats = document.getElementById('navChats');
+    const navGames = document.getElementById('navGames');
     
     if (navProfile) {
       navProfile.addEventListener('click', () => {
@@ -192,6 +335,13 @@ class ChatApp {
         this.showSettings('messenger-settings');
       });
     }
+
+    if (navGames) {
+      navGames.addEventListener('click', () => {
+        this.setActiveNavButton(navGames);
+        this.showSettings('mini-games');
+      });
+    }
     
     if (navCalls) {
       navCalls.addEventListener('click', () => {
@@ -200,9 +350,10 @@ class ChatApp {
       });
     }
     
-    if (navChats) {
-      navChats.addEventListener('click', () => {
-        this.setActiveNavButton(navChats);
+      if (navChats) {
+        navChats.addEventListener('click', () => {
+          this.setActiveNavButton(navChats);
+          this.showBottomNav();
         // Show chats list and hide settings
         const settingsContainer = document.getElementById('settingsContainer');
         const settingsContainerMobile = document.getElementById('settingsContainerMobile');
@@ -210,6 +361,8 @@ class ChatApp {
         const chatContainer = document.getElementById('chatContainer');
         const welcomeScreen = document.getElementById('welcomeScreen');
         const chatsListHeader = document.querySelector('.chats-list-header');
+        const sidebar = document.querySelector('.sidebar');
+        const profileMenu = document.querySelector('.profile-menu-wrapper');
         
         if (settingsContainer) {
           settingsContainer.classList.remove('active');
@@ -227,6 +380,15 @@ class ChatApp {
         // Show search box back
         const searchBox = document.querySelector('.search-box');
         if (searchBox) searchBox.style.display = '';
+
+        if (sidebar) {
+          sidebar.style.display = '';
+          sidebar.classList.remove('compact');
+        }
+        if (profileMenu && this.profileMenuPlaceholder) {
+          this.profileMenuPlaceholder.parentNode?.insertBefore(profileMenu, this.profileMenuPlaceholder);
+          profileMenu.classList.remove('floating-nav');
+        }
         
         // Clear current chat and show welcome screen
         this.currentChat = null;
@@ -253,7 +415,8 @@ class ChatApp {
 
     document.getElementById('searchInput').addEventListener('input', (e) => this.filterChats(e.target.value));
 
-    document.getElementById('backBtn').addEventListener('click', () => this.closeChat());
+    const backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.addEventListener('click', () => this.closeChat());
 
     document.getElementById('newContactInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -675,8 +838,14 @@ class ChatApp {
     this.renderChat();
     this.updateChatHeader();
     this.hideWelcomeScreen();
+    this.hideBottomNavForChat();
+    const appEl = document.querySelector('.bridge-app');
+    if (appEl) appEl.classList.add('chat-open');
+    if (window.innerWidth > 768) {
+      const sidebar = document.querySelector('.sidebar');
+      if (sidebar) sidebar.classList.add('compact');
+    }
     try {
-      const appEl = document.querySelector('.bridge-app');
       const sidebar = document.querySelector('.sidebar');
       const sidebarOverlay = document.getElementById('sidebarOverlay');
       
@@ -698,6 +867,13 @@ class ChatApp {
     this.renderChatsList();
     this.showWelcomeScreen();
     this.clearMessages();
+    this.showBottomNav();
+    const appEl = document.querySelector('.bridge-app');
+    if (appEl) appEl.classList.remove('chat-open');
+    if (window.innerWidth > 768) {
+      const sidebar = document.querySelector('.sidebar');
+      if (sidebar) sidebar.classList.remove('compact');
+    }
     try {
       const appEl = document.querySelector('.bridge-app');
       const sidebar = document.querySelector('.sidebar');
@@ -777,8 +953,7 @@ class ChatApp {
         avatarHtml = `<div class="message-avatar" style="background: ${color}">${initials}</div>`;
       } else {
         senderNameHtml = `<div class="message-sender-name">${this.user.name}</div>`;
-        const initials = this.user.name.split(' ').map(w => w[0]).join('').toUpperCase();
-        avatarHtml = `<div class="message-avatar" style="background: ${this.user.avatarColor}">${initials}</div>`;
+        avatarHtml = this.getUserAvatarHtml();
       }
       
       const editedLabel = msg.edited ? '<span class="message-edited">• редаговано</span>' : '';
@@ -1049,13 +1224,12 @@ class ChatApp {
   }
 
   updateChatHeader() {
-    const header = document.getElementById('chatHeader');
     const contactName = document.getElementById('contactName');
     const contactStatus = document.getElementById('contactStatus');
-    const avatar = document.querySelector('.contact-info .avatar');
-    const contactDetails = document.querySelector('.contact-info');
+    const avatar = document.getElementById('appChatAvatar');
+    const contactDetails = document.getElementById('appChatInfo');
 
-    if (this.currentChat) {
+    if (this.currentChat && contactName && contactStatus) {
       contactName.textContent = this.currentChat.name;
       if (this.currentChat.isGroup) {
         const count = Array.isArray(this.currentChat.members) ? this.currentChat.members.length + 1 : 1;
@@ -1076,6 +1250,20 @@ class ChatApp {
         contactDetails.onclick = this.currentChat.isGroup
           ? () => this.openGroupInfoModal()
           : null;
+      }
+    } else {
+      if (contactName) contactName.textContent = 'Виберіть контакт';
+      if (contactStatus) {
+        contactStatus.textContent = '';
+        contactStatus.classList.remove('online');
+      }
+      if (avatar) {
+        avatar.textContent = '';
+        avatar.style.background = '';
+      }
+      if (contactDetails) {
+        contactDetails.style.cursor = 'default';
+        contactDetails.onclick = null;
       }
     }
   }
@@ -1105,8 +1293,7 @@ class ChatApp {
       avatarHtml = `<div class="message-avatar" style="background: ${color}">${initials}</div>`;
     } else {
       senderNameHtml = `<div class="message-sender-name">${this.user.name}</div>`;
-      const initials = this.user.name.split(' ').map(w => w[0]).join('').toUpperCase();
-      avatarHtml = `<div class="message-avatar" style="background: ${this.user.avatarColor}">${initials}</div>`;
+      avatarHtml = this.getUserAvatarHtml();
     }
     
     const editedLabel = msg.edited ? '<span class="message-edited">• редаговано</span>' : '';
@@ -1289,6 +1476,478 @@ class ChatApp {
     if (btn) {
       btn.classList.add('active');
     }
+    this.updateBottomNavIndicator(btn);
+  }
+
+  setupBottomNavReveal() {
+    const revealHandle = document.getElementById('navRevealHandle');
+    const hideHandle = document.getElementById('navHideHandle');
+    if (revealHandle) {
+      revealHandle.addEventListener('click', () => this.showBottomNav());
+    }
+    if (hideHandle) {
+      hideHandle.addEventListener('click', () => this.hideBottomNavForChat());
+    }
+
+    document.addEventListener('mousemove', (event) => {
+      if (!this.bottomNavHidden) return;
+      if (!this.currentChat) return;
+      if (window.innerWidth <= 768) return;
+      if (event.clientY >= window.innerHeight - 6) {
+        this.showBottomNav();
+      }
+    });
+  }
+
+  handleBottomNavResize() {
+    if (window.innerWidth <= 768) {
+      this.showBottomNav();
+      return;
+    }
+    if (this.currentChat) {
+      this.hideBottomNavForChat();
+    }
+  }
+
+  hideBottomNavForChat() {
+    if (window.innerWidth <= 768) return;
+    const profileMenu = document.querySelector('.profile-menu-wrapper');
+    const revealHandle = document.getElementById('navRevealHandle');
+    const hideHandle = document.getElementById('navHideHandle');
+    if (!profileMenu) return;
+    profileMenu.classList.add('nav-hidden');
+    this.bottomNavHidden = true;
+    if (revealHandle) revealHandle.classList.remove('show');
+    if (hideHandle) hideHandle.classList.remove('show');
+    if (this.navRevealTimeout) window.clearTimeout(this.navRevealTimeout);
+    this.navRevealTimeout = window.setTimeout(() => {
+      if (this.bottomNavHidden && revealHandle) revealHandle.classList.add('show');
+    }, 320);
+  }
+
+  showBottomNav() {
+    const profileMenu = document.querySelector('.profile-menu-wrapper');
+    const revealHandle = document.getElementById('navRevealHandle');
+    const hideHandle = document.getElementById('navHideHandle');
+    if (profileMenu) profileMenu.classList.remove('nav-hidden');
+    if (revealHandle) revealHandle.classList.remove('show');
+    if (hideHandle) {
+      hideHandle.classList.toggle(
+        'show',
+        Boolean(this.currentChat) && window.innerWidth > 768
+      );
+    }
+    this.bottomNavHidden = false;
+  }
+
+  updateBottomNavIndicator(activeBtn = null) {
+    const nav = document.querySelector('.bottom-nav');
+    const indicator = nav?.querySelector('.bottom-nav-indicator');
+    const target = activeBtn || nav?.querySelector('.bottom-nav-item.active');
+    if (!nav || !indicator || !target) return;
+
+    const navRect = nav.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const offsetX = targetRect.left - navRect.left + (targetRect.width - indicator.offsetWidth) / 2;
+    indicator.style.transform = `translateX(${Math.max(0, offsetX)}px)`;
+  }
+
+  triggerGameEnd(panel, message) {
+    if (!panel) return;
+    panel.dataset.endMessage = message || 'Гру завершено';
+    const canvas = panel.querySelector('.mini-game-canvas');
+    if (canvas) canvas.setAttribute('data-end-message', panel.dataset.endMessage);
+    panel.classList.add('game-over');
+    setTimeout(() => {
+      panel.classList.remove('game-over');
+    }, 1200);
+  }
+
+  initMiniGames(settingsContainer) {
+    const list = settingsContainer.querySelector('.mini-games-list');
+    const view = settingsContainer.querySelector('#miniGameView');
+    const backBtn = settingsContainer.querySelector('#miniGameBack');
+    const titleEl = settingsContainer.querySelector('#miniGameTitle');
+    const scoreLabel = settingsContainer.querySelector('#miniGameScoreLabel');
+    const setMaxScoreLabel = (game) => {
+      if (!scoreLabel) return;
+      const max = this.getMiniGameMax(game);
+      scoreLabel.textContent = `Рекорд: ${max}`;
+    };
+
+    const showGame = (game) => {
+      if (!view || !list) return;
+      list.style.display = 'none';
+      view.classList.add('active');
+      settingsContainer.classList.add('mini-games-active');
+      this.currentMiniGame = game;
+
+      const panels = settingsContainer.querySelectorAll('.mini-game-panel');
+      panels.forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.game === game);
+      });
+
+      if (titleEl) {
+        titleEl.textContent = game === 'snake' ? 'Snake' : game === 'g2048' ? '2048' : 'Memory';
+      }
+      setMaxScoreLabel(game);
+
+      this.initSnake(settingsContainer);
+      this.init2048(settingsContainer);
+      this.initMemory(settingsContainer);
+    };
+
+    const showList = () => {
+      if (!view || !list) return;
+      view.classList.remove('active');
+      list.style.display = 'grid';
+      settingsContainer.classList.remove('mini-games-active');
+    };
+
+    if (backBtn) backBtn.addEventListener('click', showList);
+
+    settingsContainer.querySelectorAll('.mini-game-select').forEach(btn => {
+      btn.addEventListener('click', () => showGame(btn.dataset.game));
+    });
+  }
+
+  initSnake(settingsContainer) {
+    const boardEl = settingsContainer.querySelector('#snakeBoard');
+    const startBtn = settingsContainer.querySelector('#snakeStart');
+    const scoreEl = settingsContainer.querySelector('#snakeScore');
+    const panel = settingsContainer.querySelector('.mini-game-panel[data-game="snake"]');
+    if (!boardEl || !startBtn || !scoreEl) return;
+    if (boardEl.dataset.bound === 'true') return;
+    boardEl.dataset.bound = 'true';
+
+    const size = 12;
+    let direction = { x: 1, y: 0 };
+    let snake = [{ x: 5, y: 5 }];
+    let food = { x: 8, y: 5 };
+    let score = 0;
+    let timer = null;
+
+    const buildGrid = () => {
+      boardEl.innerHTML = '';
+      boardEl.style.display = 'grid';
+      boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+      boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+      for (let i = 0; i < size * size; i += 1) {
+        const cell = document.createElement('div');
+        cell.className = 'snake-cell';
+        boardEl.appendChild(cell);
+      }
+    };
+
+    const indexOf = (x, y) => y * size + x;
+
+    const draw = () => {
+      const cells = boardEl.querySelectorAll('.snake-cell');
+      cells.forEach(cell => {
+        cell.classList.remove('snake', 'food');
+      });
+      snake.forEach(part => {
+        const idx = indexOf(part.x, part.y);
+        cells[idx]?.classList.add('snake');
+      });
+      const foodIdx = indexOf(food.x, food.y);
+      cells[foodIdx]?.classList.add('food');
+      scoreEl.textContent = String(score);
+      this.updateMiniGameMax('snake', score);
+    };
+
+    const spawnFood = () => {
+      let x = Math.floor(Math.random() * size);
+      let y = Math.floor(Math.random() * size);
+      while (snake.some(p => p.x === x && p.y === y)) {
+        x = Math.floor(Math.random() * size);
+        y = Math.floor(Math.random() * size);
+      }
+      food = { x, y };
+    };
+
+    const setDirection = (next) => {
+      if (direction.x === -next.x && direction.y === -next.y) return;
+      direction = next;
+    };
+
+    const step = () => {
+      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+      if (head.x < 0 || head.y < 0 || head.x >= size || head.y >= size) {
+        clearInterval(timer);
+        timer = null;
+        this.triggerGameEnd(panel, 'Гру завершено');
+        return;
+      }
+      if (snake.some(p => p.x === head.x && p.y === head.y)) {
+        clearInterval(timer);
+        timer = null;
+        this.triggerGameEnd(panel, 'Гру завершено');
+        return;
+      }
+      snake.unshift(head);
+      if (head.x === food.x && head.y === food.y) {
+        score += 1;
+        spawnFood();
+      } else {
+        snake.pop();
+      }
+      draw();
+    };
+
+    const reset = () => {
+      direction = { x: 1, y: 0 };
+      snake = [{ x: 5, y: 5 }];
+      score = 0;
+      spawnFood();
+      draw();
+      panel?.classList.remove('game-over');
+    };
+
+    buildGrid();
+    reset();
+
+    startBtn.addEventListener('click', () => {
+      reset();
+      if (timer) clearInterval(timer);
+      timer = setInterval(step, 140);
+    });
+
+    const onKey = (e) => {
+      const key = (e.key || '').toLowerCase();
+      if (key === 'arrowup' || key === 'w') setDirection({ x: 0, y: -1 });
+      if (key === 'arrowdown' || key === 's') setDirection({ x: 0, y: 1 });
+      if (key === 'arrowleft' || key === 'a') setDirection({ x: -1, y: 0 });
+      if (key === 'arrowright' || key === 'd') setDirection({ x: 1, y: 0 });
+    };
+
+    document.addEventListener('keydown', onKey);
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    boardEl.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: true });
+
+    boardEl.addEventListener('touchend', (e) => {
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        setDirection(dx > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 });
+      } else {
+        setDirection(dy > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 });
+      }
+    });
+  }
+
+  init2048(settingsContainer) {
+    const boardEl = settingsContainer.querySelector('#g2048Board');
+    const startBtn = settingsContainer.querySelector('#g2048Start');
+    const scoreEl = settingsContainer.querySelector('#g2048Score');
+    const panel = settingsContainer.querySelector('.mini-game-panel[data-game="g2048"]');
+    if (!boardEl || !startBtn || !scoreEl) return;
+
+    const size = 4;
+    let score = 0;
+    let grid = Array.from({ length: size }, () => Array(size).fill(0));
+
+    const draw = () => {
+      boardEl.innerHTML = '';
+      grid.flat().forEach(value => {
+        const tile = document.createElement('div');
+        tile.className = `tile value-${value || 0}`;
+        tile.textContent = value ? String(value) : '';
+        boardEl.appendChild(tile);
+      });
+      scoreEl.textContent = String(score);
+      this.updateMiniGameMax('g2048', score);
+    };
+
+    const addRandom = () => {
+      const empty = [];
+      for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+          if (grid[y][x] === 0) empty.push({ x, y });
+        }
+      }
+      if (!empty.length) return;
+      const spot = empty[Math.floor(Math.random() * empty.length)];
+      grid[spot.y][spot.x] = Math.random() < 0.9 ? 2 : 4;
+    };
+
+    const slide = (row) => {
+      const filtered = row.filter(n => n !== 0);
+      for (let i = 0; i < filtered.length - 1; i += 1) {
+        if (filtered[i] === filtered[i + 1]) {
+          filtered[i] *= 2;
+          score += filtered[i];
+          filtered[i + 1] = 0;
+        }
+      }
+      const merged = filtered.filter(n => n !== 0);
+      while (merged.length < size) merged.push(0);
+      return merged;
+    };
+
+    const moveLeft = () => {
+      const old = JSON.stringify(grid);
+      grid = grid.map(row => slide(row));
+      if (JSON.stringify(grid) !== old) addRandom();
+      draw();
+      checkGameOver();
+    };
+
+    const moveRight = () => {
+      const old = JSON.stringify(grid);
+      grid = grid.map(row => slide([...row].reverse()).reverse());
+      if (JSON.stringify(grid) !== old) addRandom();
+      draw();
+      checkGameOver();
+    };
+
+    const moveUp = () => {
+      const old = JSON.stringify(grid);
+      const transposed = grid[0].map((_, i) => grid.map(r => r[i]));
+      const moved = transposed.map(row => slide(row));
+      grid = moved[0].map((_, i) => moved.map(r => r[i]));
+      if (JSON.stringify(grid) !== old) addRandom();
+      draw();
+      checkGameOver();
+    };
+
+    const moveDown = () => {
+      const old = JSON.stringify(grid);
+      const transposed = grid[0].map((_, i) => grid.map(r => r[i]));
+      const moved = transposed.map(row => slide([...row].reverse()).reverse());
+      grid = moved[0].map((_, i) => moved.map(r => r[i]));
+      if (JSON.stringify(grid) !== old) addRandom();
+      draw();
+      checkGameOver();
+    };
+
+    const reset = () => {
+      grid = Array.from({ length: size }, () => Array(size).fill(0));
+      score = 0;
+      addRandom();
+      addRandom();
+      draw();
+      panel?.classList.remove('game-over');
+    };
+
+    const checkGameOver = () => {
+      const hasEmpty = grid.some(row => row.some(v => v === 0));
+      if (hasEmpty) return;
+      for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+          const v = grid[y][x];
+          if ((grid[y + 1] && grid[y + 1][x] === v) || (grid[y][x + 1] === v)) {
+            return;
+          }
+        }
+      }
+      this.triggerGameEnd(panel, 'Ходів більше немає');
+    };
+
+    if (boardEl.dataset.bound === 'true') return;
+    boardEl.dataset.bound = 'true';
+    reset();
+    startBtn.addEventListener('click', reset);
+
+    const onKey = (e) => {
+      const key = e.key.toLowerCase();
+      if (key === 'arrowleft' || key === 'a') moveLeft();
+      if (key === 'arrowright' || key === 'd') moveRight();
+      if (key === 'arrowup' || key === 'w') moveUp();
+      if (key === 'arrowdown' || key === 's') moveDown();
+    };
+    window.addEventListener('keydown', onKey);
+  }
+
+  initMemory(settingsContainer) {
+    const boardEl = settingsContainer.querySelector('#memoryBoard');
+    const startBtn = settingsContainer.querySelector('#memoryStart');
+    const scoreEl = settingsContainer.querySelector('#memoryScore');
+    const panel = settingsContainer.querySelector('.mini-game-panel[data-game="memory"]');
+    if (!boardEl || !startBtn || !scoreEl) return;
+
+    const icons = ['🚀', '🛰️', '🌕', '⭐', '🪐', '☄️', '🌌', '🧠'];
+    let deck = [];
+    let open = [];
+    let matched = 0;
+
+    const draw = () => {
+      boardEl.innerHTML = '';
+      deck.forEach((card, index) => {
+        const cell = document.createElement('button');
+        cell.className = 'memory-card' + (card.revealed ? ' revealed' : '');
+        cell.textContent = card.revealed ? card.icon : '';
+        cell.addEventListener('click', () => flip(index));
+        boardEl.appendChild(cell);
+      });
+      scoreEl.textContent = String(matched);
+      this.updateMiniGameMax('memory', matched);
+    };
+
+    const reset = () => {
+      deck = [...icons, ...icons]
+        .map(icon => ({ icon, revealed: false }))
+        .sort(() => Math.random() - 0.5);
+      open = [];
+      matched = 0;
+      draw();
+      panel?.classList.remove('game-over');
+    };
+
+    const flip = (idx) => {
+      if (open.length === 2) return;
+      if (deck[idx].revealed) return;
+      deck[idx].revealed = true;
+      open.push(idx);
+      draw();
+      if (open.length === 2) {
+        const [a, b] = open;
+        if (deck[a].icon === deck[b].icon) {
+          matched += 1;
+          open = [];
+          draw();
+          if (matched === icons.length) {
+            this.triggerGameEnd(panel, 'Перемога!');
+          }
+        } else {
+          setTimeout(() => {
+            deck[a].revealed = false;
+            deck[b].revealed = false;
+            open = [];
+            draw();
+          }, 600);
+        }
+      }
+    };
+
+    if (boardEl.dataset.bound === 'true') return;
+    boardEl.dataset.bound = 'true';
+    startBtn.addEventListener('click', reset);
+    reset();
+  }
+
+  getMiniGameMax(game) {
+    const raw = localStorage.getItem(`bridge_game_max_${game}`);
+    return raw ? parseInt(raw, 10) || 0 : 0;
+  }
+
+  updateMiniGameMax(game, value) {
+    const current = this.getMiniGameMax(game);
+    if (value <= current) return;
+    localStorage.setItem(`bridge_game_max_${game}`, String(value));
+    if (this.currentMiniGame === game) {
+      const scoreLabel = document.getElementById('miniGameScoreLabel');
+      if (scoreLabel) scoreLabel.textContent = `Рекорд: ${value}`;
+    }
   }
 
 
@@ -1344,6 +2003,7 @@ class ChatApp {
   }
 
   async showSettings(sectionName) {
+    this.showBottomNav();
     // На мобільному використовуємо settingsContainerMobile, на ПК - settingsContainer
     const isMobile = window.innerWidth <= 768;
     const settingsContainerId = isMobile ? 'settingsContainerMobile' : 'settingsContainer';
@@ -1360,6 +2020,25 @@ class ChatApp {
     
     // Hide chats list header when showing settings
     if (chatsListHeader) chatsListHeader.style.display = 'none';
+
+    // On desktop, hide sidebar when showing settings (keep bottom nav visible)
+    if (!isMobile) {
+      const sidebar = document.querySelector('.sidebar');
+      const profileMenu = document.querySelector('.profile-menu-wrapper');
+      if (sidebar) {
+        sidebar.style.display = 'none';
+        sidebar.classList.remove('compact');
+      }
+      if (profileMenu) {
+        if (!this.profileMenuPlaceholder) {
+          this.profileMenuPlaceholder = document.createElement('span');
+          this.profileMenuPlaceholder.className = 'profile-menu-placeholder';
+          profileMenu.parentNode?.insertBefore(this.profileMenuPlaceholder, profileMenu);
+        }
+        document.body.appendChild(profileMenu);
+        profileMenu.classList.add('floating-nav');
+      }
+    }
     
     // On mobile, hide chats list and search when showing settings
     const searchBox = document.querySelector('.search-box');
@@ -1440,19 +2119,35 @@ class ChatApp {
       if (sectionName === 'profile-settings') {
         const profileNameInput = settingsContainer.querySelector('#profileName');
         const profileEmailInput = settingsContainer.querySelector('#profileEmail');
-        const profileStatusInput = settingsContainer.querySelector('#profileStatus');
         const profileBioInput = settingsContainer.querySelector('#profileBio');
+        const profileDobInput = settingsContainer.querySelector('#profileDob');
         const avatarDiv = settingsContainer.querySelector('.profile-avatar-large');
         
         if (profileNameInput) profileNameInput.value = this.user.name;
         if (profileEmailInput) profileEmailInput.value = this.user.email;
-        if (profileStatusInput) profileStatusInput.value = this.user.status;
         if (profileBioInput) profileBioInput.value = this.user.bio;
+        if (profileDobInput) profileDobInput.value = this.user.birthDate || '';
         
-        if (avatarDiv) {
-          const initials = this.user.name.split(' ').map(w => w[0]).join('').toUpperCase();
-          avatarDiv.style.background = this.user.avatarColor;
-          avatarDiv.innerHTML = `<span style="color: white; font-size: 32px; font-weight: 600;">${initials}</span>`;
+        this.renderProfileAvatar(avatarDiv);
+
+        const avatarUpload = settingsContainer.querySelector('#profileAvatarUpload');
+        if (avatarUpload) {
+          avatarUpload.addEventListener('change', async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+              await this.showAlert('Файл завеликий. Максимум 2MB.');
+              avatarUpload.value = '';
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              this.user.avatarImage = reader.result?.toString() || '';
+              this.saveUserProfile(this.user);
+              this.renderProfileAvatar(avatarDiv);
+            };
+            reader.readAsDataURL(file);
+          });
         }
         
         const changeAvatarBtn = settingsContainer.querySelector('.btn-change-avatar');
@@ -1460,7 +2155,37 @@ class ChatApp {
           changeAvatarBtn.addEventListener('click', () => this.handleAvatarChange(settingsContainer));
         }
       }
-      
+
+      if (sectionName === 'profile') {
+        const profileName = settingsContainer.querySelector('#profileName');
+        const profileStatus = settingsContainer.querySelector('#profileStatus');
+        const profileBio = settingsContainer.querySelector('#profileBio');
+        const profileEmail = settingsContainer.querySelector('#profileEmail');
+        const profileDob = settingsContainer.querySelector('#profileDob');
+        const avatarDiv = settingsContainer.querySelector('.profile-avatar-large');
+        const editBtn = settingsContainer.querySelector('.profile-edit-btn');
+        const fabBtn = settingsContainer.querySelector('.profile-fab');
+        const inlineEditBtn = settingsContainer.querySelector('.profile-edit-inline');
+
+        if (profileName) profileName.textContent = this.user.name;
+        if (profileStatus) this.renderStatusIndicator(profileStatus);
+        if (profileBio) profileBio.textContent = this.user.bio || '';
+        if (profileEmail) profileEmail.textContent = this.user.email || '';
+        if (profileDob) profileDob.textContent = this.formatBirthDate(this.user.birthDate);
+
+        this.renderProfileAvatar(avatarDiv);
+        this.updateProfileMenuButton();
+
+        const openProfileSettings = () => this.showSettings('profile-settings');
+        if (editBtn) editBtn.addEventListener('click', openProfileSettings);
+        if (fabBtn) fabBtn.addEventListener('click', openProfileSettings);
+        if (inlineEditBtn) inlineEditBtn.addEventListener('click', openProfileSettings);
+      }
+
+      if (sectionName === 'mini-games') {
+        this.initMiniGames(settingsContainer);
+      }
+
       if (sectionName === 'messenger-settings') {
         // Додаємо обробники для кнопок-розділів
         const menuItems = settingsContainer.querySelectorAll('.settings-menu-item');
@@ -1581,7 +2306,7 @@ class ChatApp {
       }
       
       // Додаємо свайп для повернення назад в підрозділах
-      if (sectionName !== 'messenger-settings' && sectionName !== 'profile' && sectionName !== 'calls') {
+      if (sectionName !== 'messenger-settings' && sectionName !== 'profile' && sectionName !== 'calls' && sectionName !== 'mini-games') {
         this.setupSettingsSwipeBack(settingsContainer);
       }
       
@@ -1635,10 +2360,11 @@ class ChatApp {
   }
 
   async saveProfileSettings() {
-    const name = document.getElementById('profileName')?.value;
-    const email = document.getElementById('profileEmail')?.value;
-    const status = document.getElementById('profileStatus')?.value;
-    const bio = document.getElementById('profileBio')?.value;
+    const container = document.getElementById('profile-settings');
+    const name = container?.querySelector('#profileName')?.value;
+    const email = container?.querySelector('#profileEmail')?.value;
+    const bio = container?.querySelector('#profileBio')?.value;
+    const birthDate = container?.querySelector('#profileDob')?.value;
     
     if (!name) {
       await this.showAlert('Будь ласка, введіть ім\'я');
@@ -1648,9 +2374,11 @@ class ChatApp {
     const profileData = {
       name: name.trim(),
       email: email?.trim() || '',
-      status: status?.trim() || 'Доступний',
+      status: this.user.status || 'online',
       bio: bio?.trim() || '',
-      avatarColor: this.user.avatarColor
+      birthDate: birthDate?.trim() || '',
+      avatarColor: this.user.avatarColor,
+      avatarImage: this.user.avatarImage || ''
     };
     
     this.saveUserProfile(profileData);
@@ -1748,13 +2476,12 @@ class ChatApp {
     const newColor = colors[colorIndex];
     
     const avatarDiv = settingsContainer.querySelector('.profile-avatar-large');
-    if (avatarDiv) {
-      const initials = this.user.name.split(' ').map(w => w[0]).join('').toUpperCase();
-      avatarDiv.style.background = newColor;
-      avatarDiv.innerHTML = `<span style="color: white; font-size: 32px; font-weight: 600;">${initials}</span>`;
-    }
-    
     this.user.avatarColor = newColor;
+    this.user.avatarImage = '';
+
+    if (avatarDiv) {
+      this.renderProfileAvatar(avatarDiv);
+    }
   }
 }
 

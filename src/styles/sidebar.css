@@ -1,10 +1,46 @@
-.sidebar-header {
-  padding: 12px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  min-width: 0;
+@media (min-width: 769px) {
+  .sidebar {
+    transition: width 0.35s ease, min-width 0.35s ease;
+  }
+
+  .sidebar.compact {
+    width: 88px;
+    min-width: 88px;
+  }
+
+  .sidebar.compact .search-box,
+  .sidebar.compact .chats-list-header {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    pointer-events: none;
+    transition: opacity 0.2s ease, height 0.3s ease, padding 0.3s ease;
+  }
+
+  .sidebar.compact .chats-list {
+    padding: 12px 0;
+    align-items: center;
+  }
+
+  .sidebar.compact .chat-item {
+    width: auto;
+    margin: 6px 0;
+    padding: 8px 0;
+    justify-content: center;
+  }
+
+  .sidebar.compact .chat-item:hover {
+    background-color: transparent;
+  }
+
+  .sidebar.compact .chat-info,
+  .sidebar.compact .chat-time,
+  .sidebar.compact .chat-item-actions,
+  .sidebar.compact .chat-pin-badge {
+    display: none;
+  }
 }
 
 .new-chat-action {
@@ -35,13 +71,9 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  color: #000;
+  color: var(--text-primary);
   margin: 0;
   white-space: nowrap;
-}
-
-.dark-theme .app-title {
-  color: #fff;
 }
 
 @keyframes titleGradient {
@@ -68,7 +100,7 @@
   border-radius: 20px;
   font-size: 13px;
   color: var(--text-primary);
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-elevated);
   outline: none;
   transition: all 0.2s ease;
   box-sizing: border-box;
@@ -78,8 +110,8 @@
 
 .search-input:focus {
   border-color: var(--primary-color);
-  background-color: var(--bg-color);
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  background-color: var(--bg-elevated);
+  box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.2);
 }
 
 .search-input::placeholder {
@@ -116,7 +148,7 @@
 }
 
 .search-box .btn-new-chat:hover {
-  background-color: #0066dd;
+  background-color: var(--primary-strong);
   transform: translateY(-50%) scale(1.05);
 }
 
@@ -218,7 +250,7 @@
 }
 
 .chat-item.active {
-  background-color: rgba(0, 122, 255, 0.1);
+  background-color: rgba(91, 124, 255, 0.1);
   color: var(--primary-color);
 }
 
@@ -230,6 +262,10 @@
 
 .chat-item:hover .chat-item-actions {
   display: flex;
+}
+
+.bridge-app.chat-open .chat-item:hover .chat-item-actions {
+  display: none;
 }
 
 .btn-delete-chat {

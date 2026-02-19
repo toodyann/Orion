@@ -2,48 +2,57 @@
 
 export const settingsTemplates = {
   'profile': `
-<div class="settings-section" id="profile">
-  <div class="settings-header">
-    <h2>Мій профіль</h2>
-  </div>
-
-  <div class="settings-content">
-    <div class="profile-avatar-section">
-      <div class="profile-avatar-large">
-        <svg
-          width="64"
-          height="64"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle cx="12" cy="8" r="4" />
-          <path d="M12 14c-5 0-8 2.5-8 5v4h16v-4c0-2.5-3-5-8-5z" />
-        </svg>
+<div class="settings-section profile-page" id="profile">
+  <div class="settings-content profile-content">
+    <section class="profile-hero">
+      <div class="profile-avatar-wrap">
+        <div class="profile-avatar-glow" aria-hidden="true"></div>
+        <div class="profile-avatar-large" aria-hidden="true">
+          <img class="profile-avatar-image" alt="Фото профілю" />
+          <span class="profile-avatar-initials">KO</span>
+        </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label>Ім'я:</label>
-      <p id="profileName" style="font-weight: 600; color: var(--text-primary);">Користувач Orion</p>
-    </div>
+      <div class="profile-name-row">
+        <h2 class="profile-name" id="profileName">Користувач Orion</h2>
+        <div class="profile-status" id="profileStatus">
+          <span class="status-dot" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="profile-handle-row">
+        <p class="profile-handle">@orion.user</p>
+        <button class="profile-edit-inline" aria-label="Редагувати профіль">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <p class="profile-bio" id="profileBio">Вітаю!</p>
 
-    <div class="form-group">
-      <label>Email:</label>
-      <p id="profileEmail" style="color: var(--text-secondary);">user@example.com</p>
-    </div>
+      <div class="profile-hero-actions">
+        <button class="btn btn-primary profile-edit-btn">Редагувати профіль</button>
+        <button class="profile-icon-btn" aria-label="QR код">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zM13 3h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zM15 13h2v2h-2v-2zm4 0h2v6h-2v-6zm-4 4h6v2h-6v-2z" fill="currentColor"/>
+          </svg>
+          <span>QR</span>
+        </button>
+        <button class="profile-icon-btn" aria-label="Поділитися профілем">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 5l-8 7 8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Поділитися</span>
+        </button>
+      </div>
 
-    <div class="form-group">
-      <label>Статус:</label>
-      <p id="profileStatus" style="color: var(--text-secondary);">Онлайн</p>
-    </div>
+      <div class="profile-userid">ID користувача: <span class="profile-id">OR-91A7-4F2C</span></div>
+    </section>
 
-    <div class="form-group">
-      <label>Біографія:</label>
-      <p id="profileBio" style="color: var(--text-secondary); white-space: pre-wrap;">Добро пожалувати!</p>
-    </div>
-
-    <button class="btn btn-primary" style="width: 100%; margin-top: 16px;">Редагувати профіль</button>
+    <button class="profile-fab" aria-label="Редагувати профіль">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
 </div>
   `.trim(),
@@ -57,18 +66,16 @@ export const settingsTemplates = {
   <div class="settings-content">
     <div class="profile-avatar-section">
       <div class="profile-avatar-large">
-        <svg
-          width="64"
-          height="64"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle cx="12" cy="8" r="4" />
-          <path d="M12 14c-5 0-8 2.5-8 5v4h16v-4c0-2.5-3-5-8-5z" />
-        </svg>
+        <img class="profile-avatar-image" alt="Фото профілю" />
+        <span class="profile-avatar-initials">KO</span>
       </div>
-      <button class="btn btn-primary btn-change-avatar">Змінити аватар</button>
+      <div class="profile-avatar-actions">
+        <label class="profile-upload-btn">
+          <input type="file" id="profileAvatarUpload" accept="image/*" />
+          Завантажити фото
+        </label>
+        <button class="btn btn-secondary btn-change-avatar">Випадковий градієнт</button>
+      </div>
     </div>
 
     <div class="form-group">
@@ -94,24 +101,22 @@ export const settingsTemplates = {
     </div>
 
     <div class="form-group">
-      <label for="profileStatus">Статус:</label>
+      <label for="profileDob">Дата народження:</label>
       <input
-        type="text"
-        id="profileStatus"
+        type="date"
+        id="profileDob"
         class="form-input"
-        placeholder="Ваш статус"
-        value="Доступний"
       />
     </div>
 
     <div class="form-group">
-      <label for="profileBio">Біографія:</label>
+      <label for="profileBio">Опис:</label>
       <textarea
         id="profileBio"
         class="form-textarea"
-        placeholder="Розкажіть про себе"
+        placeholder="Коротко про себе"
         rows="4"
-      >Привіт! Я користувач Orion месенджера.</textarea>
+      >Вітаю!</textarea>
     </div>
 
     <div class="settings-buttons">
@@ -317,6 +322,33 @@ export const settingsTemplates = {
           <span class="toggle-slider"></span>
         </label>
       </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Двофакторна автентифікація (2FA)</span>
+          <p class="settings-item-desc">Додатковий захист для входу в акаунт</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="twoFactorAuth" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Видимість профілю</span>
+          <p class="settings-item-desc">Хто може бачити ваш профіль</p>
+        </div>
+        <button class="settings-item-action">Друзі</button>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Заблоковані користувачі</span>
+          <p class="settings-item-desc">Керування списком блокувань</p>
+        </div>
+        <button class="settings-item-action">Керувати</button>
+      </div>
     </div>
 
     <div class="settings-buttons">
@@ -451,6 +483,71 @@ export const settingsTemplates = {
     <div class="settings-buttons">
       <button class="btn btn-primary btn-save-messenger">Зберегти налаштування</button>
       <button class="btn btn-secondary">Скасувати</button>
+    </div>
+  </div>
+</div>
+  `.trim(),
+
+  'mini-games': `
+<div class="settings-section" id="mini-games">
+  <div class="settings-header">
+    <h2>Міні-ігри</h2>
+  </div>
+
+  <div class="settings-content mini-games-content">
+    <div class="mini-games-list">
+      <button class="mini-game-select" data-game="snake">
+        <span class="mini-game-icon">🐍</span>
+        <span class="mini-game-title">Snake</span>
+        <span class="mini-game-sub">Класика аркад</span>
+      </button>
+      <button class="mini-game-select" data-game="g2048">
+        <span class="mini-game-icon">🧩</span>
+        <span class="mini-game-title">2048</span>
+        <span class="mini-game-sub">Логічна головоломка</span>
+      </button>
+      <button class="mini-game-select" data-game="memory">
+        <span class="mini-game-icon">🧠</span>
+        <span class="mini-game-title">Memory</span>
+        <span class="mini-game-sub">Знайди всі пари</span>
+      </button>
+    </div>
+
+    <div class="mini-game-view" id="miniGameView">
+      <div class="mini-game-view-header">
+        <button class="btn btn-secondary mini-game-back" id="miniGameBack">Назад</button>
+        <div class="mini-game-view-title" id="miniGameTitle">—</div>
+        <div class="mini-game-view-score" id="miniGameScoreLabel">Рекорд: 0</div>
+      </div>
+
+      <div class="mini-game-stage">
+        <div class="mini-game-panel" data-game="snake">
+          <div class="mini-game-score-current">Очки: <span id="snakeScore">0</span></div>
+          <div class="mini-game-canvas" id="snakeBoard"></div>
+          <div class="mini-game-controls">
+            <button class="btn btn-secondary mini-game-btn" id="snakeStart">Старт</button>
+            <div class="mini-game-hint">Керування: стрілки або WASD</div>
+          </div>
+        </div>
+
+        <div class="mini-game-panel" data-game="g2048">
+          <div class="mini-game-score-current">Очки: <span id="g2048Score">0</span></div>
+          <div class="mini-game-canvas grid-2048" id="g2048Board"></div>
+          <div class="mini-game-controls">
+            <button class="btn btn-secondary mini-game-btn" id="g2048Start">Нова гра</button>
+            <div class="mini-game-hint">Керування: стрілки або свайпи</div>
+          </div>
+        </div>
+
+        <div class="mini-game-panel" data-game="memory">
+          <div class="mini-game-score-current">Пари: <span id="memoryScore">0</span></div>
+          <div class="mini-game-canvas grid-memory" id="memoryBoard"></div>
+          <div class="mini-game-controls">
+            <button class="btn btn-secondary mini-game-btn" id="memoryStart">Нова гра</button>
+            <div class="mini-game-hint">Знайди всі пари карток</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

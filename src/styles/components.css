@@ -15,7 +15,7 @@
 }
 
 .btn-primary:hover {
-  background-color: #0066dd;
+  background-color: var(--primary-strong);
 }
 
 .btn-primary:active {
@@ -53,7 +53,7 @@
 }
 
 .btn-send:hover {
-  background-color: #0066dd;
+  background-color: var(--primary-strong);
   transform: scale(1.05);
 }
 
@@ -88,7 +88,6 @@
 
 .chat-avatar,
 .avatar,
-.profile-avatar-large,
 .message-avatar {
   display: flex;
   align-items: center;
@@ -100,6 +99,9 @@
   font-family: inherit;
   line-height: 1;
   margin-right: 5px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .emoji-picker {
@@ -110,10 +112,11 @@
   grid-template-columns: repeat(6, 1fr);
   gap: 6px;
   padding: 8px;
-  background: var(--bg-color);
+  background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
   z-index: 50;
 }
 
@@ -137,7 +140,7 @@
   border-radius: 8px;
   font-size: 14px;
   color: var(--text-primary);
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-elevated);
   margin-bottom: 12px;
   font-family: inherit;
   transition: all 0.2s ease;
@@ -146,8 +149,8 @@
 .contact-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  background-color: var(--bg-color);
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  background-color: var(--bg-elevated);
+  box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.2);
 }
 
 .contact-input::placeholder {
@@ -169,7 +172,7 @@
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  background: var(--bg-secondary);
+  background: var(--bg-elevated);
   border: 2px solid var(--border-color);
   border-radius: 6px;
   display: grid;
@@ -199,7 +202,7 @@
 }
 
 .group-toggle input[type="checkbox"]:focus-visible {
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.2);
 }
 
 .group-toggle span {

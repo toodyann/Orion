@@ -1,35 +1,45 @@
 :root {
-  --primary-color: #007aff;
-  --secondary-color: #5ac8fa;
+  --app-header-height: 56px;
+  --primary-color: #335bff;
+  --primary-strong: #244cff;
+  --secondary-color: #7a4dff;
   --danger-color: #ff3b30;
   --success-color: #34c759;
   --warning-color: #ff9500;
 
-  --text-primary: #000000;
-  --text-secondary: #666666;
+  --text-primary: #0f1320;
+  --text-secondary: rgba(15, 19, 32, 0.6);
 
-  --bg-color: #ffffff;
-  --bg-secondary: #f5f5f5;
+  --bg-color: #f6f7fb;
+  --bg-secondary: #ffffff;
+  --bg-elevated: rgba(255, 255, 255, 0.85);
+  --bg-gradient: linear-gradient(135deg, #f2f3f5 0%, #e6e8ec 45%, #f4f5f7 100%);
 
-  --border-color: #e0e0e0;
+  --border-color: rgba(30, 38, 68, 0.12);
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-strong: rgba(255, 255, 255, 0.88);
+  --glow: rgba(51, 91, 255, 0.25);
 
-  --message-user: #007aff;
-  --message-other: #e5e5ea;
+  --message-user: #335bff;
+  --message-other: #eef1f7;
 
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --shadow-dark: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow: 0 12px 24px rgba(15, 19, 32, 0.08);
+  --shadow-dark: 0 18px 40px rgba(15, 19, 32, 0.12);
 }
 
 .dark-theme {
-  --text-primary: #ffffff;
-  --text-secondary: #8e8e93;
-
-  --bg-color: #1c1c1e;
-  --bg-secondary: #2c2c2e;
-
-  --border-color: #3a3a3c;
-
-  --message-other: #3a3a3c;
+  --text-primary: #e9edf5;
+  --text-secondary: rgba(233, 237, 245, 0.64);
+  --bg-color: #0f1115;
+  --bg-secondary: #0f1115;
+  --bg-elevated: rgba(22, 26, 38, 0.86);
+  --bg-gradient: linear-gradient(135deg, #0f1115 0%, #15171c 45%, #1b1e24 100%);
+  --border-color: rgba(130, 145, 180, 0.22);
+  --glass: rgba(18, 20, 30, 0.62);
+  --glass-strong: rgba(18, 20, 30, 0.78);
+  --glow: rgba(91, 124, 255, 0.35);
+  --message-user: #5b7cff;
+  --message-other: rgba(20, 24, 36, 0.9);
 }
 
 @keyframes bounce {
