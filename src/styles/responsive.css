@@ -76,6 +76,48 @@
     bottom: calc(12px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     z-index: 80;
+    width: min(430px, calc(100vw - 24px));
+  }
+
+  .bottom-nav {
+    width: 100%;
+    gap: 4px;
+    padding: 10px 10px;
+    border-radius: 26px;
+    box-sizing: border-box;
+    background: var(--glass-strong);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(16px);
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    min-width: 0;
+    min-height: 52px;
+    padding: 8px 6px;
+    gap: 4px;
+    border-radius: 18px;
+  }
+
+  .bottom-nav-item svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .bottom-nav-item span {
+    font-size: 11px !important;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .bottom-nav-indicator {
+    width: 52px;
+    height: calc(100% - 20px);
+    top: 10px;
   }
 
   .sidebar {
@@ -405,9 +447,31 @@
     position: relative;
   }
 
+  .message-input-area {
+    transition:
+      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+      padding-bottom 0.24s ease,
+      box-shadow 0.24s ease;
+    transform: translateY(0);
+    will-change: transform;
+  }
+
+  .bridge-app.composer-focus .message-input-area {
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.12);
+  }
+
+  .bridge-app.keyboard-open .message-input-area {
+    transform: translateY(calc(var(--keyboard-offset, 0px) * -1));
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .bridge-app.keyboard-open .messages-container {
+    padding-bottom: 8px;
+  }
+
   .message-input {
-    min-height: 36px;
-    max-height: 100px;
+    min-height: 40px;
+    max-height: 132px;
     padding-right: 52px;
     font-size: 16px;
   }
@@ -566,10 +630,6 @@
     font-size: 13px !important;
   }
 
-  .bottom-nav-item span {
-    font-size: 12px !important;
-  }
-
   .chat-header-title {
     font-size: 18px !important;
   }
@@ -613,6 +673,35 @@
 }
 
 @media (max-width: 480px) {
+  .profile-menu-wrapper {
+    width: calc(100vw - 16px);
+    bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .bottom-nav {
+    gap: 3px;
+    padding: 9px 8px;
+    border-radius: 22px;
+  }
+
+  .bottom-nav-item {
+    min-height: 48px;
+    padding: 7px 4px;
+  }
+
+  .bottom-nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .bottom-nav-item span {
+    font-size: 10px !important;
+  }
+
+  .bottom-nav-indicator {
+    width: 46px;
+  }
+
   .sidebar {
     width: 100%;
   }

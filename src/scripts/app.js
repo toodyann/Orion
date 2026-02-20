@@ -29,10 +29,22 @@ class ChatApp {
     this.init();
   }
 
+  readJsonStorage(key, fallback) {
+    const rawValue = localStorage.getItem(key);
+    if (!rawValue) return fallback;
+
+    try {
+      return JSON.parse(rawValue);
+    } catch (error) {
+      console.warn(`Invalid JSON in localStorage for key "${key}", resetting value.`);
+      localStorage.removeItem(key);
+      return fallback;
+    }
+  }
+
   loadUserProfile() {
-    const saved = localStorage.getItem('bridge_user');
-    if (saved) {
-      const data = JSON.parse(saved);
+    const data = this.readJsonStorage('bridge_user', null);
+    if (data && typeof data === 'object') {
       return {
         name: data.name || 'Користувач Orion',
         email: data.email || 'user@example.com',
@@ -202,9 +214,9 @@ class ChatApp {
   }
 
   loadSettings() {
-    const saved = localStorage.getItem('bridge_settings');
-    if (saved) {
-      return JSON.parse(saved);
+    const saved = this.readJsonStorage('bridge_settings', null);
+    if (saved && typeof saved === 'object') {
+      return saved;
     }
     return {
       soundNotifications: true,
@@ -262,9 +274,9 @@ class ChatApp {
   }
 
   loadChats() {
-    const stored = localStorage.getItem('bridge_chats');
-    if (stored) {
-      return JSON.parse(stored);
+    const stored = this.readJsonStorage('bridge_chats', null);
+    if (Array.isArray(stored)) {
+      return stored;
     }
     return [];
   }
@@ -429,13 +441,16 @@ class ChatApp {
       e.preventDefault();
       this.sendMessage();
     });
-    document.getElementById('messageInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+      this.setupMessageComposer(messageInput);
+      messageInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
         if (this.settings?.enterToSend === false) return;
         e.preventDefault();
         this.sendMessage();
-      }
-    });
+      });
+    }
 
     document.getElementById('searchInput').addEventListener('input', (e) => this.filterChats(e.target.value));
 
@@ -633,6 +648,78 @@ class ChatApp {
 
   insertAtCursor(input, text) {
     insertAtCursor(input, text);
+  }
+
+  resizeMessageInput(inputEl = null) {
+    const input = inputEl || document.getElementById('messageInput');
+    if (!input) return;
+
+    const minHeight = 40;
+    const maxHeight = 132;
+    input.style.height = 'auto';
+    const nextHeight = Math.min(maxHeight, Math.max(minHeight, input.scrollHeight));
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }
+
+  syncMobileKeyboardState(inputEl = null) {
+    const appEl = document.querySelector('.bridge-app');
+    const input = inputEl || document.getElementById('messageInput');
+    if (!appEl || !input) return;
+
+    if (window.innerWidth > 900) {
+      appEl.classList.remove('keyboard-open');
+      appEl.style.setProperty('--keyboard-offset', '0px');
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const keyboardHeightRaw = window.innerHeight - viewport.height - viewport.offsetTop;
+    const keyboardHeight = Math.min(360, Math.max(0, keyboardHeightRaw));
+    const isInputFocused = document.activeElement === input;
+    const isOpen = isInputFocused && keyboardHeight > 80;
+
+    appEl.classList.toggle('keyboard-open', isOpen);
+    appEl.style.setProperty('--keyboard-offset', isOpen ? `${keyboardHeight}px` : '0px');
+  }
+
+  setupMessageComposer(inputEl) {
+    if (!inputEl || inputEl.dataset.composerReady === 'true') return;
+    inputEl.dataset.composerReady = 'true';
+
+    const appEl = document.querySelector('.bridge-app');
+
+    const updateHeight = () => {
+      this.resizeMessageInput(inputEl);
+      const messages = document.getElementById('messagesContainer');
+      if (messages && this.currentChat) {
+        messages.scrollTop = messages.scrollHeight;
+      }
+    };
+
+    inputEl.addEventListener('input', updateHeight);
+    inputEl.addEventListener('focus', () => {
+      if (appEl) appEl.classList.add('composer-focus');
+      this.syncMobileKeyboardState(inputEl);
+      requestAnimationFrame(updateHeight);
+    });
+    inputEl.addEventListener('blur', () => {
+      window.setTimeout(() => {
+        if (appEl) appEl.classList.remove('composer-focus');
+        this.syncMobileKeyboardState(inputEl);
+      }, 80);
+    });
+
+    if (window.visualViewport) {
+      const sync = () => this.syncMobileKeyboardState(inputEl);
+      window.visualViewport.addEventListener('resize', sync);
+      window.visualViewport.addEventListener('scroll', sync);
+    }
+
+    window.addEventListener('resize', () => this.syncMobileKeyboardState(inputEl));
+    updateHeight();
   }
 
   renderChatsList() {
@@ -890,6 +977,7 @@ class ChatApp {
   closeChat() {
     this.currentChat = null;
     document.getElementById('messageInput').value = '';
+    this.resizeMessageInput();
     this.renderChatsList();
     this.updateChatHeader();
     this.showWelcomeScreen();
@@ -1365,6 +1453,7 @@ class ChatApp {
       msg.edited = true;
       this.saveChats();
       input.value = '';
+      this.resizeMessageInput(input);
       this.editingMessageId = null;
       this.renderChat();
       this.renderChatsList();
@@ -1389,6 +1478,7 @@ class ChatApp {
     this.currentChat.messages.push(newMessage);
     this.saveChats();
     input.value = '';
+    this.resizeMessageInput(input);
     this.clearReplyTarget();
     if (this.currentChat.messages.length === 1) {
       this.renderChat(newMessage.id);
@@ -1475,6 +1565,7 @@ class ChatApp {
     if (!input) return;
     this.editingMessageId = messageId;
     input.value = msg.text;
+    this.resizeMessageInput(input);
     input.focus();
   }
 

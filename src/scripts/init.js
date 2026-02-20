@@ -156,16 +156,17 @@ document.addEventListener('DOMContentLoaded', () => {
               <path d="M21.5 2H2.5C1.12 2 0 3.12 0 4.5v15C0 20.88 1.12 22 2.5 22h19C22.88 22 24 20.88 24 19.5v-15C24 3.12 22.88 2 21.5 2zm-8 16h-5v-10h5v10zm8-14h-7v4h7v-4z" fill="currentColor"/>
             </svg>
           </button>
-          <input 
-            type="text" 
-            id="messageInput" 
-            class="message-input" 
+          <textarea
+            id="messageInput"
+            class="message-input"
             placeholder="Напишіть повідомлення..."
+            rows="1"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="off"
             spellcheck="false"
-          >
+            enterkeyhint="send"
+          ></textarea>
           <button type="button" class="btn-emoji">😊</button>
           <button type="button" class="btn-send" id="sendBtn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
