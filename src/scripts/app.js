@@ -350,10 +350,10 @@ class ChatApp {
       });
     }
     
-      if (navChats) {
-        navChats.addEventListener('click', () => {
-          this.setActiveNavButton(navChats);
-          this.showBottomNav();
+    if (navChats) {
+      navChats.addEventListener('click', () => {
+        this.setActiveNavButton(navChats);
+        this.showBottomNav();
         // Show chats list and hide settings
         const settingsContainer = document.getElementById('settingsContainer');
         const settingsContainerMobile = document.getElementById('settingsContainerMobile');
@@ -363,6 +363,7 @@ class ChatApp {
         const chatsListHeader = document.querySelector('.chats-list-header');
         const sidebar = document.querySelector('.sidebar');
         const profileMenu = document.querySelector('.profile-menu-wrapper');
+        const appEl = document.querySelector('.bridge-app');
         
         if (settingsContainer) {
           settingsContainer.classList.remove('active');
@@ -392,6 +393,8 @@ class ChatApp {
         
         // Clear current chat and show welcome screen
         this.currentChat = null;
+        this.updateChatHeader();
+        if (appEl) appEl.classList.remove('chat-open');
         if (chatContainer) {
           chatContainer.style.display = '';
           chatContainer.classList.remove('active');
@@ -848,6 +851,7 @@ class ChatApp {
     try {
       const sidebar = document.querySelector('.sidebar');
       const sidebarOverlay = document.getElementById('sidebarOverlay');
+      const profileMenu = document.querySelector('.profile-menu-wrapper');
       
       if (window.innerWidth <= 768) {
         if (appEl) appEl.classList.add('mobile-chat-open');
@@ -856,6 +860,7 @@ class ChatApp {
           sidebar.classList.remove('active', 'mobile-menu');
         }
         if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        if (profileMenu) profileMenu.style.display = 'none';
       }
     } catch (e) {
     }
@@ -865,6 +870,7 @@ class ChatApp {
     this.currentChat = null;
     document.getElementById('messageInput').value = '';
     this.renderChatsList();
+    this.updateChatHeader();
     this.showWelcomeScreen();
     this.clearMessages();
     this.showBottomNav();
@@ -877,10 +883,12 @@ class ChatApp {
     try {
       const appEl = document.querySelector('.bridge-app');
       const sidebar = document.querySelector('.sidebar');
+      const profileMenu = document.querySelector('.profile-menu-wrapper');
       
       if (window.innerWidth <= 768) {
         if (appEl) appEl.classList.remove('mobile-chat-open');
         if (sidebar) sidebar.classList.remove('hidden');
+        if (profileMenu) profileMenu.style.display = '';
       }
     } catch (e) {}
   }
