@@ -3,10 +3,6 @@
     --app-header-height: 64px;
   }
 
-  .app-header {
-    padding: calc(10px + env(safe-area-inset-top)) 16px 10px 16px;
-  }
-
   .app-header .chat-brand .app-logo {
     width: 24px;
     height: 24px;
@@ -203,7 +199,6 @@
   #settingsContainerMobile .settings-header {
     display: flex !important;
     padding: 0 !important;
-    border-bottom: 1px solid var(--border-color) !important;
     flex-shrink: 0 !important;
     justify-content: center !important;
     align-items: center !important;

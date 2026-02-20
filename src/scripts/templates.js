@@ -130,7 +130,6 @@ export const settingsTemplates = {
   'messenger-settings': `
 <div class="settings-section" id="messenger-settings">
   <div class="settings-header">
-    <button class="btn-back-settings">‹</button>
     <h2>Налаштування</h2>
   </div>
 

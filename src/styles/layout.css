@@ -13,6 +13,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.no-animations * {
+  animation: none !important;
+  transition: none !important;
+}
+
+.no-message-preview .chat-preview {
+  display: none;
+}
+
 #app {
   width: 100%;
   height: 100%;

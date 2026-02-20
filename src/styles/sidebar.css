@@ -268,6 +268,25 @@
   display: none;
 }
 
+.compact-mode .chat-item {
+  padding: 8px 10px;
+  margin: 4px 8px;
+}
+
+.compact-mode .chat-avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.compact-mode .chat-name {
+  font-size: 13px;
+}
+
+.compact-mode .chat-preview {
+  font-size: 11px;
+}
+
 .btn-delete-chat {
   width: 32px;
   height: 32px;

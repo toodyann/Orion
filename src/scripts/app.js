@@ -211,6 +211,16 @@ class ChatApp {
       desktopNotifications: true,
       showOnlineStatus: true,
       showTypingIndicator: true,
+      vibrationEnabled: true,
+      messagePreview: true,
+      readReceipts: true,
+      lastSeen: true,
+      enterToSend: true,
+      autoPlayMedia: true,
+      autoSaveMedia: false,
+      animationsEnabled: true,
+      compactMode: false,
+      language: 'uk',
       fontSize: 'medium',
       theme: 'light'
     };
@@ -219,6 +229,15 @@ class ChatApp {
   saveSettings(settingsData) {
     this.settings = settingsData;
     localStorage.setItem('bridge_settings', JSON.stringify(settingsData));
+  }
+
+  applySettingsToUI() {
+    const root = document.documentElement;
+    const settings = this.settings || {};
+    root.classList.toggle('no-animations', settings.animationsEnabled === false);
+    root.classList.toggle('compact-mode', settings.compactMode === true);
+    root.classList.toggle('no-message-preview', settings.messagePreview === false);
+    this.updateProfileDisplay();
   }
 
   // Метод-обгортка для імпортованої функції
@@ -294,6 +313,7 @@ class ChatApp {
     this.setupModalEnterHandlers();
     this.renderChatsList();
     this.applyFontSize(this.settings.fontSize);
+    this.applySettingsToUI();
     this.updateProfileMenuButton();
     this.updateBottomNavIndicator();
     this.setupMobileSwipeBack();
@@ -411,6 +431,7 @@ class ChatApp {
     });
     document.getElementById('messageInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
+        if (this.settings?.enterToSend === false) return;
         e.preventDefault();
         this.sendMessage();
       }
@@ -2025,6 +2046,10 @@ class ChatApp {
     // Hide chat and welcome screen
     if (chatContainer) chatContainer.classList.remove('active');
     if (welcomeScreen) welcomeScreen.classList.add('hidden');
+    const appEl = document.querySelector('.bridge-app');
+    this.currentChat = null;
+    this.updateChatHeader();
+    if (appEl) appEl.classList.remove('chat-open');
     
     // Hide chats list header when showing settings
     if (chatsListHeader) chatsListHeader.style.display = 'none';
@@ -2318,17 +2343,6 @@ class ChatApp {
         this.setupSettingsSwipeBack(settingsContainer);
       }
       
-      const backBtn = settingsContainer.querySelector('.settings-header button');
-      if (backBtn) {
-        backBtn.addEventListener('click', () => {
-          settingsContainer.classList.remove('active');
-          const section = settingsContainer.querySelector('.settings-section');
-          if (section) {
-            section.classList.remove('active');
-          }
-        });
-      }
-      
       const themeToggleCheckbox = settingsContainer.querySelector('#themeToggleCheckbox');
       if (themeToggleCheckbox) {
         const isDark = document.documentElement.classList.contains('dark-theme');
@@ -2446,6 +2460,7 @@ class ChatApp {
     this.saveSettings(settings);
     
     this.applyFontSize(fontSize);
+    this.applySettingsToUI();
     
     await this.showAlert('Налаштування месенджера збережено!');
   }

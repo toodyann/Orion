@@ -709,12 +709,12 @@ to {
   max-width: 280px;
 }
 
-/* Telegram-style settings menu */
 .settings-menu-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
   background: transparent;
+  margin: 30px;
 }
 
 .settings-menu-item {
@@ -1061,7 +1061,11 @@ to {
   position: absolute;
   inset: -8px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(91, 124, 255, 0.35), transparent 65%);
+  background: radial-gradient(
+    circle,
+    rgba(91, 124, 255, 0.35),
+    transparent 65%
+  );
   filter: blur(6px);
   opacity: 0.8;
 }
@@ -1257,7 +1261,9 @@ to {
   font-family: inherit;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .form-input:focus,
@@ -1362,7 +1368,10 @@ to {
   background: var(--glass);
   color: var(--text-primary);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
   text-align: left;
 }
 
@@ -1452,7 +1461,8 @@ to {
   max-width: 420px;
   max-height: 420px;
   border-radius: 20px;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 60%),
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 60%),
     radial-gradient(circle at bottom, rgba(0, 0, 0, 0.2), transparent 55%),
     rgba(16, 18, 24, 0.6);
   border: 1px solid var(--border-color);
@@ -1536,17 +1546,31 @@ to {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-.grid-2048 .value-2 { background: #2b2f3a; }
-.grid-2048 .value-4 { background: #31384a; }
-.grid-2048 .value-8 { background: #3b4b6e; }
-.grid-2048 .value-16 { background: #465a86; }
-.grid-2048 .value-32 { background: #4f67a3; }
-.grid-2048 .value-64 { background: #5b7cff; }
+.grid-2048 .value-2 {
+  background: #2b2f3a;
+}
+.grid-2048 .value-4 {
+  background: #31384a;
+}
+.grid-2048 .value-8 {
+  background: #3b4b6e;
+}
+.grid-2048 .value-16 {
+  background: #465a86;
+}
+.grid-2048 .value-32 {
+  background: #4f67a3;
+}
+.grid-2048 .value-64 {
+  background: #5b7cff;
+}
 .grid-2048 .value-128,
 .grid-2048 .value-256,
 .grid-2048 .value-512,
 .grid-2048 .value-1024,
-.grid-2048 .value-2048 { color: #fff; }
+.grid-2048 .value-2048 {
+  color: #fff;
+}
 
 .grid-memory {
   display: grid;
@@ -1566,7 +1590,9 @@ to {
   justify-content: center;
   font-size: 20px;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .memory-card.revealed {
