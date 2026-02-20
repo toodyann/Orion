@@ -163,8 +163,9 @@ document.addEventListener('DOMContentLoaded', () => {
             rows="1"
             autocomplete="off"
             autocorrect="off"
-            autocapitalize="off"
+            autocapitalize="none"
             spellcheck="false"
+            inputmode="text"
             enterkeyhint="send"
           ></textarea>
           <button type="button" class="btn-emoji">😊</button>

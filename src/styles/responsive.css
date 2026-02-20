@@ -188,10 +188,10 @@
   .chat-container.active {
     display: flex !important;
     position: fixed;
-    top: 0;
+    top: var(--app-header-height);
     left: 0;
     width: 100%;
-    height: 100%;
+    height: calc(100dvh - var(--app-header-height));
     z-index: 2;
     background-color: var(--bg-color);
     animation: slideInChat 0.3s ease-out;
@@ -461,7 +461,6 @@
   }
 
   .bridge-app.keyboard-open .message-input-area {
-    transform: translateY(calc(var(--keyboard-offset, 0px) * -1));
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
 

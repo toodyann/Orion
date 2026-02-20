@@ -437,10 +437,18 @@ class ChatApp {
       });
     }
     
-    document.getElementById('sendBtn').addEventListener('click', (e) => {
-      e.preventDefault();
-      this.sendMessage();
-    });
+    const sendBtn = document.getElementById('sendBtn');
+    if (sendBtn) {
+      const keepComposerFocus = (e) => {
+        e.preventDefault();
+      };
+      sendBtn.addEventListener('mousedown', keepComposerFocus);
+      sendBtn.addEventListener('touchstart', keepComposerFocus, { passive: false });
+      sendBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.sendMessage();
+      });
+    }
     const messageInput = document.getElementById('messageInput');
     if (messageInput) {
       this.setupMessageComposer(messageInput);
@@ -669,7 +677,6 @@ class ChatApp {
 
     if (window.innerWidth > 900) {
       appEl.classList.remove('keyboard-open');
-      appEl.style.setProperty('--keyboard-offset', '0px');
       return;
     }
 
@@ -682,7 +689,6 @@ class ChatApp {
     const isOpen = isInputFocused && keyboardHeight > 80;
 
     appEl.classList.toggle('keyboard-open', isOpen);
-    appEl.style.setProperty('--keyboard-offset', isOpen ? `${keyboardHeight}px` : '0px');
   }
 
   setupMessageComposer(inputEl) {
@@ -704,6 +710,9 @@ class ChatApp {
       if (appEl) appEl.classList.add('composer-focus');
       this.syncMobileKeyboardState(inputEl);
       requestAnimationFrame(updateHeight);
+      window.setTimeout(() => {
+        inputEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }, 60);
     });
     inputEl.addEventListener('blur', () => {
       window.setTimeout(() => {
@@ -1457,6 +1466,9 @@ class ChatApp {
       this.editingMessageId = null;
       this.renderChat();
       this.renderChatsList();
+      if (window.innerWidth <= 900) {
+        input.focus({ preventScroll: true });
+      }
       return;
     }
 
@@ -1486,6 +1498,9 @@ class ChatApp {
       this.appendMessage(newMessage, ' new-message');
     }
     this.renderChatsList();
+    if (window.innerWidth <= 900) {
+      input.focus({ preventScroll: true });
+    }
   }
 
   openNewChatModal() {
