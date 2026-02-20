@@ -1,4 +1,7 @@
-html,
+html {
+  background: var(--bg-gradient);
+}
+
 body {
   margin: 0;
   padding: 0;
