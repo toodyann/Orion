@@ -1605,6 +1605,10 @@ class ChatApp {
   }
 
   setActiveNavButton(btn) {
+    if (btn && btn.classList.contains('active')) {
+      return;
+    }
+
     document.querySelectorAll('.bottom-nav-item').forEach(item => {
       item.classList.remove('active');
     });
@@ -1683,8 +1687,47 @@ class ChatApp {
 
     const navRect = nav.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
+    const maxX = Math.max(0, navRect.width - indicator.offsetWidth);
     const offsetX = targetRect.left - navRect.left + (targetRect.width - indicator.offsetWidth) / 2;
-    indicator.style.transform = `translateX(${Math.max(0, offsetX)}px)`;
+    const nextX = Math.min(maxX, Math.max(0, offsetX));
+    let currentX = Number(indicator.dataset.x ?? nextX);
+    const noAnimations = document.documentElement.classList.contains('no-animations');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const computedTransform = window.getComputedStyle(indicator).transform;
+    if (computedTransform && computedTransform !== 'none') {
+      const matrix = new DOMMatrixReadOnly(computedTransform);
+      if (Number.isFinite(matrix.m41)) {
+        currentX = matrix.m41;
+      }
+    }
+
+    if (!Number.isFinite(currentX) || Math.abs(nextX - currentX) < 1) {
+      indicator.style.transform = `translateX(${nextX}px)`;
+      indicator.dataset.x = String(nextX);
+      return;
+    }
+
+    const distance = Math.abs(nextX - currentX);
+    const duration = Math.min(320, Math.max(140, 120 + distance * 0.9));
+
+    if (noAnimations || reducedMotion) {
+      indicator.style.transition = 'none';
+      indicator.style.transform = `translateX(${nextX}px)`;
+      indicator.dataset.x = String(nextX);
+      return;
+    }
+
+    // Lock the bubble at the current visual position first, then start a new transition.
+    // This prevents animation drop/jump when users switch tabs very quickly.
+    indicator.style.transition = 'none';
+    indicator.style.transform = `translateX(${currentX}px)`;
+    void indicator.offsetWidth;
+    indicator.style.transition = `transform ${Math.round(duration)}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+    window.requestAnimationFrame(() => {
+      indicator.style.transform = `translateX(${nextX}px)`;
+    });
+    indicator.dataset.x = String(nextX);
   }
 
   triggerGameEnd(panel, message) {
