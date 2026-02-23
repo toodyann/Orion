@@ -25,6 +25,17 @@ class ChatApp {
     this.bottomNavHidden = false;
     this.navRevealTimeout = null;
     this.lastSendTriggerAt = 0;
+    this.forceComposerFocusUntil = 0;
+    this.attachSheetOpen = false;
+    this.nativePickerOpen = false;
+    this.nativePickerResetTimer = null;
+    this.cameraCaptureOpen = false;
+    this.cameraStream = null;
+    this.cameraFacingMode = 'environment';
+    this.chatEnterAnimation = null;
+    this.attachSheetTouchStartY = 0;
+    this.attachSheetTouchCurrentY = 0;
+    this.attachSheetTouchDragging = false;
     this.mobileScrollLockY = 0;
     this.mobileScrollLocked = false;
     this.mobileTouchMoveLockHandler = null;
@@ -488,11 +499,62 @@ class ChatApp {
       });
     }
     const attachBtn = document.querySelector('.btn-attach');
-    const imagePickerInput = document.getElementById('imagePickerInput');
-    if (attachBtn && imagePickerInput) {
+    const galleryPickerInput = document.getElementById('galleryPickerInput');
+    const cameraPickerInput = document.getElementById('cameraPickerInput');
+    const filePickerInput = document.getElementById('filePickerInput');
+    const attachSheetOverlay = document.getElementById('attachSheetOverlay');
+    const attachSheet = document.getElementById('attachSheet');
+    const attachSheetCancelBtn = document.getElementById('attachSheetCancelBtn');
+    const attachSheetItems = document.querySelectorAll('.attach-sheet-item');
+    const cameraCloseBtn = document.getElementById('cameraCloseBtn');
+    const cameraSwitchBtn = document.getElementById('cameraSwitchBtn');
+    const cameraShutterBtn = document.getElementById('cameraShutterBtn');
+    if (attachBtn) {
       attachBtn.addEventListener('click', () => this.openImagePicker());
-      imagePickerInput.addEventListener('change', (e) => this.handleImageSelected(e));
     }
+    if (galleryPickerInput) {
+      galleryPickerInput.addEventListener('change', (e) => this.handleImageSelected(e));
+    }
+    if (cameraPickerInput) {
+      cameraPickerInput.addEventListener('change', (e) => this.handleImageSelected(e));
+    }
+    if (filePickerInput) {
+      filePickerInput.addEventListener('change', (e) => this.handleImageSelected(e));
+    }
+    if (attachSheetOverlay) {
+      attachSheetOverlay.addEventListener('click', (e) => {
+        if (e.target === attachSheetOverlay) this.closeAttachSheet();
+      });
+    }
+    if (attachSheet) {
+      attachSheet.addEventListener('touchstart', (e) => this.onAttachSheetTouchStart(e), { passive: true });
+      attachSheet.addEventListener('touchmove', (e) => this.onAttachSheetTouchMove(e), { passive: false });
+      attachSheet.addEventListener('touchend', () => this.onAttachSheetTouchEnd());
+      attachSheet.addEventListener('touchcancel', () => this.onAttachSheetTouchEnd());
+    }
+    if (attachSheetCancelBtn) {
+      attachSheetCancelBtn.addEventListener('click', () => this.closeAttachSheet());
+    }
+    if (attachSheetItems.length) {
+      attachSheetItems.forEach((item) => {
+        item.addEventListener('click', () => this.handleAttachSheetAction(item.dataset.attachAction || ''));
+      });
+    }
+    if (cameraCloseBtn) {
+      cameraCloseBtn.addEventListener('click', () => this.closeCameraCapture());
+    }
+    if (cameraSwitchBtn) {
+      cameraSwitchBtn.addEventListener('click', () => this.toggleCameraFacingMode());
+    }
+    if (cameraShutterBtn) {
+      cameraShutterBtn.addEventListener('click', () => this.capturePhotoFromCamera());
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.closeAttachSheet();
+        this.closeCameraCapture();
+      }
+    });
 
     document.getElementById('searchInput').addEventListener('input', (e) => this.filterChats(e.target.value));
 
@@ -696,7 +758,7 @@ class ChatApp {
     const input = inputEl || document.getElementById('messageInput');
     if (!input) return;
 
-    const minHeight = 40;
+    const minHeight = window.innerWidth <= 768 ? 40 : 34;
     const maxHeight = 132;
     input.style.height = 'auto';
     const nextHeight = Math.min(maxHeight, Math.max(minHeight, input.scrollHeight));
@@ -895,34 +957,80 @@ class ChatApp {
     };
 
     inputEl.addEventListener('input', updateHeight);
+    const forceComposerFocus = () => {
+      if (this.nativePickerOpen || this.cameraCaptureOpen) return;
+      this.forceComposerFocusUntil = Date.now() + 900;
+      const focusSafely = () => {
+        if (this.nativePickerOpen || this.cameraCaptureOpen) return;
+        if (document.activeElement === inputEl) return;
+        this.closeImagePickerMenu();
+        try {
+          inputEl.focus({ preventScroll: true });
+        } catch (_) {
+          inputEl.focus();
+        }
+      };
+      focusSafely();
+      window.setTimeout(focusSafely, 70);
+      window.setTimeout(focusSafely, 160);
+      window.setTimeout(focusSafely, 280);
+    };
     const engageKeyboardGuard = () => {
       if (window.innerWidth > 900) return;
+      this.closeAttachSheet();
       this.setMobilePageScrollLock(true, true);
       const messages = document.getElementById('messagesContainer');
       if (messages) messages.scrollTop = messages.scrollHeight;
     };
     inputEl.addEventListener('touchstart', (event) => {
       if (window.innerWidth > 900) return;
+      if (this.attachSheetOpen) {
+        event.preventDefault();
+        this.closeAttachSheet();
+        window.setTimeout(() => forceComposerFocus(), 40);
+        return;
+      }
+      if (this.nativePickerOpen || this.cameraCaptureOpen) {
+        event.preventDefault();
+        this.forceComposerFocusUntil = 0;
+        if (document.activeElement === inputEl) inputEl.blur();
+        return;
+      }
+      this.closeImagePickerMenu();
       // Prevent iOS native viewport jump on textarea tap, then focus manually.
       event.preventDefault();
       engageKeyboardGuard();
-      try {
-        inputEl.focus({ preventScroll: true });
-      } catch (_) {
-        inputEl.focus();
-      }
+      forceComposerFocus();
     }, { passive: false });
     inputEl.addEventListener('mousedown', (event) => {
       if (window.innerWidth > 900) return;
+      if (this.attachSheetOpen) {
+        event.preventDefault();
+        this.closeAttachSheet();
+        window.setTimeout(() => forceComposerFocus(), 40);
+        return;
+      }
+      if (this.nativePickerOpen || this.cameraCaptureOpen) {
+        event.preventDefault();
+        this.forceComposerFocusUntil = 0;
+        if (document.activeElement === inputEl) inputEl.blur();
+        return;
+      }
+      this.closeImagePickerMenu();
       event.preventDefault();
       engageKeyboardGuard();
-      try {
-        inputEl.focus({ preventScroll: true });
-      } catch (_) {
-        inputEl.focus();
-      }
+      forceComposerFocus();
     });
     inputEl.addEventListener('focus', () => {
+      if (this.attachSheetOpen) {
+        this.closeAttachSheet();
+      }
+      if (this.nativePickerOpen || this.cameraCaptureOpen) {
+        this.forceComposerFocusUntil = 0;
+        inputEl.blur();
+        return;
+      }
+      this.closeImagePickerMenu();
       engageKeyboardGuard();
       if (appEl) appEl.classList.add('composer-focus');
       this.syncMobileKeyboardState(inputEl);
@@ -935,6 +1043,15 @@ class ChatApp {
     });
     inputEl.addEventListener('blur', () => {
       window.setTimeout(() => {
+        if (this.nativePickerOpen || this.cameraCaptureOpen) {
+          if (appEl) appEl.classList.remove('composer-focus');
+          this.syncMobileKeyboardState(inputEl);
+          return;
+        }
+        if (window.innerWidth <= 900 && Date.now() < this.forceComposerFocusUntil) {
+          forceComposerFocus();
+          return;
+        }
         if (appEl) appEl.classList.remove('composer-focus');
         this.syncMobileKeyboardState(inputEl);
       }, 80);
@@ -1203,7 +1320,58 @@ class ChatApp {
       }
     } catch (e) {
     }
+    this.triggerChatEnterAnimation();
     this.applyMobileChatViewportLayout();
+  }
+
+  triggerChatEnterAnimation() {
+    const chatContainer = document.getElementById('chatContainer');
+    if (!chatContainer) return;
+
+    if (this.chatEnterAnimation) {
+      this.chatEnterAnimation.cancel();
+      this.chatEnterAnimation = null;
+    }
+
+    const distance = window.innerWidth <= 768 ? 30 : 22;
+    const duration = window.innerWidth <= 768 ? 500 : 460;
+    chatContainer.style.willChange = 'transform, opacity';
+
+    if (typeof chatContainer.animate === 'function') {
+      this.chatEnterAnimation = chatContainer.animate(
+        [
+          { transform: `translate3d(${distance}px, 0, 0)`, opacity: 0.88 },
+          { transform: 'translate3d(0, 0, 0)', opacity: 1 }
+        ],
+        {
+          duration,
+          easing: 'cubic-bezier(0.2, 0.82, 0.25, 1)',
+          fill: 'both'
+        }
+      );
+
+      this.chatEnterAnimation.onfinish = () => {
+        chatContainer.style.removeProperty('will-change');
+        chatContainer.style.removeProperty('transform');
+        chatContainer.style.removeProperty('opacity');
+        this.chatEnterAnimation = null;
+      };
+      this.chatEnterAnimation.oncancel = () => {
+        chatContainer.style.removeProperty('will-change');
+        chatContainer.style.removeProperty('transform');
+        chatContainer.style.removeProperty('opacity');
+        this.chatEnterAnimation = null;
+      };
+      return;
+    }
+
+    chatContainer.classList.remove('chat-entering');
+    void chatContainer.offsetWidth;
+    chatContainer.classList.add('chat-entering');
+    window.setTimeout(() => {
+      chatContainer.classList.remove('chat-entering');
+      chatContainer.style.removeProperty('will-change');
+    }, duration + 40);
   }
 
   closeChat() {
@@ -1334,6 +1502,7 @@ class ChatApp {
     });
 
     this.bindMessageContextMenu();
+    this.initMessageImageTransitions(messagesContainer);
 
     // Auto-scroll to bottom
     setTimeout(() => {
@@ -1746,6 +1915,7 @@ class ChatApp {
       </div>
     `;
     messagesContainer.appendChild(messageEl);
+    this.initMessageImageTransitions(messageEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
@@ -1807,9 +1977,229 @@ class ChatApp {
   }
 
   openImagePicker() {
-    const input = document.getElementById('imagePickerInput');
+    this.forceComposerFocusUntil = 0;
+    if (window.innerWidth > 900) {
+      this.launchNativePicker(document.getElementById('galleryPickerInput'));
+      return;
+    }
+    this.openAttachSheet();
+  }
+
+  closeImagePickerMenu() {
+    this.closeAttachSheet();
+  }
+
+  openAttachSheet() {
+    const overlay = document.getElementById('attachSheetOverlay');
+    const sheet = document.getElementById('attachSheet');
+    if (!overlay) return;
+    if (sheet) {
+      sheet.style.removeProperty('transform');
+      sheet.style.removeProperty('opacity');
+    }
+    overlay.classList.add('active');
+    overlay.setAttribute('aria-hidden', 'false');
+    this.attachSheetOpen = true;
+  }
+
+  closeAttachSheet() {
+    const overlay = document.getElementById('attachSheetOverlay');
+    const sheet = document.getElementById('attachSheet');
+    if (sheet) {
+      sheet.style.removeProperty('transform');
+      sheet.style.removeProperty('opacity');
+    }
+    if (!overlay) {
+      this.attachSheetOpen = false;
+      return;
+    }
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    this.attachSheetOpen = false;
+  }
+
+  onAttachSheetTouchStart(event) {
+    if (!this.attachSheetOpen) return;
+    if (!event.touches || !event.touches.length) return;
+    this.attachSheetTouchDragging = true;
+    this.attachSheetTouchStartY = event.touches[0].clientY;
+    this.attachSheetTouchCurrentY = this.attachSheetTouchStartY;
+  }
+
+  onAttachSheetTouchMove(event) {
+    if (!this.attachSheetOpen || !this.attachSheetTouchDragging) return;
+    if (!event.touches || !event.touches.length) return;
+    const sheet = document.getElementById('attachSheet');
+    if (!sheet) return;
+    this.attachSheetTouchCurrentY = event.touches[0].clientY;
+    const deltaY = Math.max(0, this.attachSheetTouchCurrentY - this.attachSheetTouchStartY);
+    if (deltaY <= 0) return;
+    event.preventDefault();
+    const opacity = Math.max(0.75, 1 - deltaY / 360);
+    sheet.style.transform = `translateY(${deltaY}px)`;
+    sheet.style.opacity = `${opacity}`;
+  }
+
+  onAttachSheetTouchEnd() {
+    if (!this.attachSheetTouchDragging) return;
+    this.attachSheetTouchDragging = false;
+    const sheet = document.getElementById('attachSheet');
+    const deltaY = Math.max(0, this.attachSheetTouchCurrentY - this.attachSheetTouchStartY);
+    this.attachSheetTouchStartY = 0;
+    this.attachSheetTouchCurrentY = 0;
+
+    if (!sheet) return;
+    if (deltaY > 90) {
+      this.closeAttachSheet();
+      return;
+    }
+    sheet.style.removeProperty('transform');
+    sheet.style.removeProperty('opacity');
+  }
+
+  handleAttachSheetAction(action) {
+    if (!action) return;
+    if (action === 'gallery') {
+      this.launchNativePicker(document.getElementById('galleryPickerInput'));
+      return;
+    }
+    if (action === 'camera') {
+      this.openCameraCapture();
+      return;
+    }
+    if (action === 'file') {
+      this.launchNativePicker(document.getElementById('filePickerInput'));
+      return;
+    }
+    if (action === 'location') {
+      this.closeAttachSheet();
+      this.showAlert('Надсилання локації буде доступне незабаром.');
+    }
+  }
+
+  launchNativePicker(input) {
     if (!input) return;
-    input.click();
+    this.nativePickerOpen = true;
+    this.setComposerInputInteractionLocked(true);
+
+    const cleanup = () => {
+      this.nativePickerOpen = false;
+      this.setComposerInputInteractionLocked(false);
+      window.removeEventListener('focus', onFocus, true);
+      document.removeEventListener('visibilitychange', onVisibility, true);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      if (this.nativePickerResetTimer) {
+        window.clearTimeout(this.nativePickerResetTimer);
+        this.nativePickerResetTimer = null;
+      }
+    };
+    const onFocus = () => window.setTimeout(cleanup, 80);
+    const onVisibility = () => {
+      if (!document.hidden) window.setTimeout(cleanup, 80);
+    };
+    const onPointerDown = () => {
+      if (this.nativePickerOpen) cleanup();
+    };
+
+    window.addEventListener('focus', onFocus, true);
+    document.addEventListener('visibilitychange', onVisibility, true);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    input.addEventListener('change', cleanup, { once: true });
+    this.nativePickerResetTimer = window.setTimeout(cleanup, 1200);
+    input.value = '';
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker();
+      } else {
+        input.click();
+      }
+    } catch (_) {
+      input.click();
+    }
+    this.closeAttachSheet();
+  }
+
+  setComposerInputInteractionLocked(locked) {
+    const input = document.getElementById('messageInput');
+    const appEl = document.querySelector('.bridge-app');
+    if (!input) return;
+    input.readOnly = !!locked;
+    if (locked) {
+      input.blur();
+      if (appEl) appEl.classList.add('composer-locked');
+    } else if (appEl) {
+      appEl.classList.remove('composer-locked');
+    }
+  }
+
+  async openCameraCapture() {
+    this.closeAttachSheet();
+    const overlay = document.getElementById('cameraCaptureOverlay');
+    const video = document.getElementById('cameraCaptureVideo');
+    if (!overlay || !video) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      this.showAlert('Камера недоступна у цьому браузері.');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: this.cameraFacingMode } },
+        audio: false
+      });
+      this.stopCameraStream();
+      this.cameraStream = stream;
+      video.srcObject = stream;
+      overlay.classList.add('active');
+      overlay.setAttribute('aria-hidden', 'false');
+      this.cameraCaptureOpen = true;
+    } catch (error) {
+      this.showAlert('Не вдалося відкрити камеру. Перевірте дозволи браузера.');
+    }
+  }
+
+  closeCameraCapture() {
+    const overlay = document.getElementById('cameraCaptureOverlay');
+    const video = document.getElementById('cameraCaptureVideo');
+    if (overlay) {
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+    if (video) {
+      video.srcObject = null;
+    }
+    this.cameraCaptureOpen = false;
+    this.stopCameraStream();
+  }
+
+  stopCameraStream() {
+    if (!this.cameraStream) return;
+    this.cameraStream.getTracks().forEach((track) => track.stop());
+    this.cameraStream = null;
+  }
+
+  async toggleCameraFacingMode() {
+    this.cameraFacingMode = this.cameraFacingMode === 'environment' ? 'user' : 'environment';
+    if (!this.cameraCaptureOpen) return;
+    await this.openCameraCapture();
+  }
+
+  capturePhotoFromCamera() {
+    const video = document.getElementById('cameraCaptureVideo');
+    if (!video || !this.currentChat) return;
+    const width = video.videoWidth || 1080;
+    const height = video.videoHeight || 1920;
+    if (!width || !height) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, width, height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    this.sendImageMessage(dataUrl);
+    this.closeCameraCapture();
   }
 
   handleImageSelected(event) {
@@ -1975,6 +2365,24 @@ class ChatApp {
       return `<img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="lazy" />${captionHtml}`;
     }
     return this.escapeHtml(msg?.text || '');
+  }
+
+  initMessageImageTransitions(rootEl) {
+    if (!rootEl) return;
+    const images = rootEl.querySelectorAll ? rootEl.querySelectorAll('.message-image') : [];
+    images.forEach((img) => {
+      if (img.dataset.ready === 'true') return;
+      const markLoaded = () => {
+        img.classList.add('is-loaded');
+        img.dataset.ready = 'true';
+      };
+      if (img.complete && img.naturalWidth > 0) {
+        markLoaded();
+        return;
+      }
+      img.addEventListener('load', markLoaded, { once: true });
+      img.addEventListener('error', markLoaded, { once: true });
+    });
   }
 
   // Метод-обгортка для імпортованої функції getSettingsTemplate

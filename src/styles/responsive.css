@@ -593,6 +593,11 @@
     align-items: center;
   }
 
+  .bridge-app.chat-active .input-wrapper,
+  .bridge-app:has(#chatContainer.active) .input-wrapper {
+    margin-bottom: 8px;
+  }
+
   .message-input-area {
     position: sticky;
     bottom: 0;
@@ -632,6 +637,11 @@
     will-change: auto;
   }
 
+  .bridge-app.composer-locked .message-input {
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
   .btn-emoji {
     display: none !important;
   }
@@ -640,6 +650,7 @@
     padding-right: 12px;
   }
 
+  .btn-send,
   .btn-attach,
   .btn-emoji {
     width: 34px;
@@ -659,12 +670,6 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 2;
-  }
-
-  .btn-send {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
   }
 
   .contact-input {
@@ -909,6 +914,23 @@
     overflow: hidden !important;
     overscroll-behavior: none !important;
     touch-action: none !important;
+  }
+
+  .bridge-app.chat-active .chat-container.active.chat-entering,
+  .bridge-app:has(#chatContainer.active) .chat-container.active.chat-entering {
+    animation: chatEnterFromRightMobile 0.5s cubic-bezier(0.2, 0.82, 0.25, 1) !important;
+    will-change: transform, opacity;
+  }
+
+  @keyframes chatEnterFromRightMobile {
+    from {
+      transform: translateX(30px);
+      opacity: 0.88;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 
   .bridge-app.chat-active .message-input-area,

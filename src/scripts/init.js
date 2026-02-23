@@ -161,7 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm48-88a8,8,0,0,1-8,8H136v32a8,8,0,0,1-16,0V136H88a8,8,0,0,1,0-16h32V88a8,8,0,0,1,16,0v32h32A8,8,0,0,1,176,128Z"></path>
             </svg>
           </button>
-          <input type="file" id="imagePickerInput" accept="image/*" hidden />
+          <input type="file" id="galleryPickerInput" accept="image/*" hidden />
+          <input type="file" id="cameraPickerInput" accept="image/*" capture="environment" hidden />
+          <input type="file" id="filePickerInput" accept="image/*" hidden />
           <textarea
             id="messageInput"
             class="message-input"
@@ -207,6 +209,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Sidebar overlay для мобільного -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Mobile attach sheet -->
+<div class="attach-sheet-overlay" id="attachSheetOverlay" aria-hidden="true">
+  <div class="attach-sheet" id="attachSheet" role="dialog" aria-modal="true" aria-label="Меню вкладень">
+    <div class="attach-sheet-handle" aria-hidden="true"></div>
+    <div class="attach-sheet-grid">
+      <button type="button" class="attach-sheet-item" data-attach-action="gallery">
+        <span class="attach-sheet-icon gallery" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256">
+            <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H216V152l-38.34-38.34a16,16,0,0,0-22.63,0L120,148.69,94.34,123a16,16,0,0,0-22.63,0L40,154.69ZM216,200H40V177.31l43-43L108.69,160a16,16,0,0,0,22.62,0L166.34,125,216,174.69V200ZM92,96A12,12,0,1,1,80,84,12,12,0,0,1,92,96Z"></path>
+          </svg>
+        </span>
+        <span class="attach-sheet-label">Галерея</span>
+      </button>
+      <button type="button" class="attach-sheet-item" data-attach-action="camera">
+        <span class="attach-sheet-icon camera" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256">
+            <path d="M216,64H176L163.58,45.37A8,8,0,0,0,156.92,40H99.08a8,8,0,0,0-6.66,3.37L80,64H40A16,16,0,0,0,24,80V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V80A16,16,0,0,0,216,64ZM128,176a40,40,0,1,1,40-40A40,40,0,0,1,128,176Zm0-64a24,24,0,1,0,24,24A24,24,0,0,0,128,112Z"></path>
+          </svg>
+        </span>
+        <span class="attach-sheet-label">Камера</span>
+      </button>
+      <button type="button" class="attach-sheet-item" data-attach-action="file">
+        <span class="attach-sheet-icon file" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256">
+            <path d="M213.66,82.34l-40-40A8,8,0,0,0,168,40H72A16,16,0,0,0,56,56V200a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V88A8,8,0,0,0,197.66,82.34ZM168,56l24,24H168ZM72,200V56h80V88a16,16,0,0,0,16,16h16V200Z"></path>
+          </svg>
+        </span>
+        <span class="attach-sheet-label">Файл</span>
+      </button>
+      <button type="button" class="attach-sheet-item" data-attach-action="location">
+        <span class="attach-sheet-icon location" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256">
+            <path d="M128,16A88.1,88.1,0,0,0,40,104c0,87.06,77.9,131.78,81.21,133.64a8,8,0,0,0,7.58,0C132.1,235.78,210,191.06,210,104A88.1,88.1,0,0,0,128,16Zm0,203.13C111.63,208.85,56,168.08,56,104a72,72,0,0,1,144,0C200,168.08,144.37,208.85,128,219.13ZM128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Z"></path>
+          </svg>
+        </span>
+        <span class="attach-sheet-label">Локація</span>
+      </button>
+    </div>
+    <button type="button" class="attach-sheet-cancel" id="attachSheetCancelBtn">Скасувати</button>
+  </div>
+</div>
+
+<!-- Mobile custom camera -->
+<div class="camera-capture-overlay" id="cameraCaptureOverlay" aria-hidden="true">
+  <div class="camera-capture">
+    <video id="cameraCaptureVideo" class="camera-capture-video" autoplay playsinline muted></video>
+    <div class="camera-capture-top">
+      <button type="button" class="camera-capture-btn ghost" id="cameraCloseBtn" aria-label="Закрити камеру">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256">
+          <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66A8,8,0,0,1,50.34,194.34L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+        </svg>
+      </button>
+      <button type="button" class="camera-capture-btn ghost" id="cameraSwitchBtn" aria-label="Перемкнути камеру">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256">
+          <path d="M208,56H157.77l-11.4-17.1A16,16,0,0,0,133.06,32H122.94a16,16,0,0,0-13.31,6.9L98.23,56H48A16,16,0,0,0,32,72V184a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V72A16,16,0,0,0,208,56ZM124,160a36,36,0,1,1,36-36A36,36,0,0,1,124,160Zm68.94-40a8,8,0,0,1,0,11.31l-20,20A8,8,0,0,1,161.63,140L168,133.66H152a56.06,56.06,0,0,1-56-56V72a8,8,0,0,1,16,0v5.66a40,40,0,0,0,40,40h16l-6.34-6.34a8,8,0,0,1,11.31-11.32Z"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="camera-capture-bottom">
+      <button type="button" class="camera-shutter-btn" id="cameraShutterBtn" aria-label="Зробити фото"></button>
+    </div>
+  </div>
+</div>
 
 <!-- Модальне вікно для нового чату -->
 <div class="modal" id="newChatModal">
