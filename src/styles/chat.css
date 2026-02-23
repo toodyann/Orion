@@ -180,7 +180,7 @@
 }
 
 .btn-attach:hover {
-  color: var(--primary-color);
+  color: var(--text-secondary);
 }
 
 .btn-emoji {

@@ -117,7 +117,7 @@
   border-radius: 8px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
-  z-index: 50;
+  z-index: 140;
 }
 
 .emoji-item {
@@ -281,6 +281,6 @@
 }
 
 .btn-attach:hover {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
+  background: none;
+  color: var(--text-secondary);
 }

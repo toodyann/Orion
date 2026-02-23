@@ -24,6 +24,10 @@ class ChatApp {
     this.addToGroupTarget = null;
     this.bottomNavHidden = false;
     this.navRevealTimeout = null;
+    this.lastSendTriggerAt = 0;
+    this.mobileScrollLockY = 0;
+    this.mobileScrollLocked = false;
+    this.mobileTouchMoveLockHandler = null;
     this.loadTheme();
     this.profileMenuPlaceholder = null;
     this.init();
@@ -333,7 +337,23 @@ class ChatApp {
     window.addEventListener('resize', () => {
       this.updateBottomNavIndicator();
       this.handleBottomNavResize();
+      this.applyMobileChatViewportLayout();
     });
+
+    this.mobileTouchMoveLockHandler = (event) => {
+      if (window.innerWidth > 900) return;
+      const appEl = document.querySelector('.bridge-app');
+      if (!appEl || !appEl.classList.contains('chat-active')) return;
+      const messages = document.getElementById('messagesContainer');
+      if (!messages) return;
+      const target = event.target;
+      const withinMessages = target instanceof Node && messages.contains(target);
+      if (!withinMessages) {
+        event.preventDefault();
+      }
+    };
+    document.addEventListener('touchmove', this.mobileTouchMoveLockHandler, { passive: false });
+
   }
 
   // Метод-обгортка для імпортованої функції setupMobileSwipeBack
@@ -426,7 +446,10 @@ class ChatApp {
         // Clear current chat and show welcome screen
         this.currentChat = null;
         this.updateChatHeader();
-        if (appEl) appEl.classList.remove('chat-open');
+        if (appEl) {
+          appEl.classList.remove('chat-open');
+          appEl.classList.remove('chat-active');
+        }
         if (chatContainer) {
           chatContainer.style.display = '';
           chatContainer.classList.remove('active');
@@ -442,12 +465,17 @@ class ChatApp {
       const keepComposerFocus = (e) => {
         e.preventDefault();
       };
+      const triggerSend = (e) => {
+        e.preventDefault();
+        const now = Date.now();
+        if (now - this.lastSendTriggerAt < 220) return;
+        this.lastSendTriggerAt = now;
+        this.sendMessage();
+      };
       sendBtn.addEventListener('mousedown', keepComposerFocus);
       sendBtn.addEventListener('touchstart', keepComposerFocus, { passive: false });
-      sendBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.sendMessage();
-      });
+      sendBtn.addEventListener('touchend', triggerSend, { passive: false });
+      sendBtn.addEventListener('click', triggerSend);
     }
     const messageInput = document.getElementById('messageInput');
     if (messageInput) {
@@ -458,6 +486,12 @@ class ChatApp {
         e.preventDefault();
         this.sendMessage();
       });
+    }
+    const attachBtn = document.querySelector('.btn-attach');
+    const imagePickerInput = document.getElementById('imagePickerInput');
+    if (attachBtn && imagePickerInput) {
+      attachBtn.addEventListener('click', () => this.openImagePicker());
+      imagePickerInput.addEventListener('change', (e) => this.handleImageSelected(e));
     }
 
     document.getElementById('searchInput').addEventListener('input', (e) => this.filterChats(e.target.value));
@@ -677,18 +711,173 @@ class ChatApp {
 
     if (window.innerWidth > 900) {
       appEl.classList.remove('keyboard-open');
+      appEl.style.setProperty('--keyboard-inset', '0px');
+      this.setMobilePageScrollLock(false);
       return;
     }
 
     const viewport = window.visualViewport;
-    if (!viewport) return;
+    if (!viewport) {
+      appEl.classList.remove('keyboard-open');
+      appEl.style.setProperty('--keyboard-inset', '0px');
+      this.setMobilePageScrollLock(false);
+      return;
+    }
 
     const keyboardHeightRaw = window.innerHeight - viewport.height - viewport.offsetTop;
-    const keyboardHeight = Math.min(360, Math.max(0, keyboardHeightRaw));
+    const keyboardHeight = Math.min(420, Math.max(0, keyboardHeightRaw));
     const isInputFocused = document.activeElement === input;
-    const isOpen = isInputFocused && keyboardHeight > 80;
+    const isOpen = isInputFocused && keyboardHeight > 70;
 
     appEl.classList.toggle('keyboard-open', isOpen);
+    appEl.style.setProperty('--keyboard-inset', `${isOpen ? keyboardHeight : 0}px`);
+    this.setMobilePageScrollLock(isOpen);
+
+    if (isOpen) {
+      // iOS can shift layout viewport on focus; lock page scroll and keep chat at latest message.
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      const messages = document.getElementById('messagesContainer');
+      if (messages) {
+        messages.scrollTop = messages.scrollHeight;
+      }
+    }
+
+    this.applyMobileChatViewportLayout();
+  }
+
+  setMobilePageScrollLock(locked, forceTop = false) {
+    if (window.innerWidth > 900) locked = false;
+    const body = document.body;
+    const html = document.documentElement;
+    if (!body || !html) return;
+
+    if (locked) {
+      const nextY = forceTop ? 0 : (window.scrollY || window.pageYOffset || 0);
+      if (this.mobileScrollLocked) {
+        if (forceTop && this.mobileScrollLockY !== 0) {
+          this.mobileScrollLockY = 0;
+          body.style.top = '0px';
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }
+        return;
+      }
+      this.mobileScrollLockY = nextY;
+      body.style.position = 'fixed';
+      body.style.top = `-${this.mobileScrollLockY}px`;
+      body.style.left = '0';
+      body.style.right = '0';
+      body.style.width = '100%';
+      body.style.overflow = 'hidden';
+      html.style.overflow = 'hidden';
+      this.mobileScrollLocked = true;
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      return;
+    }
+
+    if (!this.mobileScrollLocked) return;
+    body.style.removeProperty('position');
+    body.style.removeProperty('top');
+    body.style.removeProperty('left');
+    body.style.removeProperty('right');
+    body.style.removeProperty('width');
+    body.style.removeProperty('overflow');
+    html.style.removeProperty('overflow');
+    window.scrollTo(0, this.mobileScrollLockY || 0);
+    this.mobileScrollLocked = false;
+  }
+
+  applyMobileChatViewportLayout() {
+    const appEl = document.querySelector('.bridge-app');
+    const header = document.querySelector('.app-header');
+    const chatArea = document.querySelector('.chat-area');
+    const chatContainer = document.getElementById('chatContainer');
+    const inputArea = document.querySelector('.message-input-area');
+    const messages = document.getElementById('messagesContainer');
+    const chatInfo = document.querySelector('.app-chat-info');
+    const headerRight = document.querySelector('.app-header-right');
+    const backBtn = document.getElementById('backBtn');
+    if (!appEl || !header || !chatArea || !chatContainer || !inputArea) return;
+
+    const isMobile = window.innerWidth <= 900;
+    const isChatActive = isMobile
+      && appEl.classList.contains('chat-active')
+      && chatContainer.classList.contains('active');
+
+    if (!isChatActive) {
+      this.setMobilePageScrollLock(false);
+      appEl.style.setProperty('--keyboard-inset', '0px');
+      header.style.removeProperty('position');
+      header.style.removeProperty('top');
+      header.style.removeProperty('left');
+      header.style.removeProperty('right');
+      header.style.removeProperty('z-index');
+      header.style.removeProperty('padding-top');
+      header.style.removeProperty('height');
+      header.style.removeProperty('min-height');
+
+      chatArea.style.removeProperty('position');
+      chatArea.style.removeProperty('top');
+      chatArea.style.removeProperty('left');
+      chatArea.style.removeProperty('right');
+      chatArea.style.removeProperty('bottom');
+      chatArea.style.removeProperty('height');
+
+      chatContainer.style.removeProperty('padding-bottom');
+      chatContainer.style.removeProperty('flex-direction');
+      chatContainer.style.removeProperty('height');
+      inputArea.style.removeProperty('position');
+      inputArea.style.removeProperty('bottom');
+
+      if (chatInfo) chatInfo.style.removeProperty('display');
+      if (headerRight) headerRight.style.removeProperty('display');
+      if (backBtn) backBtn.style.removeProperty('display');
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    const keyboardHeight = viewport
+      ? Math.max(0, Math.min(420, window.innerHeight - viewport.height - viewport.offsetTop))
+      : 0;
+
+    header.style.setProperty('position', 'fixed', 'important');
+    header.style.setProperty('top', '0');
+    header.style.setProperty('left', '0');
+    header.style.setProperty('right', '0');
+    header.style.setProperty('z-index', '80');
+    header.style.setProperty('padding-top', 'env(safe-area-inset-top)', 'important');
+    header.style.setProperty('height', 'calc(56px + env(safe-area-inset-top))', 'important');
+    header.style.setProperty('min-height', 'calc(56px + env(safe-area-inset-top))', 'important');
+
+    chatArea.style.setProperty('position', 'fixed', 'important');
+    chatArea.style.setProperty('top', 'calc(56px + env(safe-area-inset-top))', 'important');
+    chatArea.style.setProperty('left', '0');
+    chatArea.style.setProperty('right', '0');
+    chatArea.style.setProperty('bottom', '0');
+    chatArea.style.setProperty('height', 'auto');
+
+    chatContainer.style.setProperty('display', 'flex', 'important');
+    chatContainer.style.setProperty('flex-direction', 'column', 'important');
+    chatContainer.style.setProperty('height', '100%', 'important');
+    chatContainer.style.setProperty('padding-bottom', `${keyboardHeight}px`, 'important');
+
+    inputArea.style.setProperty('position', 'sticky');
+    inputArea.style.setProperty('bottom', '0');
+    appEl.style.setProperty('--keyboard-inset', `${keyboardHeight}px`);
+
+    if (chatInfo) chatInfo.style.setProperty('display', 'flex', 'important');
+    if (headerRight) headerRight.style.setProperty('display', 'flex', 'important');
+    if (backBtn) backBtn.style.setProperty('display', 'flex', 'important');
+
+    if (keyboardHeight > 0 && messages) {
+      messages.scrollTop = messages.scrollHeight;
+    }
   }
 
   setupMessageComposer(inputEl) {
@@ -706,13 +895,43 @@ class ChatApp {
     };
 
     inputEl.addEventListener('input', updateHeight);
+    const engageKeyboardGuard = () => {
+      if (window.innerWidth > 900) return;
+      this.setMobilePageScrollLock(true, true);
+      const messages = document.getElementById('messagesContainer');
+      if (messages) messages.scrollTop = messages.scrollHeight;
+    };
+    inputEl.addEventListener('touchstart', (event) => {
+      if (window.innerWidth > 900) return;
+      // Prevent iOS native viewport jump on textarea tap, then focus manually.
+      event.preventDefault();
+      engageKeyboardGuard();
+      try {
+        inputEl.focus({ preventScroll: true });
+      } catch (_) {
+        inputEl.focus();
+      }
+    }, { passive: false });
+    inputEl.addEventListener('mousedown', (event) => {
+      if (window.innerWidth > 900) return;
+      event.preventDefault();
+      engageKeyboardGuard();
+      try {
+        inputEl.focus({ preventScroll: true });
+      } catch (_) {
+        inputEl.focus();
+      }
+    });
     inputEl.addEventListener('focus', () => {
+      engageKeyboardGuard();
       if (appEl) appEl.classList.add('composer-focus');
       this.syncMobileKeyboardState(inputEl);
       requestAnimationFrame(updateHeight);
-      window.setTimeout(() => {
-        inputEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      }, 60);
+      if (window.innerWidth > 900) {
+        window.setTimeout(() => {
+          inputEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }, 60);
+      }
     });
     inputEl.addEventListener('blur', () => {
       window.setTimeout(() => {
@@ -960,7 +1179,10 @@ class ChatApp {
     this.hideWelcomeScreen();
     this.hideBottomNavForChat();
     const appEl = document.querySelector('.bridge-app');
-    if (appEl) appEl.classList.add('chat-open');
+    if (appEl) {
+      appEl.classList.add('chat-open');
+      appEl.classList.add('chat-active');
+    }
     if (window.innerWidth > 768) {
       const sidebar = document.querySelector('.sidebar');
       if (sidebar) sidebar.classList.add('compact');
@@ -981,6 +1203,7 @@ class ChatApp {
       }
     } catch (e) {
     }
+    this.applyMobileChatViewportLayout();
   }
 
   closeChat() {
@@ -993,7 +1216,11 @@ class ChatApp {
     this.clearMessages();
     this.showBottomNav();
     const appEl = document.querySelector('.bridge-app');
-    if (appEl) appEl.classList.remove('chat-open');
+    if (appEl) {
+      appEl.classList.remove('chat-open');
+      appEl.classList.remove('chat-active');
+    }
+    this.setMobilePageScrollLock(false);
     if (window.innerWidth > 768) {
       const sidebar = document.querySelector('.sidebar');
       if (sidebar) sidebar.classList.remove('compact');
@@ -1009,6 +1236,7 @@ class ChatApp {
         if (profileMenu) profileMenu.style.display = '';
       }
     } catch (e) {}
+    this.applyMobileChatViewportLayout();
   }
 
   async deleteChat(chatId) {
@@ -1066,7 +1294,7 @@ class ChatApp {
       messageEl.className = `message ${msg.from}${highlightClass}`;
       messageEl.dataset.id = msg.id;
       messageEl.dataset.from = msg.from;
-      messageEl.dataset.text = msg.text || '';
+      messageEl.dataset.text = (msg.type === 'image' && msg.imageUrl) ? (msg.text || 'Фото') : (msg.text || '');
       messageEl.dataset.date = msg.date || '';
       messageEl.dataset.time = msg.time || '';
       
@@ -1077,13 +1305,13 @@ class ChatApp {
         const initials = this.currentChat.name.split(' ').map(w => w[0]).join('').toUpperCase();
         const color = this.getContactColor(this.currentChat.name);
         avatarHtml = `<div class="message-avatar" style="background: ${color}">${initials}</div>`;
-      } else {
-        senderNameHtml = `<div class="message-sender-name">${this.user.name}</div>`;
-        avatarHtml = this.getUserAvatarHtml();
-      }
+    } else {
+      avatarHtml = this.getUserAvatarHtml();
+    }
       
       const editedLabel = msg.edited ? '<span class="message-edited">• редаговано</span>' : '';
       const editedClass = msg.edited ? ' edited' : '';
+      const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
       const replyHtml = msg.replyTo
         ? `<div class="message-reply">
             <div class="message-reply-name">${msg.replyTo.from === 'own' ? this.user.name : this.currentChat.name}</div>
@@ -1095,9 +1323,9 @@ class ChatApp {
         ${avatarHtml}
         <div class="message-bubble">
           ${senderNameHtml}
-          <div class="message-content${editedClass}">
+          <div class="message-content${editedClass}${imageClass}">
             ${replyHtml}
-            ${this.escapeHtml(msg.text)}
+            ${this.buildMessageBodyHtml(msg)}
             <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>
           </div>
         </div>
@@ -1115,6 +1343,7 @@ class ChatApp {
 
   bindMessageContextMenu() {
     const messagesContainer = document.getElementById('messagesContainer');
+    const backdrop = document.getElementById('messageMenuBackdrop');
     const menu = document.getElementById('messageMenu');
     const menuDate = document.getElementById('messageMenuDate');
     const btnReply = document.getElementById('messageMenuReply');
@@ -1122,22 +1351,76 @@ class ChatApp {
     const btnDelete = document.getElementById('messageMenuDelete');
     const btnCopy = document.getElementById('messageMenuCopy');
 
-    if (!messagesContainer || !menu || !menuDate || !btnReply || !btnEdit || !btnDelete || !btnCopy) return;
+    if (!messagesContainer || !menu || !menuDate || !btnReply || !btnEdit || !btnDelete || !btnCopy || !backdrop) return;
+
+    let focusedMessageClone = null;
+    let focusedMessageSource = null;
+    let activeMenuMessageId = null;
+
+    const clearFocusedMessage = () => {
+      if (focusedMessageSource) {
+        focusedMessageSource.style.removeProperty('visibility');
+        focusedMessageSource = null;
+      }
+      if (focusedMessageClone) {
+        focusedMessageClone.remove();
+        focusedMessageClone = null;
+      }
+      activeMenuMessageId = null;
+    };
+
+    const focusMessageAboveOverlay = (messageEl) => {
+      clearFocusedMessage();
+      if (!messageEl) return;
+
+      const rect = messageEl.getBoundingClientRect();
+      const clone = messageEl.cloneNode(true);
+      clone.classList.add('message-menu-focus-clone');
+      clone.classList.remove('longpress-pulse');
+      clone.style.left = `${rect.left}px`;
+      clone.style.top = `${rect.top}px`;
+      clone.style.width = `${rect.width}px`;
+
+      focusedMessageSource = messageEl;
+      focusedMessageSource.style.visibility = 'hidden';
+      focusedMessageClone = clone;
+      document.body.appendChild(clone);
+      window.requestAnimationFrame(() => {
+        if (focusedMessageClone) focusedMessageClone.classList.add('show');
+      });
+    };
 
     const closeMenu = () => {
+      backdrop.classList.remove('active');
+      backdrop.setAttribute('aria-hidden', 'true');
       menu.classList.remove('active');
       menu.setAttribute('aria-hidden', 'true');
       this.messageMenuState = { id: null, from: null, text: '' };
+      clearFocusedMessage();
+    };
+
+    const runLongPressPulse = (messageEl) => {
+      if (!messageEl) return;
+      messageEl.classList.remove('longpress-pulse');
+      void messageEl.offsetWidth;
+      messageEl.classList.add('longpress-pulse');
+      window.setTimeout(() => {
+        messageEl.classList.remove('longpress-pulse');
+      }, 280);
     };
 
     const openMenu = (messageEl) => {
       const id = Number(messageEl.dataset.id);
+      if (menu.classList.contains('active') && activeMenuMessageId === id) {
+        return;
+      }
       const from = messageEl.dataset.from;
       const text = messageEl.dataset.text || '';
       const date = messageEl.dataset.date || new Date().toISOString().slice(0,10);
       const time = messageEl.dataset.time || '';
 
       this.messageMenuState = { id, from, text };
+      activeMenuMessageId = id;
 
       const formatted = this.formatMessageDateTime(date, time);
       menuDate.textContent = formatted;
@@ -1150,6 +1433,9 @@ class ChatApp {
 
       menu.style.left = '0px';
       menu.style.top = '0px';
+      focusMessageAboveOverlay(messageEl);
+      backdrop.classList.add('active');
+      backdrop.setAttribute('aria-hidden', 'false');
       menu.classList.add('active');
       menu.setAttribute('aria-hidden', 'false');
 
@@ -1159,7 +1445,11 @@ class ChatApp {
         ? msgRect.right - menuRect.width
         : msgRect.left;
       const x = Math.min(Math.max(8, desiredX), window.innerWidth - menuRect.width - 8);
-      const y = Math.min(msgRect.bottom + 6, window.innerHeight - menuRect.height - 8);
+      let y = msgRect.bottom + 6;
+      if (y + menuRect.height > window.innerHeight - 8) {
+        y = msgRect.top - menuRect.height - 6;
+      }
+      y = Math.max(8, Math.min(y, window.innerHeight - menuRect.height - 8));
       menu.style.left = `${Math.max(8, x)}px`;
       menu.style.top = `${Math.max(8, y)}px`;
     };
@@ -1172,22 +1462,35 @@ class ChatApp {
     });
 
     let pressTimer = null;
+    let activePressMessage = null;
     messagesContainer.addEventListener('touchstart', (e) => {
       const messageEl = e.target.closest('.message');
       if (!messageEl) return;
+      activePressMessage = messageEl;
       pressTimer = setTimeout(() => {
-        openMenu(messageEl);
+        runLongPressPulse(messageEl);
+        window.setTimeout(() => {
+          openMenu(messageEl);
+        }, 110);
       }, 450);
     }, { passive: true });
 
     messagesContainer.addEventListener('touchend', () => {
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = null;
+      if (activePressMessage) {
+        activePressMessage.classList.remove('longpress-pulse');
+        activePressMessage = null;
+      }
     });
 
     messagesContainer.addEventListener('touchmove', () => {
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = null;
+      if (activePressMessage) {
+        activePressMessage.classList.remove('longpress-pulse');
+        activePressMessage = null;
+      }
     });
 
     btnEdit.addEventListener('click', () => {
@@ -1229,6 +1532,7 @@ class ChatApp {
     document.addEventListener('click', (e) => {
       if (!menu.contains(e.target)) closeMenu();
     });
+    backdrop.addEventListener('click', closeMenu);
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeMenu();
@@ -1357,13 +1661,12 @@ class ChatApp {
 
     if (this.currentChat && contactName && contactStatus) {
       contactName.textContent = this.currentChat.name;
-      if (this.currentChat.isGroup) {
-        const count = Array.isArray(this.currentChat.members) ? this.currentChat.members.length + 1 : 1;
-        contactStatus.textContent = `учасників: ${count}`;
-      } else {
-        contactStatus.textContent = 'онлайн';
-      }
-      contactStatus.classList.add('online');
+      contactStatus.textContent = '';
+      const isOnline = this.currentChat.isGroup
+        ? false
+        : (this.currentChat.status || 'online') !== 'offline';
+      contactStatus.classList.toggle('online', isOnline);
+      contactStatus.classList.toggle('offline', !isOnline);
       if (avatar) {
         const initials = this.currentChat.name.split(' ').map(w => w[0]).join('').toUpperCase();
         const color = this.getContactColor(this.currentChat.name);
@@ -1381,7 +1684,7 @@ class ChatApp {
       if (contactName) contactName.textContent = 'Виберіть контакт';
       if (contactStatus) {
         contactStatus.textContent = '';
-        contactStatus.classList.remove('online');
+        contactStatus.classList.remove('online', 'offline');
       }
       if (avatar) {
         avatar.textContent = '';
@@ -1406,7 +1709,7 @@ class ChatApp {
     messageEl.className = `message ${msg.from}${highlightClass}`;
     messageEl.dataset.id = msg.id;
     messageEl.dataset.from = msg.from;
-    messageEl.dataset.text = msg.text || '';
+    messageEl.dataset.text = (msg.type === 'image' && msg.imageUrl) ? (msg.text || 'Фото') : (msg.text || '');
     messageEl.dataset.date = msg.date || '';
     messageEl.dataset.time = msg.time || '';
     
@@ -1418,12 +1721,12 @@ class ChatApp {
       const color = this.getContactColor(this.currentChat.name);
       avatarHtml = `<div class="message-avatar" style="background: ${color}">${initials}</div>`;
     } else {
-      senderNameHtml = `<div class="message-sender-name">${this.user.name}</div>`;
       avatarHtml = this.getUserAvatarHtml();
     }
     
     const editedLabel = msg.edited ? '<span class="message-edited">• редаговано</span>' : '';
     const editedClass = msg.edited ? ' edited' : '';
+    const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
     const replyHtml = msg.replyTo
       ? `<div class="message-reply">
           <div class="message-reply-name">${msg.replyTo.from === 'own' ? this.user.name : this.currentChat.name}</div>
@@ -1435,9 +1738,9 @@ class ChatApp {
       ${avatarHtml}
       <div class="message-bubble">
         ${senderNameHtml}
-        <div class="message-content${editedClass}">
+        <div class="message-content${editedClass}${imageClass}">
           ${replyHtml}
-          ${this.escapeHtml(msg.text)}
+          ${this.buildMessageBodyHtml(msg)}
           <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>
         </div>
       </div>
@@ -1499,6 +1802,71 @@ class ChatApp {
     }
     this.renderChatsList();
     if (window.innerWidth <= 900) {
+      input.focus({ preventScroll: true });
+    }
+  }
+
+  openImagePicker() {
+    const input = document.getElementById('imagePickerInput');
+    if (!input) return;
+    input.click();
+  }
+
+  handleImageSelected(event) {
+    const input = event?.target;
+    const file = input?.files?.[0];
+    if (!file || !this.currentChat) return;
+    if (!file.type.startsWith('image/')) {
+      this.showAlert('Оберіть файл зображення');
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      if (result) {
+        this.sendImageMessage(result);
+      }
+      input.value = '';
+    };
+    reader.onerror = () => {
+      this.showAlert('Не вдалося прочитати зображення');
+      input.value = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  sendImageMessage(imageUrl) {
+    if (!imageUrl || !this.currentChat) return;
+    const input = document.getElementById('messageInput');
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    const newMessage = {
+      id: this.getNextMessageId(this.currentChat),
+      text: '',
+      type: 'image',
+      imageUrl,
+      from: 'own',
+      time,
+      date: now.toISOString().slice(0, 10),
+      replyTo: this.replyTarget
+        ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
+        : null
+    };
+
+    this.currentChat.messages.push(newMessage);
+    this.saveChats();
+    this.clearReplyTarget();
+    if (this.currentChat.messages.length === 1) {
+      this.renderChat(newMessage.id);
+    } else {
+      this.appendMessage(newMessage, ' new-message');
+    }
+    this.renderChatsList();
+
+    if (input && window.innerWidth <= 900) {
       input.focus({ preventScroll: true });
     }
   }
@@ -1597,6 +1965,16 @@ class ChatApp {
   // Метод-обгортка для імпортованої функції escapeHtml
   escapeHtml(text) {
     return escapeHtml(text);
+  }
+
+  buildMessageBodyHtml(msg) {
+    if (msg?.type === 'image' && msg.imageUrl) {
+      const safeUrl = this.escapeAttr(msg.imageUrl);
+      const caption = (msg.text || '').trim();
+      const captionHtml = caption ? `<div class="message-image-caption">${this.escapeHtml(caption)}</div>` : '';
+      return `<img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="lazy" />${captionHtml}`;
+    }
+    return this.escapeHtml(msg?.text || '');
   }
 
   // Метод-обгортка для імпортованої функції getSettingsTemplate
@@ -2198,7 +2576,10 @@ class ChatApp {
     const appEl = document.querySelector('.bridge-app');
     this.currentChat = null;
     this.updateChatHeader();
-    if (appEl) appEl.classList.remove('chat-open');
+    if (appEl) {
+      appEl.classList.remove('chat-open');
+      appEl.classList.remove('chat-active');
+    }
     
     // Hide chats list header when showing settings
     if (chatsListHeader) chatsListHeader.style.display = 'none';

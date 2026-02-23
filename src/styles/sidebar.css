@@ -49,44 +49,12 @@
   padding: 8px 16px 0 16px;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
 .app-logo {
   width: 40px;
   height: 40px;
   border-radius: 10px;
 }
 
-.app-title {
-  font-size: 11px;
-  font-weight: 700;
-  font-family:
-    "SN Pro",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-  color: var(--text-primary);
-  margin: 0;
-  white-space: nowrap;
-}
-
-@keyframes titleGradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
 
 .search-box {
   padding: 8px 12px 12px 12px;

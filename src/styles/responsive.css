@@ -1,6 +1,53 @@
 @media (max-width: 768px) {
   :root {
-    --app-header-height: 64px;
+    --app-header-height: 40px;
+    --mobile-chat-header-offset: calc(var(--app-header-height) + env(safe-area-inset-top));
+  }
+
+  .bridge-app.chat-active {
+    --app-header-height: 56px;
+    --mobile-chat-header-offset: calc(var(--app-header-height) + env(safe-area-inset-top));
+  }
+
+  /* Fallback for cases when JS classes desync: if chat container is active,
+     force chat header layout to be visible. */
+  .bridge-app:has(#chatContainer.active) {
+    --app-header-height: 56px;
+    --mobile-chat-header-offset: calc(var(--app-header-height) + env(safe-area-inset-top));
+  }
+
+  .bridge-app:has(#chatContainer.active) .app-header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 45;
+    padding-top: env(safe-area-inset-top);
+    height: var(--mobile-chat-header-offset) !important;
+    min-height: var(--mobile-chat-header-offset) !important;
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .bridge-app:has(#chatContainer.active) .app-header .chat-brand {
+    display: none !important;
+  }
+
+  .bridge-app:has(#chatContainer.active) .app-header-left .btn-back,
+  .bridge-app:has(#chatContainer.active) .app-chat-info,
+  .bridge-app:has(#chatContainer.active) .app-header-right {
+    display: flex !important;
+  }
+
+  .bridge-app.chat-active .app-header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding-top: env(safe-area-inset-top);
+    height: var(--mobile-chat-header-offset) !important;
+    min-height: var(--mobile-chat-header-offset) !important;
+    z-index: 40;
   }
 
   .app-header .chat-brand .app-logo {
@@ -15,6 +62,45 @@
     letter-spacing: 0.08em;
   }
 
+  .bridge-app:not(.chat-active) .app-header {
+    position: relative;
+    height: var(--app-header-height) !important;
+    min-height: var(--app-header-height) !important;
+    padding: 0 !important;
+    justify-content: center;
+    border: none;
+  }
+
+  .bridge-app:not(.chat-active) .app-header-left {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .bridge-app:not(.chat-active) .app-header .chat-brand {
+    margin: 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .bridge-app:not(.chat-active) .app-header .chat-brand .app-title {
+    display: block;
+    margin: 0;
+    font-size: 13px !important;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    text-align: center;
+  }
+
+  .bridge-app:not(.chat-active) .app-header .chat-brand .app-logo {
+    display: none;
+  }
+
   .app-chat-info {
     gap: 8px;
   }
@@ -26,7 +112,7 @@
   }
 
   .app-chat-name {
-    font-size: 12px;
+    font-size: 16px;
   }
   * {
     -webkit-user-select: none;
@@ -86,8 +172,16 @@
     border-radius: 26px;
     box-sizing: border-box;
     background:
-      radial-gradient(125% 180% at 0% 0%, rgba(255, 255, 255, 0.34), transparent 50%),
-      radial-gradient(130% 180% at 100% 100%, rgba(97, 142, 255, 0.2), transparent 60%),
+      radial-gradient(
+        125% 180% at 0% 0%,
+        rgba(255, 255, 255, 0.34),
+        transparent 50%
+      ),
+      radial-gradient(
+        130% 180% at 100% 100%,
+        rgba(97, 142, 255, 0.2),
+        transparent 60%
+      ),
       var(--glass-strong);
     border: 1px solid var(--border-color);
     box-shadow:
@@ -194,14 +288,16 @@
   .chat-container.active {
     display: flex !important;
     position: fixed;
-    top: var(--app-header-height);
+    top: var(--mobile-chat-header-offset);
     left: 0;
-    width: 100%;
-    height: calc(100dvh - var(--app-header-height));
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
     z-index: 2;
     background-color: var(--bg-color);
-    animation: slideInChat 0.3s ease-out;
-    transition: transform 0.25s ease;
+    animation: none;
+    transition: none;
   }
 
   .chat-container.active.swiping {
@@ -301,24 +397,9 @@
     display: none !important;
   }
 
-  .sidebar-header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 1px;
-  }
-
   .app-title {
     font-size: 20px;
     font-weight: 700;
-  }
-
-  .brand {
-    margin: 0;
-  }
-
-  .app-logo {
-    display: none;
   }
 
   .search-input {
@@ -395,6 +476,64 @@
     height: 56px;
   }
 
+  .bridge-app.chat-active .app-header {
+    height: var(--app-header-height) !important;
+    min-height: var(--app-header-height) !important;
+    padding: 0 8px;
+  }
+
+  .bridge-app.chat-active .app-header .chat-brand {
+    display: none !important;
+  }
+
+  .bridge-app.chat-active .app-header-left {
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    position: static;
+    transform: none;
+  }
+
+  .bridge-app.chat-active .app-header-right {
+    gap: 4px;
+    flex-shrink: 0;
+    display: flex !important;
+    align-items: center;
+  }
+
+  .bridge-app.chat-active .app-chat-info {
+    display: flex !important;
+    min-width: 0;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .bridge-app.chat-active .app-chat-meta {
+    min-width: 0;
+  }
+
+  .bridge-app.chat-active .app-chat-name {
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bridge-app.chat-active .app-header-right .btn-icon,
+  .bridge-app.chat-active .app-header-right #chatMenuBtn {
+    display: flex !important;
+    width: 32px;
+    height: 32px;
+    color: var(--text-primary);
+  }
+
+  .bridge-app.chat-active .app-header-left .btn-back {
+    display: flex !important;
+    width: 32px;
+    height: 32px;
+  }
+
   .btn-menu-toggle {
     display: flex;
   }
@@ -451,15 +590,18 @@
   .input-wrapper {
     gap: 8px;
     position: relative;
+    align-items: center;
   }
 
   .message-input-area {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
     transition:
-      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
       padding-bottom 0.24s ease,
       box-shadow 0.24s ease;
-    transform: translateY(0);
-    will-change: transform;
+    background-color: var(--bg-color);
+    backdrop-filter: none;
   }
 
   .bridge-app.composer-focus .message-input-area {
@@ -467,18 +609,48 @@
   }
 
   .bridge-app.keyboard-open .message-input-area {
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 
   .bridge-app.keyboard-open .messages-container {
-    padding-bottom: 8px;
+    padding-bottom: 4px;
+  }
+
+  .bridge-app.chat-active .profile-menu-wrapper,
+  .bridge-app.keyboard-open .profile-menu-wrapper {
+    display: none !important;
   }
 
   .message-input {
     min-height: 40px;
     max-height: 132px;
-    padding-right: 52px;
+    padding: 9px 52px 9px 12px;
     font-size: 16px;
+    line-height: 1.35;
+    box-sizing: border-box;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .btn-emoji {
+    display: none !important;
+  }
+
+  .message-input {
+    padding-right: 12px;
+  }
+
+  .btn-attach,
+  .btn-emoji {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .btn-emoji {
@@ -487,6 +659,12 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 2;
+  }
+
+  .btn-send {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
   }
 
   .contact-input {
@@ -568,15 +746,27 @@
 
   .chat-area {
     position: fixed;
-    top: var(--app-header-height);
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 100%;
-    height: calc(100vh - var(--app-header-height));
-    height: calc(100dvh - var(--app-header-height));
+    top: var(--mobile-chat-header-offset);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-width: none;
+    height: auto;
+    transform: none;
     z-index: 2;
     display: none;
+  }
+
+  .chat-area .chat-container,
+  .chat-area .chat-container.active {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: 100% !important;
   }
 
   .sidebar.hidden + .chat-area {
@@ -675,6 +865,74 @@
   .font-size-value span {
     font-size: 15px !important;
   }
+
+  /* Stable mobile chat layout:
+     keep header fixed, raise chat content by keyboard inset. */
+  .bridge-app.chat-active .app-header,
+  .bridge-app:has(#chatContainer.active) .app-header {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60 !important;
+  }
+
+  .bridge-app.chat-active .chat-area,
+  .bridge-app:has(#chatContainer.active) .chat-area {
+    position: fixed !important;
+    top: var(--mobile-chat-header-offset) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: auto !important;
+    transform: none !important;
+    z-index: 20 !important;
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+    touch-action: none !important;
+  }
+
+  .bridge-app.chat-active .chat-container.active,
+  .bridge-app:has(#chatContainer.active) .chat-container.active {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding-bottom: var(--keyboard-inset, 0px) !important;
+    animation: none !important;
+    transition: padding-bottom 0.2s ease-out !important;
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+    touch-action: none !important;
+  }
+
+  .bridge-app.chat-active .message-input-area,
+  .bridge-app:has(#chatContainer.active) .message-input-area {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    overflow: visible !important;
+    touch-action: manipulation;
+  }
+
+  .bridge-app.chat-active .messages-container,
+  .bridge-app:has(#chatContainer.active) .messages-container {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
+  }
+
+  .message-input-area .emoji-picker {
+    z-index: 1200 !important;
+    bottom: 56px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -741,6 +999,7 @@
   }
 
   .message-input {
+    min-height: 38px;
     padding-right: 48px;
   }
 
@@ -768,7 +1027,7 @@
 
   .message-input-area {
     padding: 8px;
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 
   .btn-send,
@@ -810,7 +1069,6 @@
   }
 
   /* Enhanced menu animations for mobile */
-  .message-menu.active,
   .chat-list-menu.active {
     animation: popupAppearMobile 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
@@ -818,11 +1076,11 @@
   @keyframes popupAppearMobile {
     from {
       opacity: 0;
-      transform: scale(0.8) translateY(-15px);
+      transform: scale(0.92);
     }
     to {
       opacity: 1;
-      transform: scale(1) translateY(0);
+      transform: scale(1);
     }
   }
 

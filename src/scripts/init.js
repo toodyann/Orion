@@ -13,6 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <h1 class="app-title">ORION</h1>
       </div>
       <div class="app-chat-info" id="appChatInfo">
+        <button class="btn-back" id="backBtn" aria-label="Назад">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+            <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+          </svg>
+        </button>
         <div class="app-chat-avatar" id="appChatAvatar"></div>
         <div class="app-chat-meta">
           <div class="app-chat-name" id="contactName">Виберіть контакт</div>
@@ -152,10 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="input-wrapper">
           <button type="button" class="btn-icon btn-attach">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21.5 2H2.5C1.12 2 0 3.12 0 4.5v15C0 20.88 1.12 22 2.5 22h19C22.88 22 24 20.88 24 19.5v-15C24 3.12 22.88 2 21.5 2zm-8 16h-5v-10h5v10zm8-14h-7v4h7v-4z" fill="currentColor"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+              <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm48-88a8,8,0,0,1-8,8H136v32a8,8,0,0,1-16,0V136H88a8,8,0,0,1,0-16h32V88a8,8,0,0,1,16,0v32h32A8,8,0,0,1,176,128Z"></path>
             </svg>
           </button>
+          <input type="file" id="imagePickerInput" accept="image/*" hidden />
           <textarea
             id="messageInput"
             class="message-input"
@@ -298,12 +304,33 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <!-- Message context menu -->
+<div class="message-menu-backdrop" id="messageMenuBackdrop" aria-hidden="true"></div>
 <div class="message-menu" id="messageMenu" aria-hidden="true">
   <div class="message-menu-date" id="messageMenuDate"></div>
-  <button class="message-menu-item" id="messageMenuReply">Відповісти</button>
-  <button class="message-menu-item" id="messageMenuEdit">Редагувати</button>
-  <button class="message-menu-item" id="messageMenuDelete">Видалити</button>
-  <button class="message-menu-item" id="messageMenuCopy">Копіювати</button>
+  <button class="message-menu-item" id="messageMenuReply">
+    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M224,128a8,8,0,0,1-8,8H91.31l34.35,34.34a8,8,0,0,1-11.32,11.32l-48-48a8,8,0,0,1,0-11.32l48-48a8,8,0,0,1,11.32,11.32L91.31,120H216A8,8,0,0,1,224,128Z"></path>
+    </svg>
+    <span>Відповісти</span>
+  </button>
+  <button class="message-menu-item" id="messageMenuEdit">
+    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M227.31,73.37,182.63,28.69a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96A16,16,0,0,0,227.31,73.37ZM92.69,208H48V163.31L136,75.31,180.69,120Z"></path>
+    </svg>
+    <span>Редагувати</span>
+  </button>
+  <button class="message-menu-item" id="messageMenuDelete">
+    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16Z"></path>
+    </svg>
+    <span>Видалити</span>
+  </button>
+  <button class="message-menu-item" id="messageMenuCopy">
+    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d="M216,40H120A16,16,0,0,0,104,56V80H80A16,16,0,0,0,64,96V216a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V192h24a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"></path>
+    </svg>
+    <span>Копіювати</span>
+  </button>
 </div>`;
 
   const extraUi = `
