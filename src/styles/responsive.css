@@ -899,7 +899,7 @@
 
   .bridge-app.chat-active .chat-container.active.chat-entering,
   .bridge-app:has(#chatContainer.active) .chat-container.active.chat-entering {
-    animation: chatEnterFromRightMobile 0.5s cubic-bezier(0.2, 0.82, 0.25, 1) !important;
+    animation: chatEnterFromRightMobile 0.72s cubic-bezier(0.2, 0.82, 0.25, 1) !important;
     will-change: transform, opacity;
   }
 

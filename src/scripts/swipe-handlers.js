@@ -24,6 +24,15 @@ export function setupMobileSwipeBack(app) {
     if (window.innerWidth > 768 || !app.currentChat) return;
     if (e.touches.length !== 1) return;
 
+    if (app.chatEnterAnimation) {
+      app.chatEnterAnimation.cancel();
+      app.chatEnterAnimation = null;
+    }
+    chatContainer.classList.remove('chat-entering');
+    chatContainer.style.removeProperty('transition');
+    chatContainer.style.removeProperty('transform');
+    chatContainer.style.removeProperty('opacity');
+
     const touch = e.touches[0];
     startX = touch.clientX;
     startY = touch.clientY;
@@ -57,7 +66,7 @@ export function setupMobileSwipeBack(app) {
     const distance = Math.min(Math.max(0, dx), maxReveal);
     lastTranslate = distance;
 
-    chatContainer.style.transform = `translateX(${distance}px)`;
+    chatContainer.style.transform = `translate3d(${distance}px, 0, 0)`;
     if (active) e.preventDefault();
   };
 
@@ -70,20 +79,63 @@ export function setupMobileSwipeBack(app) {
     chatContainer.classList.remove('swiping');
     const shouldClose = lastTranslate >= window.innerWidth * CLOSE_THRESHOLD_RATIO;
     const targetX = shouldClose ? getMaxReveal() : 0;
-    const duration = shouldClose ? CLOSE_DURATION_MS : SNAP_BACK_DURATION_MS;
-    const easing = shouldClose
-      ? 'cubic-bezier(0.2, 0.7, 0, 1)'
-      : 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+    if (shouldClose) {
+      const remainingDistance = Math.max(0, targetX - lastTranslate);
+      const closeDuration = Math.max(320, Math.min(CLOSE_DURATION_MS + 120, 320 + remainingDistance * 0.4));
+
+      // Lock current position and then, on next frames, animate to the right edge.
+      chatContainer.style.removeProperty('transition');
+      chatContainer.style.transform = `translate3d(${lastTranslate}px, 0, 0)`;
+      void chatContainer.offsetWidth;
+
+      let finished = false;
+      const finishClose = () => {
+        if (finished) return;
+        finished = true;
+        chatContainer.removeEventListener('transitionend', onCloseTransitionEnd);
+        chatContainer.style.removeProperty('transition');
+        chatContainer.style.removeProperty('will-change');
+        if (appRoot) appRoot.classList.remove('swipe-peek');
+        app.closeChat({ animate: false });
+      };
+      const onCloseTransitionEnd = (event) => {
+        if (event.target !== chatContainer || event.propertyName !== 'transform') return;
+        finishClose();
+      };
+      chatContainer.addEventListener('transitionend', onCloseTransitionEnd);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+      chatContainer.style.setProperty(
+        'transition',
+        `transform ${closeDuration}ms cubic-bezier(0.22, 0.61, 0.36, 1)`,
+        'important'
+      );
+      chatContainer.style.transform = `translate3d(${targetX}px, 0, 0)`;
+        });
+      });
+
+      // Fallback in case transitionend is missed on some devices.
+      window.setTimeout(finishClose, closeDuration + 80);
+      return;
+    }
+
+    const duration = SNAP_BACK_DURATION_MS;
+    const easing = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
     const finish = () => {
       chatContainer.style.removeProperty('transition');
-      chatContainer.style.removeProperty('transform');
       chatContainer.style.removeProperty('will-change');
       if (appRoot) appRoot.classList.remove('swipe-peek');
-      if (shouldClose) app.closeChat({ animate: false });
+      chatContainer.style.removeProperty('transform');
     };
 
-    chatContainer.style.transition = `transform ${duration}ms ${easing}`;
+    chatContainer.style.setProperty(
+      'transition',
+      `transform ${duration}ms ${easing}`,
+      'important'
+    );
     chatContainer.style.transform = `translate3d(${targetX}px, 0, 0)`;
     window.setTimeout(finish, duration + 20);
   };

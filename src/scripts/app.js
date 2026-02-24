@@ -1372,24 +1372,37 @@ class ChatApp {
       }
     } catch (e) {
     }
-    if (window.innerWidth > 768) {
-      this.triggerChatEnterAnimation();
-    }
+    this.triggerChatEnterAnimation();
     this.applyMobileChatViewportLayout();
   }
 
   triggerChatEnterAnimation() {
     const chatContainer = document.getElementById('chatContainer');
     if (!chatContainer) return;
+    const isMobile = window.innerWidth <= 768;
 
     if (this.chatEnterAnimation) {
       this.chatEnterAnimation.cancel();
       this.chatEnterAnimation = null;
     }
 
-    const distance = window.innerWidth <= 768 ? 30 : 22;
-    const duration = window.innerWidth <= 768 ? 500 : 460;
+    const distance = isMobile ? 30 : 22;
+    const duration = isMobile ? 720 : 460;
     chatContainer.style.willChange = 'transform, opacity';
+
+    if (isMobile) {
+      chatContainer.style.removeProperty('transition');
+      chatContainer.style.removeProperty('transform');
+      chatContainer.style.removeProperty('opacity');
+      chatContainer.classList.remove('chat-entering');
+      void chatContainer.offsetWidth;
+      chatContainer.classList.add('chat-entering');
+      window.setTimeout(() => {
+        chatContainer.classList.remove('chat-entering');
+        chatContainer.style.removeProperty('will-change');
+      }, duration + 40);
+      return;
+    }
 
     if (typeof chatContainer.animate === 'function') {
       this.chatEnterAnimation = chatContainer.animate(
@@ -1473,7 +1486,7 @@ class ChatApp {
   }
 
   closeChat(options = {}) {
-    const { animate = true } = options;
+    const { animate = true, startTranslateX = null, duration: customDuration = null } = options;
     const isMobile = window.innerWidth <= 768;
     const chatContainer = document.getElementById('chatContainer');
 
@@ -1489,7 +1502,7 @@ class ChatApp {
 
     chatContainer.style.willChange = 'transform, opacity';
     const distance = Math.max(window.innerWidth, 320);
-    const duration = 360;
+    const duration = Number.isFinite(customDuration) ? customDuration : 360;
     const easing = 'cubic-bezier(0.18, 0.72, 0, 1)';
     const cleanupAnimationStyles = () => {
       chatContainer.style.removeProperty('will-change');
@@ -1497,9 +1510,19 @@ class ChatApp {
       chatContainer.style.removeProperty('opacity');
     };
 
+    if (Number.isFinite(startTranslateX)) {
+      const clampedStart = Math.max(0, Math.min(distance, startTranslateX));
+      chatContainer.style.transform = `translate3d(${clampedStart}px, 0, 0)`;
+      chatContainer.style.opacity = '1';
+    }
+
     // Force style flush so the transition starts from the current frame.
     void chatContainer.offsetWidth;
-    chatContainer.style.transition = `transform ${duration}ms ${easing}, opacity ${duration}ms ${easing}`;
+    chatContainer.style.setProperty(
+      'transition',
+      `transform ${duration}ms ${easing}, opacity ${duration}ms ${easing}`,
+      'important'
+    );
     chatContainer.style.transform = `translate3d(${distance}px, 0, 0)`;
     chatContainer.style.opacity = '0.98';
 
