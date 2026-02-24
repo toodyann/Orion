@@ -6,10 +6,8 @@
  */
 export function setupMobileSwipeBack(app) {
   const chatContainer = document.getElementById('chatContainer');
-  const sidebar = document.querySelector('.sidebar');
-  const appEl = document.querySelector('.bridge-app');
-
-  if (!chatContainer || !sidebar || !appEl) return;
+  const appRoot = document.querySelector('.bridge-app');
+  if (!chatContainer) return;
 
   let startX = 0;
   let startY = 0;
@@ -17,12 +15,15 @@ export function setupMobileSwipeBack(app) {
   let active = false;
   let lastTranslate = 0;
 
-  const getMaxReveal = () => Math.min(window.innerWidth * 0.82, 320);
+  const getMaxReveal = () => window.innerWidth;
+  const CLOSE_THRESHOLD_RATIO = 0.35;
+  const SNAP_BACK_DURATION_MS = 320;
+  const CLOSE_DURATION_MS = 360;
 
   const onStart = (e) => {
     if (window.innerWidth > 768 || !app.currentChat) return;
     if (e.touches.length !== 1) return;
-    
+
     const touch = e.touches[0];
     startX = touch.clientX;
     startY = touch.clientY;
@@ -39,11 +40,17 @@ export function setupMobileSwipeBack(app) {
     const dy = touch.clientY - startY;
 
     if (!active) {
-      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+      if (Math.abs(dx) < 8) return;
+      if (Math.abs(dx) < Math.abs(dy)) {
+        dragging = false;
+        return;
+      }
       if (dx < 0) return; // Ignore swipe left
       active = true;
+      chatContainer.style.removeProperty('transition');
+      chatContainer.style.willChange = 'transform';
       chatContainer.classList.add('swiping');
-      sidebar.classList.add('revealed');
+      if (appRoot) appRoot.classList.add('swipe-peek');
     }
 
     const maxReveal = getMaxReveal();
@@ -51,9 +58,7 @@ export function setupMobileSwipeBack(app) {
     lastTranslate = distance;
 
     chatContainer.style.transform = `translateX(${distance}px)`;
-    sidebar.style.setProperty('--sidebar-reveal', `${distance}px`);
-
-    if (active && !e.target.closest('#messagesContainer')) e.preventDefault();
+    if (active) e.preventDefault();
   };
 
   const onEnd = () => {
@@ -63,20 +68,24 @@ export function setupMobileSwipeBack(app) {
     if (!active) return;
 
     chatContainer.classList.remove('swiping');
-    sidebar.classList.remove('revealed');
+    const shouldClose = lastTranslate >= window.innerWidth * CLOSE_THRESHOLD_RATIO;
+    const targetX = shouldClose ? getMaxReveal() : 0;
+    const duration = shouldClose ? CLOSE_DURATION_MS : SNAP_BACK_DURATION_MS;
+    const easing = shouldClose
+      ? 'cubic-bezier(0.2, 0.7, 0, 1)'
+      : 'cubic-bezier(0.22, 1, 0.36, 1)';
 
-    const maxReveal = getMaxReveal();
-    const shouldClose = lastTranslate > maxReveal * 0.35;
+    const finish = () => {
+      chatContainer.style.removeProperty('transition');
+      chatContainer.style.removeProperty('transform');
+      chatContainer.style.removeProperty('will-change');
+      if (appRoot) appRoot.classList.remove('swipe-peek');
+      if (shouldClose) app.closeChat({ animate: false });
+    };
 
-    if (shouldClose) {
-      chatContainer.style.transform = '';
-      sidebar.style.removeProperty('--sidebar-reveal');
-      app.closeChat();
-      return;
-    }
-
-    chatContainer.style.transform = '';
-    sidebar.style.removeProperty('--sidebar-reveal');
+    chatContainer.style.transition = `transform ${duration}ms ${easing}`;
+    chatContainer.style.transform = `translate3d(${targetX}px, 0, 0)`;
+    window.setTimeout(finish, duration + 20);
   };
 
   chatContainer.addEventListener('touchstart', onStart, { passive: true });

@@ -33,6 +33,7 @@ class ChatApp {
     this.cameraStream = null;
     this.cameraFacingMode = 'environment';
     this.chatEnterAnimation = null;
+    this.chatCloseAnimation = null;
     this.attachSheetTouchStartY = 0;
     this.attachSheetTouchCurrentY = 0;
     this.attachSheetTouchDragging = false;
@@ -560,6 +561,8 @@ class ChatApp {
 
     const backBtn = document.getElementById('backBtn');
     if (backBtn) backBtn.addEventListener('click', () => this.closeChat());
+    const chatBackBtn = document.getElementById('chatBackBtn');
+    if (chatBackBtn) chatBackBtn.addEventListener('click', () => this.closeChat());
 
     document.getElementById('newContactInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -593,9 +596,29 @@ class ChatApp {
         this.showAlert(`Дзвінок з ${this.currentChat.name} поки недоступний.`, 'Дзвінок');
       });
     }
+    const chatModalCallBtn = document.getElementById('chatModalCallBtn');
+    if (chatModalCallBtn) {
+      chatModalCallBtn.addEventListener('click', () => {
+        if (!this.currentChat) {
+          this.showAlert('Спочатку оберіть чат.');
+          return;
+        }
+        this.showAlert(`Дзвінок з ${this.currentChat.name} поки недоступний.`, 'Дзвінок');
+      });
+    }
 
     if (historyBtn) {
       historyBtn.addEventListener('click', () => {
+        if (!this.currentChat) {
+          this.showAlert('Спочатку оберіть чат.');
+          return;
+        }
+        this.showAlert(`Історія для ${this.currentChat.name} буде додана пізніше.`, 'Історія');
+      });
+    }
+    const chatModalHistoryBtn = document.getElementById('chatModalHistoryBtn');
+    if (chatModalHistoryBtn) {
+      chatModalHistoryBtn.addEventListener('click', () => {
         if (!this.currentChat) {
           this.showAlert('Спочатку оберіть чат.');
           return;
@@ -650,10 +673,16 @@ class ChatApp {
 
     const chatMenuBtn = document.getElementById('chatMenuBtn');
     const chatMenu = document.getElementById('chatMenu');
+    const chatModalMenuBtn = document.getElementById('chatModalMenuBtn');
+    const chatModalMenu = document.getElementById('chatModalMenu');
     const closeChatMenu = () => {
       if (!chatMenu || !chatMenuBtn) return;
       chatMenu.classList.remove('active');
       chatMenuBtn.setAttribute('aria-expanded', 'false');
+      if (chatModalMenu && chatModalMenuBtn) {
+        chatModalMenu.classList.remove('active');
+        chatModalMenuBtn.setAttribute('aria-expanded', 'false');
+      }
     };
 
     if (chatMenuBtn && chatMenu) {
@@ -708,6 +737,48 @@ class ChatApp {
         if (e.key === 'Escape') {
           closeChatMenu();
         }
+      });
+    }
+    if (chatModalMenuBtn && chatModalMenu) {
+      chatModalMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatModalMenu.classList.toggle('active');
+        chatModalMenuBtn.setAttribute('aria-expanded', chatModalMenu.classList.contains('active') ? 'true' : 'false');
+      });
+
+      chatModalMenu.addEventListener('click', (e) => {
+        const item = e.target.closest('.chat-menu-item');
+        if (!item) return;
+        const action = item.dataset.action;
+        if (!this.currentChat) {
+          closeChatMenu();
+          return;
+        }
+
+        if (action === 'clear') {
+          this.showConfirm('Очистити всі повідомлення в цьому чаті?').then(ok => {
+            if (!ok) return;
+            this.currentChat.messages = [];
+            this.saveChats();
+            this.renderChat();
+            this.renderChatsList();
+          });
+        }
+
+        if (action === 'delete') {
+          this.deleteChat(this.currentChat.id);
+        }
+
+        if (action === 'info') {
+          const count = this.currentChat.messages?.length || 0;
+          this.showAlert(`Чат: ${this.currentChat.name}\nПовідомлень: ${count}`);
+        }
+
+        if (action === 'group-info') {
+          this.openGroupInfoModal();
+        }
+
+        closeChatMenu();
       });
     }
 
@@ -862,9 +933,6 @@ class ChatApp {
     const chatContainer = document.getElementById('chatContainer');
     const inputArea = document.querySelector('.message-input-area');
     const messages = document.getElementById('messagesContainer');
-    const chatInfo = document.querySelector('.app-chat-info');
-    const headerRight = document.querySelector('.app-header-right');
-    const backBtn = document.getElementById('backBtn');
     if (!appEl || !header || !chatArea || !chatContainer || !inputArea) return;
 
     const isMobile = window.innerWidth <= 900;
@@ -896,10 +964,6 @@ class ChatApp {
       chatContainer.style.removeProperty('height');
       inputArea.style.removeProperty('position');
       inputArea.style.removeProperty('bottom');
-
-      if (chatInfo) chatInfo.style.removeProperty('display');
-      if (headerRight) headerRight.style.removeProperty('display');
-      if (backBtn) backBtn.style.removeProperty('display');
       return;
     }
 
@@ -908,17 +972,8 @@ class ChatApp {
       ? Math.max(0, Math.min(420, window.innerHeight - viewport.height - viewport.offsetTop))
       : 0;
 
-    header.style.setProperty('position', 'fixed', 'important');
-    header.style.setProperty('top', '0');
-    header.style.setProperty('left', '0');
-    header.style.setProperty('right', '0');
-    header.style.setProperty('z-index', '80');
-    header.style.setProperty('padding-top', 'env(safe-area-inset-top)', 'important');
-    header.style.setProperty('height', 'calc(56px + env(safe-area-inset-top))', 'important');
-    header.style.setProperty('min-height', 'calc(56px + env(safe-area-inset-top))', 'important');
-
     chatArea.style.setProperty('position', 'fixed', 'important');
-    chatArea.style.setProperty('top', 'calc(56px + env(safe-area-inset-top))', 'important');
+    chatArea.style.setProperty('top', '0', 'important');
     chatArea.style.setProperty('left', '0');
     chatArea.style.setProperty('right', '0');
     chatArea.style.setProperty('bottom', '0');
@@ -928,14 +983,11 @@ class ChatApp {
     chatContainer.style.setProperty('flex-direction', 'column', 'important');
     chatContainer.style.setProperty('height', '100%', 'important');
     chatContainer.style.setProperty('padding-bottom', `${keyboardHeight}px`, 'important');
+    chatContainer.style.setProperty('background-color', 'var(--bg-color)', 'important');
 
     inputArea.style.setProperty('position', 'sticky');
     inputArea.style.setProperty('bottom', '0');
     appEl.style.setProperty('--keyboard-inset', `${keyboardHeight}px`);
-
-    if (chatInfo) chatInfo.style.setProperty('display', 'flex', 'important');
-    if (headerRight) headerRight.style.setProperty('display', 'flex', 'important');
-    if (backBtn) backBtn.style.setProperty('display', 'flex', 'important');
 
     if (keyboardHeight > 0 && messages) {
       messages.scrollTop = messages.scrollHeight;
@@ -1312,15 +1364,17 @@ class ChatApp {
       if (window.innerWidth <= 768) {
         if (appEl) appEl.classList.add('mobile-chat-open');
         if (sidebar) {
-          sidebar.classList.add('hidden');
-          sidebar.classList.remove('active', 'mobile-menu');
+          sidebar.classList.remove('hidden', 'active', 'mobile-menu', 'revealed');
+          sidebar.style.removeProperty('--sidebar-reveal');
         }
         if (sidebarOverlay) sidebarOverlay.classList.remove('active');
-        if (profileMenu) profileMenu.style.display = 'none';
+        if (profileMenu) profileMenu.style.display = '';
       }
     } catch (e) {
     }
-    this.triggerChatEnterAnimation();
+    if (window.innerWidth > 768) {
+      this.triggerChatEnterAnimation();
+    }
     this.applyMobileChatViewportLayout();
   }
 
@@ -1374,7 +1428,15 @@ class ChatApp {
     }, duration + 40);
   }
 
-  closeChat() {
+  finalizeCloseChatState() {
+    const chatContainer = document.getElementById('chatContainer');
+    if (chatContainer) {
+      chatContainer.classList.remove('active', 'swiping');
+      chatContainer.style.removeProperty('transition');
+      chatContainer.style.removeProperty('transform');
+      chatContainer.style.removeProperty('opacity');
+      chatContainer.style.removeProperty('will-change');
+    }
     this.currentChat = null;
     document.getElementById('messageInput').value = '';
     this.resizeMessageInput();
@@ -1400,11 +1462,52 @@ class ChatApp {
       
       if (window.innerWidth <= 768) {
         if (appEl) appEl.classList.remove('mobile-chat-open');
-        if (sidebar) sidebar.classList.remove('hidden');
+        if (sidebar) {
+          sidebar.classList.remove('hidden', 'revealed');
+          sidebar.style.removeProperty('--sidebar-reveal');
+        }
         if (profileMenu) profileMenu.style.display = '';
       }
     } catch (e) {}
     this.applyMobileChatViewportLayout();
+  }
+
+  closeChat(options = {}) {
+    const { animate = true } = options;
+    const isMobile = window.innerWidth <= 768;
+    const chatContainer = document.getElementById('chatContainer');
+
+    if (!animate || !isMobile || !chatContainer || !this.currentChat) {
+      this.finalizeCloseChatState();
+      return;
+    }
+
+    if (this.chatCloseAnimation) {
+      this.chatCloseAnimation.cancel();
+      this.chatCloseAnimation = null;
+    }
+
+    chatContainer.style.willChange = 'transform, opacity';
+    const distance = Math.max(window.innerWidth, 320);
+    const duration = 360;
+    const easing = 'cubic-bezier(0.18, 0.72, 0, 1)';
+    const cleanupAnimationStyles = () => {
+      chatContainer.style.removeProperty('will-change');
+      chatContainer.style.removeProperty('transform');
+      chatContainer.style.removeProperty('opacity');
+    };
+
+    // Force style flush so the transition starts from the current frame.
+    void chatContainer.offsetWidth;
+    chatContainer.style.transition = `transform ${duration}ms ${easing}, opacity ${duration}ms ${easing}`;
+    chatContainer.style.transform = `translate3d(${distance}px, 0, 0)`;
+    chatContainer.style.opacity = '0.98';
+
+    window.setTimeout(() => {
+      chatContainer.style.removeProperty('transition');
+      cleanupAnimationStyles();
+      this.finalizeCloseChatState();
+    }, duration + 20);
   }
 
   async deleteChat(chatId) {
@@ -1823,47 +1926,59 @@ class ChatApp {
   }
 
   updateChatHeader() {
-    const contactName = document.getElementById('contactName');
-    const contactStatus = document.getElementById('contactStatus');
-    const avatar = document.getElementById('appChatAvatar');
-    const contactDetails = document.getElementById('appChatInfo');
-
-    if (this.currentChat && contactName && contactStatus) {
-      contactName.textContent = this.currentChat.name;
-      contactStatus.textContent = '';
-      const isOnline = this.currentChat.isGroup
-        ? false
-        : (this.currentChat.status || 'online') !== 'offline';
-      contactStatus.classList.toggle('online', isOnline);
-      contactStatus.classList.toggle('offline', !isOnline);
-      if (avatar) {
-        const initials = this.currentChat.name.split(' ').map(w => w[0]).join('').toUpperCase();
-        const color = this.getContactColor(this.currentChat.name);
-        avatar.textContent = initials;
-        avatar.style.background = color;
+    const headerTargets = [
+      {
+        contactName: document.getElementById('contactName'),
+        contactStatus: document.getElementById('contactStatus'),
+        avatar: document.getElementById('appChatAvatar'),
+        contactDetails: document.getElementById('appChatInfo')
+      },
+      {
+        contactName: document.getElementById('chatModalName'),
+        contactStatus: document.getElementById('chatModalStatus'),
+        avatar: document.getElementById('chatModalAvatar'),
+        contactDetails: document.getElementById('chatModalInfo')
       }
+    ];
 
-      if (contactDetails) {
-        contactDetails.style.cursor = this.currentChat.isGroup ? 'pointer' : 'default';
-        contactDetails.onclick = this.currentChat.isGroup
-          ? () => this.openGroupInfoModal()
-          : null;
-      }
-    } else {
-      if (contactName) contactName.textContent = 'Виберіть контакт';
-      if (contactStatus) {
+    headerTargets.forEach(({ contactName, contactStatus, avatar, contactDetails }) => {
+      if (this.currentChat && contactName && contactStatus) {
+        contactName.textContent = this.currentChat.name;
         contactStatus.textContent = '';
-        contactStatus.classList.remove('online', 'offline');
+        const isOnline = this.currentChat.isGroup
+          ? false
+          : (this.currentChat.status || 'online') !== 'offline';
+        contactStatus.classList.toggle('online', isOnline);
+        contactStatus.classList.toggle('offline', !isOnline);
+        if (avatar) {
+          const initials = this.currentChat.name.split(' ').map(w => w[0]).join('').toUpperCase();
+          const color = this.getContactColor(this.currentChat.name);
+          avatar.textContent = initials;
+          avatar.style.background = color;
+        }
+
+        if (contactDetails) {
+          contactDetails.style.cursor = this.currentChat.isGroup ? 'pointer' : 'default';
+          contactDetails.onclick = this.currentChat.isGroup
+            ? () => this.openGroupInfoModal()
+            : null;
+        }
+      } else {
+        if (contactName) contactName.textContent = 'Виберіть контакт';
+        if (contactStatus) {
+          contactStatus.textContent = '';
+          contactStatus.classList.remove('online', 'offline');
+        }
+        if (avatar) {
+          avatar.textContent = '';
+          avatar.style.background = '';
+        }
+        if (contactDetails) {
+          contactDetails.style.cursor = 'default';
+          contactDetails.onclick = null;
+        }
       }
-      if (avatar) {
-        avatar.textContent = '';
-        avatar.style.background = '';
-      }
-      if (contactDetails) {
-        contactDetails.style.cursor = 'default';
-        contactDetails.onclick = null;
-      }
-    }
+    });
   }
 
   clearMessages() {

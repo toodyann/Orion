@@ -137,6 +137,50 @@ document.addEventListener('DOMContentLoaded', () => {
   <!-- Основна область чату -->
   <main class="chat-area">
     <div class="chat-container" id="chatContainer">
+      <div class="chat-modal-header">
+        <div class="chat-modal-header-left">
+          <button class="btn-back" id="chatBackBtn" aria-label="Назад">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+              <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+            </svg>
+          </button>
+          <div class="app-chat-info" id="chatModalInfo">
+            <div class="app-chat-avatar" id="chatModalAvatar"></div>
+            <div class="app-chat-meta">
+              <div class="app-chat-name" id="chatModalName">Виберіть контакт</div>
+              <div class="app-chat-status" id="chatModalStatus"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-modal-header-right">
+          <button class="btn-icon" id="chatModalCallBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" fill="none"/>
+            </svg>
+          </button>
+          <button class="btn-icon" id="chatModalHistoryBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23 12a11 11 0 1 1-22 0 11 11 0 0 1 22 0z" stroke="currentColor" stroke-width="2" fill="none"/>
+              <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <div class="chat-menu-wrapper">
+            <button class="btn-icon" id="chatModalMenuBtn" aria-haspopup="true" aria-expanded="false">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="1" fill="currentColor"/>
+                <circle cx="12" cy="5" r="1" fill="currentColor"/>
+                <circle cx="12" cy="19" r="1" fill="currentColor"/>
+              </svg>
+            </button>
+            <div class="chat-menu" id="chatModalMenu">
+              <button class="chat-menu-item" data-action="clear">Очистити чат</button>
+              <button class="chat-menu-item" data-action="delete">Видалити чат</button>
+              <button class="chat-menu-item" data-action="info">Інформація</button>
+              <button class="chat-menu-item" data-action="group-info">Деталі групи</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- Область повідомлень -->
       <div class="messages-container" id="messagesContainer">
         <!-- Повідомлення будуть додаватися динамічно -->

@@ -467,6 +467,10 @@ html.dark-theme body {
   height: 100%;
 }
 
+.chat-modal-header {
+  display: none;
+}
+
 .chat-container.active {
   display: flex;
 }
