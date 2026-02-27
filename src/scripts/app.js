@@ -354,6 +354,11 @@ class ChatApp {
     this.updateBottomNavIndicator();
     this.setupMobileSwipeBack();
     this.setupBottomNavReveal();
+    this.setMobilePageScrollLock(false);
+    if (window.innerWidth <= 768) {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
     window.addEventListener('resize', () => {
       this.updateBottomNavIndicator();
       this.handleBottomNavResize();
@@ -365,10 +370,14 @@ class ChatApp {
       const appEl = document.querySelector('.bridge-app');
       if (!appEl || !appEl.classList.contains('chat-active')) return;
       const messages = document.getElementById('messagesContainer');
+      const chatsList = document.getElementById('chatsList');
+      const sidebar = document.querySelector('.sidebar');
       if (!messages) return;
       const target = event.target;
       const withinMessages = target instanceof Node && messages.contains(target);
-      if (!withinMessages) {
+      const withinChatsList = target instanceof Node && chatsList?.contains(target);
+      const withinSidebar = target instanceof Node && sidebar?.contains(target);
+      if (!withinMessages && !withinChatsList && !withinSidebar) {
         event.preventDefault();
       }
     };
@@ -516,11 +525,13 @@ class ChatApp {
         if (appEl) {
           appEl.classList.remove('chat-open');
           appEl.classList.remove('chat-active');
+          appEl.classList.remove('mobile-chat-open');
         }
         if (chatContainer) {
           chatContainer.style.display = '';
           chatContainer.classList.remove('active');
         }
+        this.setMobilePageScrollLock(false);
         if (welcomeScreen) welcomeScreen.classList.remove('hidden');
         this.restoreBottomNavToHome({ animate: false });
         this.renderChatsList();

@@ -105,12 +105,29 @@
   .app-chat-name {
     font-size: 16px;
   }
-  * {
+  body {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
+    touch-action: manipulation;
+    overflow: auto;
+  }
+
+  .sidebar,
+  .chats-list,
+  .messages-container,
+  .message-input-area,
+  .message-input,
+  input,
+  textarea,
+  button {
+    touch-action: pan-y;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
   }
 
   .messages-container {
@@ -145,6 +162,20 @@
     height: 100vh;
     height: 100dvh;
     min-height: 100dvh;
+  }
+
+  .main-layout {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .bridge-app:not(.mobile-chat-open):not(.chat-active) .sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .profile-menu-wrapper {
@@ -232,12 +263,15 @@
     position: relative;
     width: 100%;
     max-width: 100%;
-    height: 100vh;
-    height: 100dvh;
+    height: 100%;
     z-index: 1;
     border-right: none;
     flex-direction: column;
     margin: 0 auto;
+    min-height: 0;
+    overflow: hidden;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
   }
 
   .sidebar.hidden {
@@ -432,8 +466,15 @@
   }
 
   .chats-list {
-    flex: 1;
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    padding-bottom: calc(130px + env(safe-area-inset-bottom));
   }
 
   .chats-list.hidden-on-settings {
