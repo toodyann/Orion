@@ -24,7 +24,7 @@
 
 .message.own .message-content {
   background-color: var(--message-user);
-  color: white;
+  color: #000;
 }
 
 .message.other .message-content {
@@ -44,6 +44,14 @@
 
 .message.other .message-time {
   color: var(--text-secondary);
+}
+
+html:not(.dark-theme) .message.own .message-time {
+  color: #111;
+}
+
+html.dark-theme .message.own .message-time {
+  color: #ffffff;
 }
 
 .message-edited {
@@ -108,6 +116,7 @@
   border: none;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 600;
   color: var(--text-primary);
   border-radius: 4px;
   transition: all 0.2s ease;
@@ -233,6 +242,7 @@
   border: none;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 600;
   color: var(--text-primary);
   border-radius: 4px;
   transition: all 0.2s ease;

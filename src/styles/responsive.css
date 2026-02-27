@@ -1,19 +1,25 @@
 @media (max-width: 768px) {
   :root {
     --app-header-height: 40px;
-    --mobile-chat-header-offset: calc(var(--app-header-height) + env(safe-area-inset-top));
+    --mobile-chat-header-offset: calc(
+      var(--app-header-height) + env(safe-area-inset-top)
+    );
   }
 
   .bridge-app.chat-active {
     --app-header-height: 40px;
-    --mobile-chat-header-offset: calc(var(--app-header-height) + env(safe-area-inset-top));
+    --mobile-chat-header-offset: calc(
+      var(--app-header-height) + env(safe-area-inset-top)
+    );
   }
 
   /* Fallback for cases when JS classes desync: if chat container is active,
      force chat header layout to be visible. */
   .bridge-app:has(#chatContainer.active) {
     --app-header-height: 40px;
-    --mobile-chat-header-offset: calc(var(--app-header-height) + env(safe-area-inset-top));
+    --mobile-chat-header-offset: calc(
+      var(--app-header-height) + env(safe-area-inset-top)
+    );
   }
 
   .app-header .chat-brand .app-logo {
@@ -150,28 +156,34 @@
     width: min(430px, calc(100vw - 24px));
   }
 
+  .bridge-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper {
+    left: 50% !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    transform: translateX(-50%) !important;
+  }
+
   .bottom-nav {
     width: 100%;
-    gap: 4px;
-    padding: 10px 10px;
-    border-radius: 26px;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 50px;
     box-sizing: border-box;
     background:
       radial-gradient(
-        125% 180% at 0% 0%,
-        rgba(255, 255, 255, 0.34),
-        transparent 50%
+        120% 170% at 0% 0%,
+        rgba(255, 255, 255, 0.36),
+        transparent 48%
       ),
       radial-gradient(
-        130% 180% at 100% 100%,
-        rgba(97, 142, 255, 0.2),
-        transparent 60%
+        125% 170% at 100% 100%,
+        rgba(97, 142, 255, 0.24),
+        transparent 58%
       ),
       var(--glass-strong);
     border: 1px solid var(--border-color);
     box-shadow:
-      0 10px 28px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.24),
+      var(--shadow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.26),
       inset 0 -1px 0 rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(16px);
   }
@@ -182,7 +194,7 @@
     min-height: 52px;
     padding: 8px 6px;
     gap: 4px;
-    border-radius: 18px;
+    border-radius: 24px;
   }
 
   .bottom-nav-item svg {
@@ -200,9 +212,7 @@
   }
 
   .bottom-nav-indicator {
-    width: 52px;
-    height: calc(100% - 20px);
-    top: 10px;
+    display: none;
   }
 
   .sidebar {
@@ -389,15 +399,20 @@
   }
 
   .search-input {
-    padding-right: 46px;
+    padding-right: 14px;
     font-size: 17px;
   }
 
   .search-box .btn-new-chat {
-    right: calc(12px + env(safe-area-inset-right));
-    width: 40px;
-    height: 40px;
-    transform: translateY(-60%);
+    right: auto;
+    width: 35px;
+    height: 35px;
+    transform: none;
+  }
+
+  .search-box .btn-new-chat svg {
+    width: 35px;
+    height: 35px;
   }
 
   .search-box {
@@ -462,7 +477,6 @@
     height: 56px;
   }
 
-
   .chat-modal-header {
     display: none;
     align-items: center;
@@ -470,7 +484,8 @@
     gap: 8px;
     height: 56px;
     padding: 0 8px;
-    background-color: var(--bg-color);
+    background-color: var(--bg-elevated);
+    backdrop-filter: blur(12px);
     flex-shrink: 0;
     padding-top: env(safe-area-inset-top);
     min-height: calc(56px + env(safe-area-inset-top));
@@ -500,6 +515,21 @@
     min-width: 0;
     gap: 8px;
     align-items: center;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .chat-modal-header .app-chat-name {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  html.dark-theme .chat-modal-header .app-chat-name {
+    color: #ffffff;
+  }
+
+  html:not(.dark-theme) .chat-modal-header .app-chat-name {
+    color: #0f1320;
   }
 
   .chat-modal-header .app-chat-name {
@@ -595,8 +625,8 @@
     transition:
       padding-bottom 0.24s ease,
       box-shadow 0.24s ease;
-    background-color: var(--bg-color);
-    backdrop-filter: none;
+    background-color: var(--bg-elevated);
+    backdrop-filter: blur(12px);
   }
 
   .bridge-app.composer-focus .message-input-area {
@@ -965,7 +995,7 @@
   }
 
   .bottom-nav-indicator {
-    width: 46px;
+    display: none;
   }
 
   .sidebar {
@@ -1046,14 +1076,19 @@
   }
 
   .search-input {
-    padding-right: 44px;
+    padding-right: 14px;
     font-size: 16px;
   }
 
   .search-box .btn-new-chat {
-    right: calc(15px + env(safe-area-inset-right));
-    width: 28px;
-    height: 28px;
+    right: auto;
+    width: 35px;
+    height: 35px;
+  }
+
+  .search-box .btn-new-chat svg {
+    width: 21px;
+    height: 21px;
   }
 }
 
@@ -1130,5 +1165,24 @@
     background-color: var(--bg-secondary);
     transform: scale(0.95);
     transition: all 0.1s ease;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover,
+  .btn-icon:hover,
+  .btn-send:hover,
+  .btn-new-chat:hover,
+  .bottom-nav-item:hover,
+  .chat-item:hover,
+  .chat-menu-item:hover,
+  .message-context-menu-item:hover,
+  .menu-item:hover,
+  .reply-bar-close:hover,
+  .settings-menu-item:hover,
+  .settings-item-action:hover {
+    background-color: rgba(140, 140, 140, 0.18) !important;
+    border-color: rgba(170, 170, 170, 0.42) !important;
+    color: var(--text-primary) !important;
   }
 }

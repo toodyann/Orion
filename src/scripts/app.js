@@ -40,6 +40,8 @@ class ChatApp {
     this.mobileScrollLockY = 0;
     this.mobileScrollLocked = false;
     this.mobileTouchMoveLockHandler = null;
+    this.bottomNavHomeAnchor = null;
+    this.bottomNavInSidebarTop = false;
     this.loadTheme();
     this.profileMenuPlaceholder = null;
     this.init();
@@ -287,6 +289,9 @@ class ChatApp {
   toggleTheme() {
     const isDark = document.documentElement.classList.toggle('dark-theme');
     localStorage.setItem('bridge_theme', isDark ? 'dark' : 'light');
+    if (!this.currentChat && window.innerWidth > 768) {
+      this.restoreBottomNavToHome({ animate: false });
+    }
   }
 
   loadChats() {
@@ -339,6 +344,9 @@ class ChatApp {
   init() {
     this.setupEventListeners();
     this.setupModalEnterHandlers();
+    this.ensureBottomNavHomeAnchor();
+    this.restoreBottomNavToHome({ animate: false });
+    this.setupDesktopChatWheelScroll();
     this.renderChatsList();
     this.applyFontSize(this.settings.fontSize);
     this.applySettingsToUI();
@@ -368,6 +376,44 @@ class ChatApp {
 
   }
 
+  setupDesktopChatWheelScroll() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    const chatContainer = document.getElementById('chatContainer');
+    if (!messagesContainer || !chatContainer) return;
+
+    chatContainer.addEventListener('wheel', (event) => {
+      if (window.innerWidth <= 900) return;
+      if (messagesContainer.scrollHeight <= messagesContainer.clientHeight) return;
+
+      const target = event.target instanceof Element ? event.target : null;
+      const shouldSkip = target?.closest('textarea, input, .message-input-area, .chat-menu, .message-context-menu, .modal, .emoji-picker');
+      if (shouldSkip) return;
+
+      messagesContainer.scrollTop += event.deltaY;
+      event.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('wheel', (event) => {
+      if (window.innerWidth <= 900) return;
+      if (!this.currentChat) return;
+      if (!chatContainer.classList.contains('active')) return;
+      if (messagesContainer.scrollHeight <= messagesContainer.clientHeight) return;
+      if (event.ctrlKey) return;
+
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || !chatContainer.contains(target)) return;
+
+      const shouldSkip = target.closest('textarea, input, .message-input-area, .chat-menu, .message-context-menu, .modal, .emoji-picker');
+      if (shouldSkip) return;
+
+      const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      if (Math.abs(delta) < 0.1) return;
+
+      messagesContainer.scrollTop += delta;
+      event.preventDefault();
+    }, { passive: false, capture: true });
+  }
+
   // Метод-обгортка для імпортованої функції setupMobileSwipeBack
   setupMobileSwipeBack() {
     setupMobileSwipeBack(this);
@@ -385,9 +431,17 @@ class ChatApp {
     const navCalls = document.getElementById('navCalls');
     const navChats = document.getElementById('navChats');
     const navGames = document.getElementById('navGames');
+    const isSettingsScreenActive = () => {
+      const desktopSettings = document.getElementById('settingsContainer');
+      const mobileSettings = document.getElementById('settingsContainerMobile');
+      const desktopActive = desktopSettings?.classList.contains('active') && desktopSettings?.style.display !== 'none';
+      const mobileActive = mobileSettings?.classList.contains('active') && mobileSettings?.style.display !== 'none';
+      return Boolean(desktopActive || mobileActive);
+    };
     
     if (navProfile) {
       navProfile.addEventListener('click', () => {
+        if (navProfile.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navProfile);
         this.showSettings('profile');
       });
@@ -395,6 +449,7 @@ class ChatApp {
     
     if (navSettings) {
       navSettings.addEventListener('click', () => {
+        if (navSettings.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navSettings);
         this.showSettings('messenger-settings');
       });
@@ -402,6 +457,7 @@ class ChatApp {
 
     if (navGames) {
       navGames.addEventListener('click', () => {
+        if (navGames.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navGames);
         this.showSettings('mini-games');
       });
@@ -409,6 +465,7 @@ class ChatApp {
     
     if (navCalls) {
       navCalls.addEventListener('click', () => {
+        if (navCalls.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navCalls);
         this.showSettings('calls');
       });
@@ -416,6 +473,7 @@ class ChatApp {
     
     if (navChats) {
       navChats.addEventListener('click', () => {
+        if (navChats.classList.contains('active') && this.currentChat === null && !isSettingsScreenActive()) return;
         this.setActiveNavButton(navChats);
         this.showBottomNav();
         // Show chats list and hide settings
@@ -450,10 +508,7 @@ class ChatApp {
           sidebar.style.display = '';
           sidebar.classList.remove('compact');
         }
-        if (profileMenu && this.profileMenuPlaceholder) {
-          this.profileMenuPlaceholder.parentNode?.insertBefore(profileMenu, this.profileMenuPlaceholder);
-          profileMenu.classList.remove('floating-nav');
-        }
+        if (profileMenu) profileMenu.classList.remove('floating-nav');
         
         // Clear current chat and show welcome screen
         this.currentChat = null;
@@ -467,7 +522,7 @@ class ChatApp {
           chatContainer.classList.remove('active');
         }
         if (welcomeScreen) welcomeScreen.classList.remove('hidden');
-        
+        this.restoreBottomNavToHome({ animate: false });
         this.renderChatsList();
       });
     }
@@ -829,6 +884,12 @@ class ChatApp {
     const input = inputEl || document.getElementById('messageInput');
     if (!input) return;
 
+    if (window.innerWidth > 900) {
+      input.style.height = '36px';
+      input.style.overflowY = 'hidden';
+      return;
+    }
+
     const minHeight = window.innerWidth <= 768 ? 40 : 34;
     const maxHeight = 132;
     input.style.height = 'auto';
@@ -1140,6 +1201,7 @@ class ChatApp {
         </div>
       `;
       chatsList.appendChild(emptyState);
+      this.renderSidebarAvatarsStrip();
       return;
     }
 
@@ -1182,6 +1244,8 @@ class ChatApp {
       
       chatsList.appendChild(chatItem);
     });
+
+    this.renderSidebarAvatarsStrip();
   }
 
   getSortedChats() {
@@ -1356,6 +1420,7 @@ class ChatApp {
       const sidebar = document.querySelector('.sidebar');
       if (sidebar) sidebar.classList.add('compact');
     }
+    this.mountBottomNavInSidebar();
     try {
       const sidebar = document.querySelector('.sidebar');
       const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -1468,6 +1533,7 @@ class ChatApp {
       const sidebar = document.querySelector('.sidebar');
       if (sidebar) sidebar.classList.remove('compact');
     }
+    this.restoreBottomNavToHome({ animate: false });
     try {
       const appEl = document.querySelector('.bridge-app');
       const sidebar = document.querySelector('.sidebar');
@@ -1553,6 +1619,8 @@ class ChatApp {
   renderChat(highlightId = null) {
     const messagesContainer = document.getElementById('messagesContainer');
     messagesContainer.innerHTML = '';
+    messagesContainer.classList.remove('has-content');
+    messagesContainer.classList.add('no-content');
 
     if (!this.currentChat) return;
 
@@ -1567,6 +1635,9 @@ class ChatApp {
       messagesContainer.appendChild(emptyEl);
       return;
     }
+
+    messagesContainer.classList.remove('no-content');
+    messagesContainer.classList.add('has-content');
 
     let lastDate = null;
     this.currentChat.messages.forEach(msg => {
@@ -2005,12 +2076,18 @@ class ChatApp {
   }
 
   clearMessages() {
-    document.getElementById('messagesContainer').innerHTML = '';
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (!messagesContainer) return;
+    messagesContainer.innerHTML = '';
+    messagesContainer.classList.remove('has-content');
+    messagesContainer.classList.add('no-content');
   }
 
   appendMessage(msg, highlightClass = '') {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer || !this.currentChat) return;
+    messagesContainer.classList.remove('no-content');
+    messagesContainer.classList.add('has-content');
 
     const messageEl = document.createElement('div');
     messageEl.className = `message ${msg.from}${highlightClass}`;
@@ -2546,61 +2623,204 @@ class ChatApp {
     const revealHandle = document.getElementById('navRevealHandle');
     const hideHandle = document.getElementById('navHideHandle');
     if (revealHandle) {
-      revealHandle.addEventListener('click', () => this.showBottomNav());
+      revealHandle.style.display = 'none';
     }
     if (hideHandle) {
-      hideHandle.addEventListener('click', () => this.hideBottomNavForChat());
+      hideHandle.style.display = 'none';
     }
 
-    document.addEventListener('mousemove', (event) => {
-      if (!this.bottomNavHidden) return;
-      if (!this.currentChat) return;
-      if (window.innerWidth <= 768) return;
-      if (event.clientY >= window.innerHeight - 6) {
-        this.showBottomNav();
-      }
-    });
+    this.renderSidebarAvatarsStrip();
   }
 
   handleBottomNavResize() {
     if (window.innerWidth <= 768) {
-      this.showBottomNav();
+      this.restoreBottomNavToHome({ animate: false });
       return;
     }
     if (this.currentChat) {
-      this.hideBottomNavForChat();
+      this.mountBottomNavInSidebar();
+    } else {
+      this.restoreBottomNavToHome({ animate: false });
     }
   }
 
   hideBottomNavForChat() {
     if (window.innerWidth <= 768) return;
-    const profileMenu = document.querySelector('.profile-menu-wrapper');
-    const revealHandle = document.getElementById('navRevealHandle');
-    const hideHandle = document.getElementById('navHideHandle');
-    if (!profileMenu) return;
-    profileMenu.classList.add('nav-hidden');
-    this.bottomNavHidden = true;
-    if (revealHandle) revealHandle.classList.remove('show');
-    if (hideHandle) hideHandle.classList.remove('show');
-    if (this.navRevealTimeout) window.clearTimeout(this.navRevealTimeout);
-    this.navRevealTimeout = window.setTimeout(() => {
-      if (this.bottomNavHidden && revealHandle) revealHandle.classList.add('show');
-    }, 320);
+    this.mountBottomNavInSidebar();
   }
 
   showBottomNav() {
-    const profileMenu = document.querySelector('.profile-menu-wrapper');
-    const revealHandle = document.getElementById('navRevealHandle');
-    const hideHandle = document.getElementById('navHideHandle');
-    if (profileMenu) profileMenu.classList.remove('nav-hidden');
-    if (revealHandle) revealHandle.classList.remove('show');
-    if (hideHandle) {
-      hideHandle.classList.toggle(
-        'show',
-        Boolean(this.currentChat) && window.innerWidth > 768
-      );
+    if (window.innerWidth > 768 && this.currentChat) {
+      this.mountBottomNavInSidebar();
+      return;
     }
+    this.restoreBottomNavToHome({ animate: true });
     this.bottomNavHidden = false;
+  }
+
+  ensureBottomNavHomeAnchor() {
+    const profileMenu = document.querySelector('.profile-menu-wrapper');
+    const appRoot = document.querySelector('.bridge-app') || document.getElementById('app');
+    if (!profileMenu || !appRoot) return;
+
+    if (!this.bottomNavHomeAnchor) {
+      const anchor = document.createElement('span');
+      anchor.className = 'bottom-nav-home-anchor';
+      appRoot.appendChild(anchor);
+      this.bottomNavHomeAnchor = anchor;
+      return;
+    }
+
+    if (this.bottomNavHomeAnchor.parentNode !== appRoot) {
+      appRoot.appendChild(this.bottomNavHomeAnchor);
+    }
+  }
+
+  mountBottomNavInSidebar() {
+    if (window.innerWidth <= 768) return;
+    if (!this.currentChat) return;
+    const profileMenu = document.querySelector('.profile-menu-wrapper');
+    const navSlot = document.getElementById('sidebarNavSlot');
+    const sidebar = document.querySelector('.sidebar');
+    if (!profileMenu || !navSlot) return;
+    if (profileMenu.parentElement !== navSlot) {
+      navSlot.appendChild(profileMenu);
+    }
+    profileMenu.classList.remove('in-sidebar-top');
+    profileMenu.classList.add('in-sidebar-slot');
+    profileMenu.setAttribute('data-nav-mode', 'sidebar-vertical');
+    profileMenu.style.display = '';
+    if (sidebar) sidebar.classList.add('nav-menu-vertical');
+    this.bottomNavInSidebarTop = false;
+    this.syncBottomNavVisualState();
+  }
+
+  renderSidebarAvatarsStrip() {
+    const avatarsStrip = document.getElementById('sidebarAvatarsStrip');
+    if (!avatarsStrip) return;
+
+    avatarsStrip.innerHTML = '';
+    const sorted = this.getSortedChats().slice(0, 40);
+    if (sorted.length === 0) {
+      avatarsStrip.classList.add('is-empty');
+      return;
+    }
+
+    avatarsStrip.classList.remove('is-empty');
+    sorted.forEach((chat) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `sidebar-avatar-chip${this.currentChat?.id === chat.id ? ' active' : ''}`;
+      button.dataset.chatId = String(chat.id);
+      button.title = chat.name;
+
+      const initials = chat.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      button.innerHTML = `
+        <span class="sidebar-avatar-chip-circle" style="background: ${this.getContactColor(chat.name)}">${initials}</span>
+      `;
+      button.addEventListener('click', () => this.selectChat(chat.id));
+      avatarsStrip.appendChild(button);
+    });
+  }
+
+  moveBottomNavToSidebarTop({ animate = true } = {}) {
+    if (window.innerWidth <= 768) return;
+    this.ensureBottomNavHomeAnchor();
+
+    const profileMenu = document.querySelector('.profile-menu-wrapper');
+    const navSlot = document.getElementById('sidebarNavSlot');
+    if (!profileMenu || !navSlot) return;
+    if (profileMenu.parentElement === navSlot && this.bottomNavInSidebarTop) return;
+
+    const startRect = profileMenu.getBoundingClientRect();
+    navSlot.appendChild(profileMenu);
+    profileMenu.classList.add('in-sidebar-top');
+    const endRect = profileMenu.getBoundingClientRect();
+    this.bottomNavInSidebarTop = true;
+
+    if (!animate || document.documentElement.classList.contains('no-animations')) return;
+    const dx = startRect.left - endRect.left;
+    const dy = startRect.top - endRect.top;
+
+    profileMenu.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px)`, opacity: 0.92 },
+        { transform: 'translate(0, 0)', opacity: 1 }
+      ],
+      {
+        duration: 420,
+        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        fill: 'both'
+      }
+    );
+  }
+
+  restoreBottomNavToHome({ animate = true } = {}) {
+    this.ensureBottomNavHomeAnchor();
+    const profileMenu = document.querySelector('.profile-menu-wrapper');
+    const homeAnchor = this.bottomNavHomeAnchor;
+    const sidebar = document.querySelector('.sidebar');
+    if (!profileMenu || !homeAnchor || !homeAnchor.parentNode) return;
+    if (profileMenu.parentNode === homeAnchor.parentNode && profileMenu.previousElementSibling === homeAnchor) {
+      profileMenu.classList.remove('in-sidebar-slot');
+      profileMenu.classList.remove('in-sidebar-top');
+      profileMenu.removeAttribute('data-nav-mode');
+      if (sidebar) sidebar.classList.remove('nav-menu-vertical');
+      this.bottomNavInSidebarTop = false;
+      this.syncBottomNavVisualState();
+      return;
+    }
+
+    const startRect = profileMenu.getBoundingClientRect();
+    homeAnchor.parentNode.insertBefore(profileMenu, homeAnchor.nextSibling);
+    profileMenu.classList.remove('in-sidebar-slot');
+    profileMenu.classList.remove('in-sidebar-top');
+    profileMenu.removeAttribute('data-nav-mode');
+    if (sidebar) sidebar.classList.remove('nav-menu-vertical');
+    const endRect = profileMenu.getBoundingClientRect();
+    this.bottomNavInSidebarTop = false;
+    this.syncBottomNavVisualState();
+
+    if (!animate || document.documentElement.classList.contains('no-animations')) return;
+    const dx = startRect.left - endRect.left;
+    const dy = startRect.top - endRect.top;
+    profileMenu.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px)`, opacity: 0.92 },
+        { transform: 'translate(0, 0)', opacity: 1 }
+      ],
+      {
+        duration: 360,
+        easing: 'cubic-bezier(0.22, 0.82, 0.25, 1)',
+        fill: 'both'
+      }
+    );
+  }
+
+  syncBottomNavVisualState() {
+    const nav = document.querySelector('.bottom-nav');
+    const indicator = nav?.querySelector('.bottom-nav-indicator');
+    if (!nav || !indicator) return;
+    if (window.getComputedStyle(indicator).display === 'none') return;
+    const activeBtn = nav.querySelector('.bottom-nav-item.active');
+    if (!activeBtn) return;
+
+    // Re-anchor indicator to the currently active button without "jump from start".
+    const navRect = nav.getBoundingClientRect();
+    const targetRect = activeBtn.getBoundingClientRect();
+    const indicatorWidth = indicator.offsetWidth || Number(indicator.dataset.w || 0) || 56;
+    if (indicator.offsetWidth > 0) indicator.dataset.w = String(indicator.offsetWidth);
+    const maxX = Math.max(0, navRect.width - indicatorWidth);
+    const offsetX = targetRect.left - navRect.left + (targetRect.width - indicatorWidth) / 2;
+    const nextX = Math.min(maxX, Math.max(0, offsetX));
+
+    indicator.style.transition = 'none';
+    indicator.style.transform = `translateX(${nextX}px)`;
+    indicator.dataset.x = String(nextX);
+
+    window.requestAnimationFrame(() => {
+      indicator.style.removeProperty('transition');
+    });
   }
 
   updateBottomNavIndicator(activeBtn = null) {
@@ -2608,11 +2828,14 @@ class ChatApp {
     const indicator = nav?.querySelector('.bottom-nav-indicator');
     const target = activeBtn || nav?.querySelector('.bottom-nav-item.active');
     if (!nav || !indicator || !target) return;
+    if (window.getComputedStyle(indicator).display === 'none') return;
 
     const navRect = nav.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
-    const maxX = Math.max(0, navRect.width - indicator.offsetWidth);
-    const offsetX = targetRect.left - navRect.left + (targetRect.width - indicator.offsetWidth) / 2;
+    const indicatorWidth = indicator.offsetWidth || Number(indicator.dataset.w || 0) || 56;
+    if (indicator.offsetWidth > 0) indicator.dataset.w = String(indicator.offsetWidth);
+    const maxX = Math.max(0, navRect.width - indicatorWidth);
+    const offsetX = targetRect.left - navRect.left + (targetRect.width - indicatorWidth) / 2;
     const nextX = Math.min(maxX, Math.max(0, offsetX));
     let currentX = Number(indicator.dataset.x ?? nextX);
     const noAnimations = document.documentElement.classList.contains('no-animations');
@@ -3105,9 +3328,13 @@ class ChatApp {
   }
 
   async showSettings(sectionName) {
-    this.showBottomNav();
     // На мобільному використовуємо settingsContainerMobile, на ПК - settingsContainer
     const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      this.showBottomNav();
+    } else {
+      this.restoreBottomNavToHome({ animate: false });
+    }
     const settingsContainerId = isMobile ? 'settingsContainerMobile' : 'settingsContainer';
     const settingsContainer = document.getElementById(settingsContainerId);
     
@@ -3130,22 +3357,18 @@ class ChatApp {
     // Hide chats list header when showing settings
     if (chatsListHeader) chatsListHeader.style.display = 'none';
 
-    // On desktop, hide sidebar when showing settings (keep bottom nav visible)
+    // On desktop, keep sidebar visible and keep nav inside sidebar.
     if (!isMobile) {
       const sidebar = document.querySelector('.sidebar');
       const profileMenu = document.querySelector('.profile-menu-wrapper');
       if (sidebar) {
-        sidebar.style.display = 'none';
+        sidebar.style.display = '';
         sidebar.classList.remove('compact');
       }
       if (profileMenu) {
-        if (!this.profileMenuPlaceholder) {
-          this.profileMenuPlaceholder = document.createElement('span');
-          this.profileMenuPlaceholder.className = 'profile-menu-placeholder';
-          profileMenu.parentNode?.insertBefore(this.profileMenuPlaceholder, profileMenu);
-        }
-        document.body.appendChild(profileMenu);
-        profileMenu.classList.add('floating-nav');
+        profileMenu.classList.remove('floating-nav');
+        this.restoreBottomNavToHome({ animate: false });
+        this.updateBottomNavIndicator();
       }
     }
     

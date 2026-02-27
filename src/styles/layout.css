@@ -7,8 +7,16 @@ body {
   overflow: hidden;
   background: var(--bg-gradient);
   font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-    Cantarell, "Helvetica Neue", sans-serif;
+    "Roboto",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Helvetica Neue",
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -50,6 +58,7 @@ html.dark-theme body {
   backdrop-filter: blur(16px);
   flex-shrink: 0;
   height: var(--app-header-height);
+  position: relative;
 }
 
 .app-header-left,
@@ -87,6 +96,15 @@ html.dark-theme body {
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+.bridge-app.chat-open .app-chat-info,
+.bridge-app.chat-active .app-chat-info {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0 auto;
 }
 
 .app-chat-avatar {
@@ -228,7 +246,7 @@ html.dark-theme body {
     background 0.2s ease,
     box-shadow 0.2s ease;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   min-width: 56px;
   position: relative;
   z-index: 1;
@@ -339,6 +357,13 @@ html.dark-theme body {
     transform 0.3s ease,
     opacity 0.2s ease;
   will-change: transform;
+}
+
+.bridge-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 20px !important;
+  transform: translateX(-50%) !important;
 }
 
 .profile-menu-wrapper.nav-hidden {
@@ -473,6 +498,7 @@ html.dark-theme body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow: hidden;
   background: var(--bg-gradient);
 }
@@ -481,6 +507,7 @@ html.dark-theme body {
   display: none;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   height: 100%;
 }
@@ -548,6 +575,24 @@ html.dark-theme body {
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text-primary);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    max-width 0.2s ease,
+    margin 0.2s ease;
+}
+
+.bridge-app.chat-open .chat-brand .app-title,
+.bridge-app.chat-active .chat-brand .app-title {
+  opacity: 0;
+  transform: translateX(-6px);
+  max-width: 0;
+  margin-left: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .btn-back {
@@ -656,14 +701,27 @@ html.dark-theme body {
   min-height: 0;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
-  justify-content: flex-end;
+  justify-content: flex-start;
+}
+
+.messages-container::before {
+  content: '';
+  flex: 1 0 8px;
+}
+
+.messages-container.has-content::before {
+  flex-grow: 1;
+}
+
+.messages-container.no-content::before {
+  display: none;
 }
 
 .message-input-area {
   padding: 16px;
   border-top: 1px solid var(--border-color);
-  background-color: var(--glass);
-  backdrop-filter: blur(16px);
+  background-color: var(--bg-elevated);
+  backdrop-filter: blur(12px);
   flex-shrink: 0;
 }
 
@@ -704,6 +762,16 @@ html.dark-theme body {
 }
 
 @media (min-width: 769px) {
+  .chat-area .message-input {
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    padding: 8px 12px;
+    line-height: 20px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
   .messages-container {
     padding: 10px 16px 12px;
   }
@@ -910,20 +978,14 @@ html.dark-theme body {
 
   .bottom-nav-item.active {
     color: white !important;
-    transform: translateY(-1px) !important;
+    background: var(--primary-color) !important;
+    border: 1px solid var(--secondary-color) !important;
+    transform: none !important;
+    box-shadow: 0 6px 14px rgba(0, 169, 255, 0.28) !important;
   }
 
   .bottom-nav-indicator {
-    width: 56px !important;
-    height: calc(100% - 20px) !important;
-    top: 10px !important;
-    border-radius: 22px !important;
-    background: linear-gradient(
-      135deg,
-      var(--primary-color),
-      var(--secondary-color)
-    ) !important;
-    box-shadow: 0 8px 18px rgba(51, 91, 255, 0.25) !important;
+    display: none !important;
   }
 
   .dark-theme .bottom-nav {

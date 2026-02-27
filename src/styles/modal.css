@@ -19,8 +19,9 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--bg-color);
+  background: rgba(18, 20, 30, 0.7);
   border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   display: none;
   z-index: 1000;
@@ -28,6 +29,8 @@
   width: 90%;
   max-height: 90vh;
   overflow: auto;
+  backdrop-filter: blur(28px) saturate(140%);
+  color: #ffffff;
 }
 
 .modal.active {
@@ -36,10 +39,51 @@
 }
 
 .modal-content {
+  background: transparent;
+  color: inherit;
+}
+
+html:not(.dark-theme) .modal {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(235, 242, 255, 0.55));
+  border-color: rgba(20, 24, 36, 0.12);
+  color: var(--text-primary);
+  box-shadow:
+    0 20px 55px rgba(15, 19, 32, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.55);
+}
+
+html:not(.dark-theme) .modal-content {
+  color: var(--text-primary);
+}
+
+.modal-content {
   display: flex;
   flex-direction: column;
   height: 100%;
   animation: fadeIn 0.3s ease;
+}
+
+html:not(.dark-theme) .modal-header,
+html:not(.dark-theme) .modal-body,
+html:not(.dark-theme) .modal-footer {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(22px) saturate(160%);
+}
+
+html:not(.dark-theme) .modal-header {
+  border-bottom-color: rgba(20, 24, 36, 0.12);
+}
+
+html:not(.dark-theme) .modal-footer {
+  border-top-color: rgba(20, 24, 36, 0.12);
+}
+
+.modal-header h2,
+.modal-header h3,
+.modal-body {
+  color: inherit;
 }
 
 @keyframes fadeIn {
@@ -75,7 +119,7 @@
 }
 
 #newChatModal .modal-header h3 {
-  color: #f5f5f7;
+  color: inherit;
 }
 
 .modal-body {
