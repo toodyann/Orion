@@ -151,9 +151,21 @@
     position: fixed;
     left: 50%;
     bottom: calc(12px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
+    transform: translate(-50%, 0);
     z-index: 80;
     width: min(430px, calc(100vw - 24px));
+    opacity: 1;
+    pointer-events: auto;
+    transition: transform 0.18s ease-out, opacity 0.18s ease-out;
+  }
+
+  .bridge-app.chat-open .profile-menu-wrapper,
+  .bridge-app.chat-active .profile-menu-wrapper,
+  .bridge-app.mobile-chat-open .profile-menu-wrapper,
+  .bridge-app:has(#chatContainer.active) .profile-menu-wrapper {
+    transform: translate(-50%, 120%);
+    opacity: 0;
+    pointer-events: none;
   }
 
   .bridge-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper {
@@ -786,6 +798,16 @@
     display: flex;
   }
 
+  .bridge-app.chat-active .chat-area,
+  .bridge-app:has(#chatContainer.active) .chat-area {
+    display: flex !important;
+  }
+
+  .bridge-app.chat-active .profile-menu-wrapper,
+  .bridge-app:has(#chatContainer.active) .profile-menu-wrapper {
+    display: none !important;
+  }
+
   .chat-area .chat-container,
   .chat-area .chat-container.active {
     position: relative !important;
@@ -951,6 +973,7 @@
     z-index: 6;
     overflow: visible !important;
     touch-action: manipulation;
+    display: block !important;
   }
 
   .bridge-app.chat-active .messages-container,
