@@ -2669,6 +2669,11 @@ class ChatApp {
       this.mountBottomNavInSidebar();
       return;
     }
+    if (window.innerWidth <= 768) {
+      this.restoreBottomNavToHome({ animate: false });
+      this.bottomNavHidden = false;
+      return;
+    }
     this.restoreBottomNavToHome({ animate: true });
     this.bottomNavHidden = false;
   }

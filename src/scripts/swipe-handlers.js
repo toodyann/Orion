@@ -96,8 +96,8 @@ export function setupMobileSwipeBack(app) {
         chatContainer.removeEventListener('transitionend', onCloseTransitionEnd);
         chatContainer.style.removeProperty('transition');
         chatContainer.style.removeProperty('will-change');
-        if (appRoot) appRoot.classList.remove('swipe-peek');
         app.closeChat({ animate: false });
+        if (appRoot) appRoot.classList.remove('swipe-peek');
       };
       const onCloseTransitionEnd = (event) => {
         if (event.target !== chatContainer || event.propertyName !== 'transform') return;
