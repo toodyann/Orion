@@ -154,6 +154,30 @@ class ChatApp {
         price: 560
       },
       {
+        id: 'frame_ember',
+        type: 'frame',
+        effect: 'ember',
+        title: 'Ember Loop',
+        description: 'Теплий вогняний акцент для яскравого профілю.',
+        price: 640
+      },
+      {
+        id: 'frame_mint',
+        type: 'frame',
+        effect: 'mint',
+        title: 'Mint Orbit',
+        description: 'Свіжий м’ятний обідок з м’яким сяйвом.',
+        price: 720
+      },
+      {
+        id: 'frame_shadow',
+        type: 'frame',
+        effect: 'shadow',
+        title: 'Shadow Loop',
+        description: 'Глибокий темний контур для стриманого стилю.',
+        price: 810
+      },
+      {
         id: 'aura_aurora',
         type: 'aura',
         effect: 'aurora',
@@ -176,6 +200,30 @@ class ChatApp {
         title: 'Sunset Mist',
         description: 'Тепла помаранчева аура для hero-блоку.',
         price: 990
+      },
+      {
+        id: 'aura_frost',
+        type: 'aura',
+        effect: 'frost',
+        title: 'Frost Veil',
+        description: 'Холодний скляний серпанок для спокійного вигляду.',
+        price: 1080
+      },
+      {
+        id: 'aura_sunbeam',
+        type: 'aura',
+        effect: 'sunbeam',
+        title: 'Sunbeam Dust',
+        description: 'Теплий золотий підсвіт із м’яким світлом.',
+        price: 1190
+      },
+      {
+        id: 'aura_midnight',
+        type: 'aura',
+        effect: 'midnight',
+        title: 'Midnight Flow',
+        description: 'Глибокий нічний перелив з темним акцентом.',
+        price: 1320
       }
     ];
   }
@@ -322,32 +370,18 @@ class ChatApp {
     if (!profileSection) return;
 
     const profileName = profileSection.querySelector('#profileName');
-    const profileStatus = profileSection.querySelector('#profileStatus');
     const profileBio = profileSection.querySelector('#profileBio');
     const profileEmail = profileSection.querySelector('#profileEmail');
     const profileDob = profileSection.querySelector('#profileDob');
     const avatarDiv = profileSection.querySelector('.profile-avatar-large');
 
     if (profileName) profileName.textContent = this.user.name;
-    if (profileStatus) this.renderStatusIndicator(profileStatus);
     if (profileBio) profileBio.textContent = this.user.bio || '';
     if (profileEmail) profileEmail.textContent = this.user.email || '';
     if (profileDob) profileDob.textContent = this.formatBirthDate(this.user.birthDate);
 
     this.renderProfileAvatar(avatarDiv);
     this.applyProfileAura(profileSection.querySelector('.profile-hero-card'));
-  }
-
-  renderStatusIndicator(container) {
-    if (!container) return;
-    const dot = container.querySelector('.status-dot');
-    const showStatus = this.settings?.showOnlineStatus ?? true;
-    const isOnline = showStatus;
-
-    if (dot) {
-      dot.classList.toggle('online', isOnline);
-    }
-    container.setAttribute('aria-label', isOnline ? 'Онлайн' : 'Офлайн');
   }
 
   formatBirthDate(value) {
@@ -3040,12 +3074,42 @@ class ChatApp {
 
   initShop(settingsContainer) {
     const balanceEl = settingsContainer.querySelector('#shopBalanceValue');
+    const filterToggleEl = settingsContainer.querySelector('#shopFilterToggle');
+    const filterSummaryEl = settingsContainer.querySelector('#shopFilterSummary');
+    const filterPanelEl = settingsContainer.querySelector('#shopFilterPanel');
+    const minPriceEl = settingsContainer.querySelector('#shopPriceMin');
+    const maxPriceEl = settingsContainer.querySelector('#shopPriceMax');
+    const minPriceValueEl = settingsContainer.querySelector('#shopPriceMinValue');
+    const maxPriceValueEl = settingsContainer.querySelector('#shopPriceMaxValue');
+    const filterResetEl = settingsContainer.querySelector('#shopFilterReset');
+    const filterApplyEl = settingsContainer.querySelector('#shopFilterApply');
+    const filterCloseEl = settingsContainer.querySelector('#shopFilterClose');
     const gridEl = settingsContainer.querySelector('#shopGrid');
     if (!balanceEl || !gridEl) return;
 
     const inventory = new Set(this.loadShopInventory());
     const catalog = this.getShopCatalog();
+    const minCatalogPrice = Math.min(...catalog.map(item => item.price));
+    const maxCatalogPrice = Math.max(...catalog.map(item => item.price));
+    const filterState = {
+      category: 'all',
+      ownership: 'all',
+      availability: 'all',
+      sort: 'default',
+      minPrice: minCatalogPrice,
+      maxPrice: maxCatalogPrice
+    };
+    const shouldOpenByDefault = window.innerWidth >= 769;
     balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
+
+    if (minPriceEl && maxPriceEl) {
+      minPriceEl.min = String(minCatalogPrice);
+      minPriceEl.max = String(maxCatalogPrice);
+      minPriceEl.value = String(minCatalogPrice);
+      maxPriceEl.min = String(minCatalogPrice);
+      maxPriceEl.max = String(maxCatalogPrice);
+      maxPriceEl.value = String(maxCatalogPrice);
+    }
 
     const createPreview = (item) => {
       if (item.type === 'frame') {
@@ -3065,11 +3129,82 @@ class ChatApp {
       `;
     };
 
+    const getFilterSummary = () => {
+      const parts = [];
+      if (filterState.category === 'frame') parts.push('Аватар');
+      if (filterState.category === 'aura') parts.push('Профіль');
+      if (filterState.ownership === 'owned') parts.push('Куплені');
+      if (filterState.ownership === 'unowned') parts.push('Не куплені');
+      if (filterState.availability === 'equipped') parts.push('Встановлені');
+      if (filterState.availability === 'can-buy') parts.push('Можна купити');
+      if (filterState.minPrice > minCatalogPrice || filterState.maxPrice < maxCatalogPrice) {
+        parts.push(`Ціна ${this.formatCoinBalance(filterState.minPrice, 1)}-${this.formatCoinBalance(filterState.maxPrice, 1)}`);
+      }
+      if (filterState.sort === 'price-asc') parts.push('Дешеві спочатку');
+      if (filterState.sort === 'price-desc') parts.push('Дорогі спочатку');
+      return parts.length ? parts.join(' • ') : 'Усі товари';
+    };
+
+    const syncFilterControls = () => {
+      if (filterPanelEl) {
+        filterPanelEl.querySelectorAll('[data-shop-filter-group]').forEach(btn => {
+          const group = btn.dataset.shopFilterGroup;
+          const value = btn.dataset.shopFilterValue;
+          btn.classList.toggle('active', Boolean(group) && filterState[group] === value);
+        });
+      }
+      if (minPriceEl) minPriceEl.value = String(filterState.minPrice);
+      if (maxPriceEl) maxPriceEl.value = String(filterState.maxPrice);
+      if (minPriceValueEl) minPriceValueEl.textContent = this.formatCoinBalance(filterState.minPrice, 1);
+      if (maxPriceValueEl) maxPriceValueEl.textContent = this.formatCoinBalance(filterState.maxPrice, 1);
+      if (filterSummaryEl) filterSummaryEl.textContent = getFilterSummary();
+    };
+
+    const setFilterPanelOpen = (isOpen) => {
+      if (!filterPanelEl || !filterToggleEl) return;
+      filterPanelEl.classList.toggle('is-open', isOpen);
+      filterToggleEl.classList.toggle('is-open', isOpen);
+      filterToggleEl.setAttribute('aria-expanded', String(isOpen));
+    };
+
     const renderShop = () => {
       const activeBalance = this.getTapBalanceCents();
       balanceEl.textContent = this.formatCoinBalance(activeBalance);
+      syncFilterControls();
 
-      gridEl.innerHTML = catalog.map(item => {
+      const visibleItems = catalog
+        .filter(item => {
+          const owned = inventory.has(item.id);
+          const equipped = item.type === 'frame'
+            ? this.user?.equippedAvatarFrame === item.effect
+            : this.user?.equippedProfileAura === item.effect;
+          const canBuy = !owned && activeBalance >= item.price;
+
+          if (filterState.category !== 'all' && item.type !== filterState.category) return false;
+          if (filterState.ownership === 'owned' && !owned) return false;
+          if (filterState.ownership === 'unowned' && owned) return false;
+          if (filterState.availability === 'equipped' && !equipped) return false;
+          if (filterState.availability === 'can-buy' && !canBuy) return false;
+          if (item.price < filterState.minPrice || item.price > filterState.maxPrice) return false;
+          return true;
+        })
+        .sort((a, b) => {
+          if (filterState.sort === 'price-asc') return a.price - b.price;
+          if (filterState.sort === 'price-desc') return b.price - a.price;
+          return 0;
+        });
+
+      if (!visibleItems.length) {
+        gridEl.innerHTML = `
+          <div class="shop-empty-state">
+            <strong>Нічого не знайдено</strong>
+            <span>Спробуйте інший фільтр або заробіть більше монет у грі.</span>
+          </div>
+        `;
+        return;
+      }
+
+      gridEl.innerHTML = visibleItems.map(item => {
         const owned = inventory.has(item.id);
         const equipped = item.type === 'frame'
           ? this.user?.equippedAvatarFrame === item.effect
@@ -3085,7 +3220,7 @@ class ChatApp {
         return `
           <article class="shop-item-card ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
             <div class="shop-item-top">
-              <span class="shop-item-type">${item.type === 'frame' ? 'Рамка' : 'Аура'}</span>
+              <span class="shop-item-type">Предмет</span>
               <span class="shop-item-price">${this.formatCoinBalance(item.price, 1)}</span>
             </div>
             <div class="shop-item-preview">
@@ -3105,6 +3240,82 @@ class ChatApp {
     };
 
     renderShop();
+    setFilterPanelOpen(shouldOpenByDefault);
+
+    if (filterToggleEl && filterToggleEl.dataset.bound !== 'true') {
+      filterToggleEl.dataset.bound = 'true';
+      filterToggleEl.addEventListener('click', () => {
+        const shouldOpen = !filterPanelEl?.classList.contains('is-open');
+        setFilterPanelOpen(shouldOpen);
+      });
+    }
+
+    if (filterPanelEl && filterPanelEl.dataset.bound !== 'true') {
+      filterPanelEl.dataset.bound = 'true';
+      filterPanelEl.addEventListener('click', (event) => {
+        const filterBtn = event.target.closest('[data-shop-filter-group]');
+        if (!filterBtn) return;
+        const group = filterBtn.dataset.shopFilterGroup;
+        const value = filterBtn.dataset.shopFilterValue;
+        if (!group || !value) return;
+        filterState[group] = value;
+        syncFilterControls();
+      });
+    }
+
+    if (minPriceEl && minPriceEl.dataset.bound !== 'true') {
+      minPriceEl.dataset.bound = 'true';
+      minPriceEl.addEventListener('input', () => {
+        const nextValue = Number(minPriceEl.value);
+        filterState.minPrice = Math.min(nextValue, filterState.maxPrice);
+        if (filterState.minPrice > filterState.maxPrice) {
+          filterState.maxPrice = filterState.minPrice;
+        }
+        syncFilterControls();
+      });
+    }
+
+    if (maxPriceEl && maxPriceEl.dataset.bound !== 'true') {
+      maxPriceEl.dataset.bound = 'true';
+      maxPriceEl.addEventListener('input', () => {
+        const nextValue = Number(maxPriceEl.value);
+        filterState.maxPrice = Math.max(nextValue, filterState.minPrice);
+        if (filterState.maxPrice < filterState.minPrice) {
+          filterState.minPrice = filterState.maxPrice;
+        }
+        syncFilterControls();
+      });
+    }
+
+    if (filterResetEl && filterResetEl.dataset.bound !== 'true') {
+      filterResetEl.dataset.bound = 'true';
+      filterResetEl.addEventListener('click', () => {
+        filterState.category = 'all';
+        filterState.ownership = 'all';
+        filterState.availability = 'all';
+        filterState.sort = 'default';
+        filterState.minPrice = minCatalogPrice;
+        filterState.maxPrice = maxCatalogPrice;
+        syncFilterControls();
+        renderShop();
+      });
+    }
+
+    if (filterApplyEl && filterApplyEl.dataset.bound !== 'true') {
+      filterApplyEl.dataset.bound = 'true';
+      filterApplyEl.addEventListener('click', () => {
+        renderShop();
+        setFilterPanelOpen(false);
+      });
+    }
+
+    if (filterCloseEl && filterCloseEl.dataset.bound !== 'true') {
+      filterCloseEl.dataset.bound = 'true';
+      filterCloseEl.addEventListener('click', () => {
+        setFilterPanelOpen(false);
+      });
+    }
+
     if (gridEl.dataset.bound === 'true') return;
     gridEl.dataset.bound = 'true';
 
@@ -3723,7 +3934,6 @@ class ChatApp {
       if (sectionName === 'profile') {
         this.settingsParentSection = 'profile';
         const profileName = settingsContainer.querySelector('#profileDisplayName');
-        const profileStatus = settingsContainer.querySelector('#profileDisplayStatus');
         const profileBio = settingsContainer.querySelector('#profileDisplayBio');
         const profileEmail = settingsContainer.querySelector('#profileDisplayEmail');
         const profileDob = settingsContainer.querySelector('#profileDisplayDob');
@@ -3733,7 +3943,6 @@ class ChatApp {
         const menuItems = settingsContainer.querySelectorAll('.settings-menu-item');
 
         if (profileName) profileName.textContent = this.user.name;
-        if (profileStatus) this.renderStatusIndicator(profileStatus);
         if (profileBio) profileBio.textContent = this.user.bio || '';
         if (profileEmail) profileEmail.textContent = this.user.email || '';
         if (profileDob) profileDob.textContent = this.formatBirthDate(this.user.birthDate);

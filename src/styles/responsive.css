@@ -459,6 +459,32 @@
     display: none !important;
   }
 
+  #settingsContainerMobile #messenger-settings .settings-header {
+    background: transparent !important;
+    min-height: 0 !important;
+    padding: 8px 0 6px !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings {
+    background: var(--bg-secondary) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .settings-content {
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .settings-header h2 {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 46px !important;
+    padding: 0 18px !important;
+    border-radius: 999px !important;
+  }
+
   #settingsContainerMobile .settings-header h2 {
     margin: 0 !important;
     font-size: 18px !important;

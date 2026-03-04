@@ -1,5 +1,7 @@
 // Шаблони налаштувань для Orion
 
+const orionValueAssetUrl = new URL('../assets/Orion_value.png', import.meta.url).href;
+
 export const settingsTemplates = {
   'profile': `
 <div class="settings-section profile-page" id="profile">
@@ -16,9 +18,6 @@ export const settingsTemplates = {
 
         <div class="profile-name-row">
           <h2 class="profile-name" id="profileDisplayName">Користувач Orion</h2>
-          <div class="profile-status" id="profileDisplayStatus">
-            <span class="status-dot" aria-hidden="true"></span>
-          </div>
         </div>
         <div class="profile-handle-row">
           <p class="profile-handle">@orion.user</p>
@@ -233,6 +232,80 @@ export const settingsTemplates = {
         </div>
       </div>
       <p class="shop-balance-note">Прокачуйте профіль предметами, які купуються лише за монети.</p>
+    </div>
+
+    <div class="shop-filter-toolbar">
+      <button type="button" class="shop-filter-trigger" id="shopFilterToggle" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+          <path d="M64,105V40a8,8,0,0,0-16,0v65a32,32,0,0,0,0,62v49a8,8,0,0,0,16,0V167a32,32,0,0,0,0-62Zm-8,47a16,16,0,1,1,16-16A16,16,0,0,1,56,152Zm80-95V40a8,8,0,0,0-16,0V57a32,32,0,0,0,0,62v97a8,8,0,0,0,16,0V119a32,32,0,0,0,0-62Zm-8,47a16,16,0,1,1,16-16A16,16,0,0,1,128,104Zm104,64a32.06,32.06,0,0,0-24-31V40a8,8,0,0,0-16,0v97a32,32,0,0,0,0,62v17a8,8,0,0,0,16,0V199A32.06,32.06,0,0,0,232,168Zm-32,16a16,16,0,1,1,16-16A16,16,0,0,1,200,184Z"></path>
+        </svg>
+        <span>Фільтр</span>
+      </button>
+      <div class="shop-filter-summary" id="shopFilterSummary">Усі товари</div>
+    </div>
+
+    <div class="shop-filter-panel" id="shopFilterPanel" aria-label="Розширений фільтр товарів">
+      <div class="shop-filter-panel-head">
+        <span class="shop-filter-panel-title">Параметри фільтра</span>
+        <button type="button" class="shop-filter-close" id="shopFilterClose" aria-label="Закрити фільтр">×</button>
+      </div>
+
+      <div class="shop-filter-section">
+        <span class="shop-filter-section-title">Категорія</span>
+        <div class="shop-filter-options">
+          <button type="button" class="shop-filter-btn active" data-shop-filter-group="category" data-shop-filter-value="all">Усе</button>
+          <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="frame">Аватар</button>
+          <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="aura">Профіль</button>
+        </div>
+      </div>
+
+      <div class="shop-filter-section">
+        <span class="shop-filter-section-title">Власність</span>
+        <div class="shop-filter-options">
+          <button type="button" class="shop-filter-btn active" data-shop-filter-group="ownership" data-shop-filter-value="all">Усе</button>
+          <button type="button" class="shop-filter-btn" data-shop-filter-group="ownership" data-shop-filter-value="owned">Куплені</button>
+          <button type="button" class="shop-filter-btn" data-shop-filter-group="ownership" data-shop-filter-value="unowned">Не куплені</button>
+        </div>
+      </div>
+
+      <div class="shop-filter-section">
+        <span class="shop-filter-section-title">Стан</span>
+        <div class="shop-filter-options">
+          <button type="button" class="shop-filter-btn active" data-shop-filter-group="availability" data-shop-filter-value="all">Будь-який</button>
+          <button type="button" class="shop-filter-btn" data-shop-filter-group="availability" data-shop-filter-value="equipped">Встановлені</button>
+          <button type="button" class="shop-filter-btn" data-shop-filter-group="availability" data-shop-filter-value="can-buy">Можна купити</button>
+        </div>
+      </div>
+
+      <div class="shop-filter-section">
+        <span class="shop-filter-section-title">Ціна</span>
+        <div class="shop-price-range">
+          <div class="shop-price-row">
+            <span>Від</span>
+            <strong id="shopPriceMinValue">00000000,00</strong>
+          </div>
+          <input type="range" id="shopPriceMin" min="0" max="0" step="1" value="0" />
+          <div class="shop-price-row">
+            <span>До</span>
+            <strong id="shopPriceMaxValue">00000000,00</strong>
+          </div>
+          <input type="range" id="shopPriceMax" min="0" max="0" step="1" value="0" />
+        </div>
+      </div>
+
+      <div class="shop-filter-section">
+        <span class="shop-filter-section-title">Сортування</span>
+        <div class="shop-filter-options">
+          <button type="button" class="shop-filter-btn active" data-shop-filter-group="sort" data-shop-filter-value="default">За замовчуванням</button>
+          <button type="button" class="shop-filter-btn" data-shop-filter-group="sort" data-shop-filter-value="price-asc">Спочатку дешеві</button>
+          <button type="button" class="shop-filter-btn" data-shop-filter-group="sort" data-shop-filter-value="price-desc">Спочатку дорогі</button>
+        </div>
+      </div>
+
+      <div class="shop-filter-actions">
+        <button type="button" class="shop-filter-reset" id="shopFilterReset">Скинути</button>
+        <button type="button" class="shop-filter-apply" id="shopFilterApply">Застосувати</button>
+      </div>
     </div>
 
     <div class="shop-grid" id="shopGrid"></div>
@@ -528,7 +601,7 @@ export const settingsTemplates = {
     <div class="coin-tapper-balance" id="coinTapBalance">00000000,00</div>
 
     <button class="coin-tapper-button" id="coinTapBtn" type="button" aria-label="Заробити монети">
-      <img class="coin-tapper-image" src="./src/Assets/Orion_value.png" alt="Orion Value" />
+      <img class="coin-tapper-image" src="${orionValueAssetUrl}" alt="Orion Value" />
     </button>
 
     <div class="coin-tapper-rate">
