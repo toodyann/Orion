@@ -406,7 +406,7 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    background-color: var(--bg-color);
+    background: transparent;
     position: relative;
     min-height: 0;
     -webkit-overflow-scrolling: touch;
@@ -430,7 +430,7 @@
     justify-content: center !important;
     align-items: center !important;
     position: relative !important;
-    background-color: var(--bg-color) !important;
+    background: transparent !important;
     min-height: 56px !important;
   }
 
@@ -477,7 +477,7 @@
 
   #settingsContainerMobile #messenger-settings {
     position: relative !important;
-    background: var(--bg-secondary) !important;
+    background: transparent !important;
   }
 
   #settingsContainerMobile #messenger-settings .shop-balance-island {
@@ -565,7 +565,7 @@
 
   #settingsContainerMobile #calls {
     position: relative !important;
-    background: var(--bg-secondary) !important;
+    background: transparent !important;
   }
 
   #settingsContainerMobile #calls .calls-header {

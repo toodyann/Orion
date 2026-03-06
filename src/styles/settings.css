@@ -2,7 +2,7 @@
   display: none;
   flex-direction: column;
   width: 100%;
-  background-color: var(--bg-color);
+  background: var(--bg-gradient);
   overflow: hidden;
 }
 
@@ -26,7 +26,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--bg-color);
+  background: transparent;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -104,7 +104,7 @@
 
 #messenger-settings {
   position: relative;
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 #messenger-settings .shop-balance-island {
@@ -220,12 +220,12 @@ html.dark-theme #messenger-settings .shop-balance-island {
 .settings-content {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--bg-secondary);
+  background: transparent;
 }
 
 #calls {
   position: relative;
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 #calls .calls-header {
@@ -725,7 +725,7 @@ to {
     width: 100% !important;
     height: 100% !important;
     z-index: 999 !important;
-    background-color: var(--bg-color) !important;
+    background: var(--bg-gradient) !important;
     flex-direction: column !important;
   }
 
@@ -784,7 +784,7 @@ to {
     overflow-y: auto !important;
     width: 100% !important;
     display: block !important;
-    background-color: var(--bg-secondary) !important;
+    background: transparent !important;
   }
 }
 /* Calls section styles */
@@ -3077,6 +3077,11 @@ html.dark-theme .profile-settings-card {
   flex-direction: column;
   gap: 16px;
   width: 100%;
+  background: transparent;
+}
+
+#mini-games {
+  background: transparent;
 }
 
 .coin-tapper-content {
@@ -3090,17 +3095,7 @@ html.dark-theme .profile-settings-card {
   flex-direction: column;
   min-height: 100%;
   text-align: center;
-  background:
-    radial-gradient(
-      circle at 50% 20%,
-      color-mix(in srgb, var(--primary-color) 10%, transparent),
-      transparent 36%
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-secondary) 82%, transparent),
-      color-mix(in srgb, var(--bg-color) 76%, transparent)
-    );
+  background: transparent;
 }
 
 .coin-tapper-kicker {

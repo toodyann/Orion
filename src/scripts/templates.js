@@ -1,6 +1,6 @@
 // Шаблони налаштувань для Orion
 
-const orionValueAssetUrl = new URL('../assets/Orion_value.png', import.meta.url).href;
+const orionValueAssetUrl = new URL('../Assets/Orion_value.png', import.meta.url).href;
 
 export const settingsTemplates = {
   'profile': `

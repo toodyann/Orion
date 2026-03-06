@@ -236,29 +236,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <!-- Екран привітання -->
     <div class="welcome-screen" id="welcomeScreen">
-      <div class="welcome-content">
-        <div class="welcome-badge">ORION SPACE</div>
-        <div class="welcome-icon">
-          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" fill="currentColor"/>
-          </svg>
-        </div>
-        <h2>Ваші діалоги в одному просторі</h2>
-        <p>Оберіть чат ліворуч або створіть новий, щоб почати розмову без зайвих кроків.</p>
-        <div class="welcome-steps">
-          <div class="welcome-step">
-            <span>1</span>
-            <strong>Оберіть контакт</strong>
-          </div>
-          <div class="welcome-step">
-            <span>2</span>
-            <strong>Напишіть перше повідомлення</strong>
-          </div>
-          <div class="welcome-step">
-            <span>3</span>
-            <strong>Керуйте чатами в одному місці</strong>
-          </div>
-        </div>
+      <div class="welcome-minimal">
+        <h2 class="welcome-minimal-title">Оберіть чат, щоб почати</h2>
+        <p class="welcome-minimal-subtitle">
+          Відкрийте діалог зі списку контактів.
+        </p>
       </div>
     </div>
 
