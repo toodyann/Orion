@@ -1,0 +1,677 @@
+import { setupMobileSwipeBack } from '../swipe-handlers.js';
+import { getContactColor } from '../ui-helpers.js';
+
+export class ChatAppCoreMethods {
+  readJsonStorage(key, fallback) {
+    const rawValue = localStorage.getItem(key);
+    if (!rawValue) return fallback;
+
+    try {
+      return JSON.parse(rawValue);
+    } catch (error) {
+      console.warn(`Invalid JSON in localStorage for key "${key}", resetting value.`);
+      localStorage.removeItem(key);
+      return fallback;
+    }
+  }
+
+  loadUserProfile() {
+    const data = this.readJsonStorage('bridge_user', null);
+    if (data && typeof data === 'object') {
+      return {
+        name: data.name || 'Користувач Orion',
+        email: data.email || 'user@example.com',
+        status: data.status || 'online',
+        bio: data.bio || 'Вітаю!',
+        birthDate: data.birthDate || '',
+        avatarColor: data.avatarColor || '',
+        avatarImage: data.avatarImage || '',
+        equippedAvatarFrame: data.equippedAvatarFrame || '',
+        equippedProfileAura: data.equippedProfileAura || '',
+        equippedProfileMotion: data.equippedProfileMotion || '',
+        equippedProfileBadge: data.equippedProfileBadge || ''
+      };
+    }
+    return {
+      name: 'Користувач Orion',
+      email: 'user@example.com',
+      status: 'online',
+      bio: 'Вітаю!',
+      birthDate: '',
+      avatarColor: 'linear-gradient(135deg, #ff9500, #ff6b6b)',
+      avatarImage: '',
+      equippedAvatarFrame: '',
+      equippedProfileAura: '',
+      equippedProfileMotion: '',
+      equippedProfileBadge: ''
+    };
+  }
+
+  saveUserProfile(userData) {
+    this.user = userData;
+    localStorage.setItem('bridge_user', JSON.stringify(userData));
+    this.updateProfileMenuButton();
+    this.updateProfileDisplay();
+  }
+
+  formatCoinBalance(value, wholeDigits = 8) {
+    const cents = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+    const whole = String(Math.floor(cents / 100)).padStart(wholeDigits, '0');
+    const fraction = String(cents % 100).padStart(2, '0');
+    return `${whole},${fraction}`;
+  }
+
+  formatShopIslandBalance(value) {
+    const cents = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+    const wholeNumber = Math.floor(cents / 100);
+    const whole = wholeNumber === 0 ? '0' : `0${wholeNumber}`;
+    const fraction = String(cents % 100).padStart(2, '0');
+    return `${whole},${fraction}`;
+  }
+
+  getTapBalanceCents() {
+    try {
+      const raw = window.localStorage.getItem('orionTapBalanceCents');
+      const value = Number.parseInt(raw || '0', 10);
+      return Number.isFinite(value) && value >= 0 ? value : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  setTapBalanceCents(value) {
+    const safeValue = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+    this.tapBalanceCents = safeValue;
+    try {
+      window.localStorage.setItem('orionTapBalanceCents', String(safeValue));
+    } catch {
+      // Ignore storage failures and keep the in-memory value.
+    }
+    const balanceTargets = document.querySelectorAll('#coinTapBalance, #shopBalanceValue');
+    balanceTargets.forEach(el => {
+      el.textContent = this.formatCoinBalance(safeValue);
+    });
+    document.querySelectorAll('#shopIslandBalance').forEach(el => {
+      el.textContent = this.formatShopIslandBalance(safeValue);
+    });
+  }
+
+  getShopCatalog() {
+    return [
+      {
+        id: 'frame_solar',
+        type: 'frame',
+        effect: 'solar',
+        title: 'Solar Ring',
+        description: 'Тепла золота рамка навколо аватарки.',
+        price: 250
+      },
+      {
+        id: 'frame_neon',
+        type: 'frame',
+        effect: 'neon',
+        title: 'Neon Pulse',
+        description: 'Світловий контур із холодним акцентом.',
+        price: 420
+      },
+      {
+        id: 'frame_crystal',
+        type: 'frame',
+        effect: 'crystal',
+        title: 'Crystal Edge',
+        description: 'Світлий кристалічний обідок для аватара.',
+        price: 560
+      },
+      {
+        id: 'frame_ember',
+        type: 'frame',
+        effect: 'ember',
+        title: 'Ember Loop',
+        description: 'Теплий вогняний акцент для яскравого профілю.',
+        price: 640
+      },
+      {
+        id: 'frame_mint',
+        type: 'frame',
+        effect: 'mint',
+        title: 'Mint Orbit',
+        description: 'Свіжий м’ятний обідок з м’яким сяйвом.',
+        price: 720
+      },
+      {
+        id: 'frame_shadow',
+        type: 'frame',
+        effect: 'shadow',
+        title: 'Shadow Loop',
+        description: 'Глибокий темний контур для стриманого стилю.',
+        price: 810
+      },
+      {
+        id: 'aura_aurora',
+        type: 'aura',
+        effect: 'aurora',
+        title: 'Aurora Glow',
+        description: 'М’яке сяйво для картки профілю.',
+        price: 680
+      },
+      {
+        id: 'aura_cosmic',
+        type: 'aura',
+        effect: 'cosmic',
+        title: 'Cosmic Wave',
+        description: 'Космічний перелив у фоні профілю.',
+        price: 860
+      },
+      {
+        id: 'aura_sunset',
+        type: 'aura',
+        effect: 'sunset',
+        title: 'Sunset Mist',
+        description: 'Тепла помаранчева аура для hero-блоку.',
+        price: 990
+      },
+      {
+        id: 'aura_frost',
+        type: 'aura',
+        effect: 'frost',
+        title: 'Frost Veil',
+        description: 'Холодний скляний серпанок для спокійного вигляду.',
+        price: 1080
+      },
+      {
+        id: 'aura_sunbeam',
+        type: 'aura',
+        effect: 'sunbeam',
+        title: 'Sunbeam Dust',
+        description: 'Теплий золотий підсвіт із м’яким світлом.',
+        price: 1190
+      },
+      {
+        id: 'aura_midnight',
+        type: 'aura',
+        effect: 'midnight',
+        title: 'Midnight Flow',
+        description: 'Глибокий нічний перелив з темним акцентом.',
+        price: 1320
+      },
+      {
+        id: 'motion_glint',
+        type: 'motion',
+        effect: 'glint',
+        title: 'Silver Drift',
+        description: 'Світловий перелив, що м’яко проходить по картці профілю.',
+        price: 940
+      },
+      {
+        id: 'motion_orbit',
+        type: 'motion',
+        effect: 'orbit',
+        title: 'Orbit Pulse',
+        description: 'Плаваючі світлові хвилі для живого фону hero-блоку.',
+        price: 1180
+      },
+      {
+        id: 'motion_prism',
+        type: 'motion',
+        effect: 'prism',
+        title: 'Prism Flow',
+        description: 'Повільний призматичний рух із переливом по всій картці.',
+        price: 1410
+      },
+      {
+        id: 'badge_spark',
+        type: 'badge',
+        effect: 'spark',
+        title: 'Spark Dot',
+        description: 'Яскравий акцент-іскра, що з’являється після імені.',
+        price: 360
+      },
+      {
+        id: 'badge_comet',
+        type: 'badge',
+        effect: 'comet',
+        title: 'Comet Tag',
+        description: 'Мініатюрна комета праворуч від ніка в стилі Orion.',
+        price: 430
+      },
+      {
+        id: 'badge_crown',
+        type: 'badge',
+        effect: 'crown',
+        title: 'Crown Mark',
+        description: 'Стримана корона, яка додає статусу біля імені.',
+        price: 540
+      },
+      {
+        id: 'badge_orbit',
+        type: 'badge',
+        effect: 'orbit',
+        title: 'Orbit Mark',
+        description: 'Планетарний значок для впізнаваного вигляду профілю.',
+        price: 620
+      }
+    ];
+  }
+
+  loadShopInventory() {
+    const stored = this.readJsonStorage('orion_shop_inventory', []);
+    return Array.isArray(stored) ? stored : [];
+  }
+
+  saveShopInventory(items) {
+    const uniqueItems = [...new Set(Array.isArray(items) ? items : [])];
+    localStorage.setItem('orion_shop_inventory', JSON.stringify(uniqueItems));
+    return uniqueItems;
+  }
+
+  getShopItem(itemId) {
+    return this.getShopCatalog().find(item => item.id === itemId) || null;
+  }
+
+  applyAvatarDecoration(avatarEl) {
+    if (!avatarEl) return;
+    const frame = this.user?.equippedAvatarFrame || '';
+    avatarEl.dataset.avatarFrame = frame;
+    avatarEl.classList.toggle('has-avatar-frame', Boolean(frame));
+  }
+
+  applyProfileAura(cardEl) {
+    if (!cardEl) return;
+    const aura = this.user?.equippedProfileAura || '';
+    cardEl.dataset.profileAura = aura;
+    cardEl.classList.toggle('has-profile-aura', Boolean(aura));
+  }
+
+  applyProfileMotion(cardEl) {
+    if (!cardEl) return;
+    const motion = this.user?.equippedProfileMotion || '';
+    cardEl.dataset.profileMotion = motion;
+    cardEl.classList.toggle('has-profile-motion', Boolean(motion));
+  }
+
+  getProfileBadgeDefinition(effect) {
+    const definitions = {
+      spark: {
+        label: 'Spark',
+        path: 'M144 24l14 50 50 14-50 14-14 50-14-50-50-14 50-14 14-50zm-72 120l9 31 31 9-31 9-9 31-9-31-31-9 31-9 9-31z'
+      },
+      comet: {
+        label: 'Comet',
+        path: 'M208 112a72 72 0 11-72-72 8 8 0 010 16 56 56 0 1056 56 8 8 0 0116 0zM48 208l44-12-32-32-12 44zm54.34-65.66l11.32 11.32 82.34-82.34a8 8 0 00-11.32-11.32z'
+      },
+      crown: {
+        label: 'Crown',
+        path: 'M40 184l16-96 48 40 24-56 24 56 48-40 16 96H40zm18.88-16h138.24l-8.77-52.6-42.23 35.2a8 8 0 01-12.31-2.6L128 99.75 122.19 148a8 8 0 01-12.31 2.6l-42.23-35.2z'
+      },
+      orbit: {
+        label: 'Orbit',
+        path: 'M128 56a40 40 0 110 80 40 40 0 010-80zm0 16a24 24 0 100 48 24 24 0 000-48zm0-40c55.23 0 100 17.91 100 40s-44.77 40-100 40-100-17.91-100-40 44.77-40 100-40zm0 16c-51.34 0-84 16.18-84 24s32.66 24 84 24 84-16.18 84-24-32.66-24-84-24zm56 88c24.3 7.31 40 19.1 40 32 0 22.09-44.77 40-100 40s-100-17.91-100-40c0-12.9 15.7-24.69 40-32a8 8 0 114.61 15.32C51.14 156.58 40 162.66 40 168c0 7.82 32.66 24 84 24s84-16.18 84-24c0-5.34-11.14-11.42-28.61-16.68A8 8 0 11184 136z'
+      }
+    };
+    return definitions[effect] || null;
+  }
+
+  getProfileBadgeMarkup(effect, extraClass = '') {
+    const badge = this.getProfileBadgeDefinition(effect);
+    if (!badge) return '';
+    const className = ['profile-badge-chip', extraClass].filter(Boolean).join(' ');
+    const safeLabel = this.escapeAttr(badge.label);
+    return `
+      <span class="${className}" data-profile-badge="${this.escapeAttr(effect)}" title="${safeLabel}" aria-label="${safeLabel}">
+        <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+          <path d="${badge.path}"></path>
+        </svg>
+      </span>
+    `.trim();
+  }
+
+  applyProfileBadge(containerEl) {
+    if (!containerEl) return;
+    const badge = this.user?.equippedProfileBadge || '';
+    containerEl.innerHTML = badge ? this.getProfileBadgeMarkup(badge) : '';
+    containerEl.classList.toggle('has-badge', Boolean(badge));
+    containerEl.toggleAttribute('hidden', !badge);
+  }
+
+  syncProfileCosmetics(root = document) {
+    root.querySelectorAll('.profile-avatar-large').forEach(avatarEl => {
+      this.applyAvatarDecoration(avatarEl);
+    });
+    root.querySelectorAll('#profile .profile-hero-card').forEach(cardEl => {
+      this.applyProfileAura(cardEl);
+      this.applyProfileMotion(cardEl);
+    });
+    root.querySelectorAll('#profile .profile-name-badges').forEach(containerEl => {
+      this.applyProfileBadge(containerEl);
+    });
+  }
+
+  updateProfileMenuButton() {
+    const navProfile = document.getElementById('navProfile');
+    if (!navProfile) return;
+
+    const avatarEl = navProfile.querySelector('.nav-avatar');
+
+    const name = this.user?.name || 'Користувач Orion';
+
+    this.applyUserAvatarToElement(avatarEl, name);
+  }
+
+  getInitials(name) {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+
+  getRandomAvatarGradient() {
+    const colors = [
+      'linear-gradient(135deg, #ff9500, #ff6b6b)',
+      'linear-gradient(135deg, #667eea, #764ba2)',
+      'linear-gradient(135deg, #f093fb, #f5576c)',
+      'linear-gradient(135deg, #4facfe, #00f2fe)',
+      'linear-gradient(135deg, #43e97b, #38f9d7)',
+      'linear-gradient(135deg, #fa709a, #fee140)',
+      'linear-gradient(135deg, #30cfd0, #330867)',
+      'linear-gradient(135deg, #a8edea, #fed6e3)'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  escapeAttr(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  applyUserAvatarToElement(avatarEl, name = '') {
+    if (!avatarEl) return;
+    const displayName = name || this.user?.name || 'Користувач Orion';
+    if (!this.user?.avatarColor) {
+      this.user.avatarColor = this.getRandomAvatarGradient();
+    }
+
+    if (this.user?.avatarImage) {
+      avatarEl.textContent = '';
+      avatarEl.style.backgroundImage = `url("${this.escapeAttr(this.user.avatarImage)}")`;
+      avatarEl.style.backgroundColor = 'transparent';
+    } else {
+      avatarEl.style.backgroundImage = '';
+      avatarEl.textContent = this.getInitials(displayName);
+      avatarEl.style.background = this.user.avatarColor || this.getContactColor(displayName);
+    }
+  }
+
+  getUserAvatarHtml() {
+    if (this.user?.avatarImage) {
+      const safeUrl = this.escapeAttr(this.user.avatarImage);
+      return `<div class="message-avatar is-image" style="background-image: url(&quot;${safeUrl}&quot;);"></div>`;
+    }
+    const initials = this.getInitials(this.user?.name || 'Користувач Orion');
+    return `<div class="message-avatar" style="background: ${this.user.avatarColor}">${initials}</div>`;
+  }
+
+  renderProfileAvatar(avatarEl) {
+    if (!avatarEl) return;
+    const name = this.user?.name || 'Користувач Orion';
+    if (!this.user?.avatarColor) {
+      this.user.avatarColor = this.getRandomAvatarGradient();
+    }
+    const imageEl = avatarEl.querySelector('.profile-avatar-image');
+    const initialsEl = avatarEl.querySelector('.profile-avatar-initials');
+
+    if (this.user?.avatarImage) {
+      if (imageEl) {
+        imageEl.src = this.user.avatarImage;
+        imageEl.style.display = 'block';
+      }
+      if (initialsEl) initialsEl.style.display = 'none';
+      avatarEl.style.background = 'transparent';
+    } else {
+      if (imageEl) imageEl.style.display = 'none';
+      if (initialsEl) {
+        initialsEl.textContent = this.getInitials(name);
+        initialsEl.style.display = 'flex';
+      }
+      avatarEl.style.background = this.user.avatarColor;
+    }
+
+    this.applyAvatarDecoration(avatarEl);
+  }
+
+  updateProfileDisplay() {
+    const profileSection = document.getElementById('profile');
+    if (!profileSection) return;
+
+    const profileName = profileSection.querySelector('#profileDisplayName');
+    const profileBio = profileSection.querySelector('#profileDisplayBio');
+    const profileEmail = profileSection.querySelector('#profileDisplayEmail');
+    const profileDob = profileSection.querySelector('#profileDisplayDob');
+    const avatarDiv = profileSection.querySelector('.profile-avatar-large');
+
+    if (profileName) profileName.textContent = this.user.name;
+    if (profileBio) profileBio.textContent = this.user.bio || '';
+    if (profileEmail) profileEmail.textContent = this.user.email || '';
+    if (profileDob) profileDob.textContent = this.formatBirthDate(this.user.birthDate);
+
+    this.renderProfileAvatar(avatarDiv);
+    this.applyProfileAura(profileSection.querySelector('.profile-hero-card'));
+    this.applyProfileMotion(profileSection.querySelector('.profile-hero-card'));
+    this.applyProfileBadge(profileSection.querySelector('#profileNameBadges'));
+  }
+
+  formatBirthDate(value) {
+    if (!value) return '—';
+    const dateObj = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(dateObj.getTime())) return '—';
+    return new Intl.DateTimeFormat('uk-UA', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(dateObj);
+  }
+
+  loadSettings() {
+    const saved = this.readJsonStorage('bridge_settings', null);
+    if (saved && typeof saved === 'object') {
+      return saved;
+    }
+    return {
+      soundNotifications: true,
+      desktopNotifications: true,
+      showOnlineStatus: true,
+      showTypingIndicator: true,
+      vibrationEnabled: true,
+      messagePreview: true,
+      readReceipts: true,
+      lastSeen: true,
+      enterToSend: true,
+      autoPlayMedia: true,
+      autoSaveMedia: false,
+      animationsEnabled: true,
+      compactMode: false,
+      language: 'uk',
+      fontSize: 'medium',
+      theme: 'light'
+    };
+  }
+
+  saveSettings(settingsData) {
+    this.settings = settingsData;
+    localStorage.setItem('bridge_settings', JSON.stringify(settingsData));
+  }
+
+  applySettingsToUI() {
+    const root = document.documentElement;
+    const settings = this.settings || {};
+    root.classList.toggle('no-animations', settings.animationsEnabled === false);
+    root.classList.toggle('compact-mode', settings.compactMode === true);
+    root.classList.toggle('no-message-preview', settings.messagePreview === false);
+    this.updateProfileDisplay();
+  }
+
+  // Метод-обгортка для імпортованої функції
+  getContactColor(name) {
+    return getContactColor(name);
+  }
+
+  loadTheme() {
+    const savedTheme = localStorage.getItem('bridge_theme');
+    if (savedTheme === 'light') {
+      document.documentElement.classList.remove('dark-theme');
+      localStorage.setItem('bridge_theme', 'light');
+    } else {
+      document.documentElement.classList.add('dark-theme');
+      localStorage.setItem('bridge_theme', 'dark');
+    }
+  }
+
+  toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark-theme');
+    localStorage.setItem('bridge_theme', isDark ? 'dark' : 'light');
+    if (!this.currentChat && window.innerWidth > 768) {
+      this.restoreBottomNavToHome({ animate: false });
+    }
+  }
+
+  loadChats() {
+    const stored = this.readJsonStorage('bridge_chats', null);
+    if (Array.isArray(stored)) {
+      return stored;
+    }
+    return [];
+  }
+
+  saveChats() {
+    localStorage.setItem('bridge_chats', JSON.stringify(this.chats));
+  }
+
+  setupModalEnterHandlers() {
+    const newChatModal = document.getElementById('newChatModal');
+    if (newChatModal) {
+      newChatModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && newChatModal.classList.contains('active')) {
+          const input = e.target;
+          if (input.id === 'newContactInput' || input.id === 'groupMembersInput') {
+            e.preventDefault();
+            this.createNewChat();
+          }
+        }
+      });
+    }
+
+    const groupInfoModal = document.getElementById('groupInfoModal');
+    if (groupInfoModal) {
+      groupInfoModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.ctrlKey && groupInfoModal.classList.contains('active')) {
+          e.preventDefault();
+          this.saveGroupInfo();
+        }
+      });
+    }
+
+    const addToGroupModal = document.getElementById('addToGroupModal');
+    if (addToGroupModal) {
+      addToGroupModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && addToGroupModal.classList.contains('active')) {
+          e.preventDefault();
+          this.confirmAddToGroup();
+        }
+      });
+    }
+  }
+
+  init() {
+    this.setupEventListeners();
+    this.setupModalEnterHandlers();
+    this.ensureBottomNavHomeAnchor();
+    this.restoreBottomNavToHome({ animate: false });
+    this.setupDesktopChatWheelScroll();
+    this.renderChatsList();
+    this.applyFontSize(this.settings.fontSize);
+    this.applySettingsToUI();
+    this.updateProfileMenuButton();
+    this.updateBottomNavIndicator();
+    this.setupMobileSwipeBack();
+    this.setupBottomNavReveal();
+    this.setMobilePageScrollLock(false);
+    if (window.innerWidth <= 768) {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    window.addEventListener('resize', () => {
+      this.updateBottomNavIndicator();
+      this.handleBottomNavResize();
+      this.applyMobileChatViewportLayout();
+    });
+
+    this.mobileTouchMoveLockHandler = (event) => {
+      if (window.innerWidth > 900) return;
+      const appEl = document.querySelector('.bridge-app');
+      if (!appEl || !appEl.classList.contains('chat-active')) return;
+      const messages = document.getElementById('messagesContainer');
+      const chatsList = document.getElementById('chatsList');
+      const sidebar = document.querySelector('.sidebar');
+      if (!messages) return;
+      const target = event.target;
+      const withinMessages = target instanceof Node && messages.contains(target);
+      const withinChatsList = target instanceof Node && chatsList?.contains(target);
+      const withinSidebar = target instanceof Node && sidebar?.contains(target);
+      if (!withinMessages && !withinChatsList && !withinSidebar) {
+        event.preventDefault();
+      }
+    };
+    document.addEventListener('touchmove', this.mobileTouchMoveLockHandler, { passive: false });
+
+  }
+
+  setupDesktopChatWheelScroll() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    const chatContainer = document.getElementById('chatContainer');
+    if (!messagesContainer || !chatContainer) return;
+
+    chatContainer.addEventListener('wheel', (event) => {
+      if (window.innerWidth <= 900) return;
+      if (messagesContainer.scrollHeight <= messagesContainer.clientHeight) return;
+
+      const target = event.target instanceof Element ? event.target : null;
+      const shouldSkip = target?.closest('textarea, input, .message-input-area, .chat-menu, .message-context-menu, .modal, .emoji-picker');
+      if (shouldSkip) return;
+
+      messagesContainer.scrollTop += event.deltaY;
+      event.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('wheel', (event) => {
+      if (window.innerWidth <= 900) return;
+      if (!this.currentChat) return;
+      if (!chatContainer.classList.contains('active')) return;
+      if (messagesContainer.scrollHeight <= messagesContainer.clientHeight) return;
+      if (event.ctrlKey) return;
+
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || !chatContainer.contains(target)) return;
+
+      const shouldSkip = target.closest('textarea, input, .message-input-area, .chat-menu, .message-context-menu, .modal, .emoji-picker');
+      if (shouldSkip) return;
+
+      const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      if (Math.abs(delta) < 0.1) return;
+
+      messagesContainer.scrollTop += delta;
+      event.preventDefault();
+    }, { passive: false, capture: true });
+  }
+
+  // Метод-обгортка для імпортованої функції setupMobileSwipeBack
+  setupMobileSwipeBack() {
+    setupMobileSwipeBack(this);
+  }
+
+}
