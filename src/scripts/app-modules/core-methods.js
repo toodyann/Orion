@@ -498,7 +498,7 @@ export class ChatAppCoreMethods {
       compactMode: false,
       language: 'uk',
       fontSize: 'medium',
-      theme: 'light'
+      theme: 'system'
     };
   }
 
@@ -521,20 +521,71 @@ export class ChatAppCoreMethods {
     return getContactColor(name);
   }
 
+  syncThemeToggleCheckboxes() {
+    const isDark = document.documentElement.classList.contains('dark-theme');
+    document.querySelectorAll('#themeToggleCheckbox').forEach((checkbox) => {
+      checkbox.checked = isDark;
+    });
+  }
+
+  applySystemTheme() {
+    const prefersDark = window.matchMedia
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : false;
+    document.documentElement.classList.toggle('dark-theme', prefersDark);
+    this.syncThemeToggleCheckboxes();
+  }
+
+  bindSystemThemeListener() {
+    if (!window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    if (this.themeMediaQuery && this.themeMediaQueryHandler) {
+      if (typeof this.themeMediaQuery.removeEventListener === 'function') {
+        this.themeMediaQuery.removeEventListener('change', this.themeMediaQueryHandler);
+      } else if (typeof this.themeMediaQuery.removeListener === 'function') {
+        this.themeMediaQuery.removeListener(this.themeMediaQueryHandler);
+      }
+    }
+
+    this.themeMediaQuery = mediaQuery;
+    this.themeMediaQueryHandler = () => {
+      if (this.settings?.theme === 'system') {
+        this.applySystemTheme();
+      }
+    };
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', this.themeMediaQueryHandler);
+    } else if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(this.themeMediaQueryHandler);
+    }
+  }
+
   loadTheme() {
-    const savedTheme = localStorage.getItem('bridge_theme');
-    if (savedTheme === 'light') {
-      document.documentElement.classList.remove('dark-theme');
-      localStorage.setItem('bridge_theme', 'light');
-    } else {
+    const themeMode = this.settings?.theme || 'system';
+    if (themeMode === 'dark') {
       document.documentElement.classList.add('dark-theme');
       localStorage.setItem('bridge_theme', 'dark');
+      this.syncThemeToggleCheckboxes();
+    } else if (themeMode === 'light') {
+      document.documentElement.classList.remove('dark-theme');
+      localStorage.setItem('bridge_theme', 'light');
+      this.syncThemeToggleCheckboxes();
+    } else {
+      this.settings = { ...(this.settings || {}), theme: 'system' };
+      localStorage.setItem('bridge_settings', JSON.stringify(this.settings));
+      this.applySystemTheme();
     }
+    this.bindSystemThemeListener();
   }
 
   toggleTheme() {
     const isDark = document.documentElement.classList.toggle('dark-theme');
     localStorage.setItem('bridge_theme', isDark ? 'dark' : 'light');
+    this.settings = { ...(this.settings || {}), theme: isDark ? 'dark' : 'light' };
+    localStorage.setItem('bridge_settings', JSON.stringify(this.settings));
+    this.syncThemeToggleCheckboxes();
     if (!this.currentChat && window.innerWidth > 768) {
       this.restoreBottomNavToHome({ animate: false });
     }

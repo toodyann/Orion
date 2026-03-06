@@ -267,9 +267,9 @@ html.dark-theme .message.own .message-content {
 }
 
 .message-input:focus {
-  border-color: var(--primary-color);
+  border-color: var(--border-color);
   background-color: var(--bg-elevated);
-  box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--border-color) 70%, transparent);
 }
 
 .message-input::placeholder {
@@ -284,9 +284,16 @@ html.dark-theme .message.own .message-content {
     padding: 8px 12px;
     line-height: 20px;
     overflow: hidden;
+    border-color: var(--border-color);
+    box-shadow: none;
     transition:
       border-color 0.2s ease,
       box-shadow 0.2s ease;
+  }
+
+  .message-input:focus {
+    border-color: var(--border-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--border-color) 70%, transparent);
   }
 }
 

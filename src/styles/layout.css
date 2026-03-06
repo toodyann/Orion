@@ -91,7 +91,7 @@ html:not(.dark-theme) .app-header {
   .bridge-app:not(.chat-open):not(.chat-active) .app-header-left {
     position: absolute;
     top: 12px;
-    left: 16px;
+    left: 26px;
     flex: 0 0 auto;
     min-width: auto;
     pointer-events: auto;

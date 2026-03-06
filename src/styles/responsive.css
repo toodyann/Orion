@@ -556,7 +556,6 @@
     align-items: center !important;
     justify-content: center !important;
     min-height: 46px !important;
-    padding: 0 18px !important;
     border-radius: 999px !important;
     font-size: 18px !important;
     font-weight: 600 !important;
@@ -588,12 +587,19 @@
     justify-content: center !important;
     min-height: 46px !important;
     margin: 0 auto !important;
-    padding: 0 20px !important;
     border-radius: 999px !important;
     font-size: 18px !important;
     font-weight: 600 !important;
     color: var(--text-primary) !important;
     pointer-events: auto !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-header h2,
+  #settingsContainerMobile #calls .calls-header h2 {
+    width: 208px !important;
+    max-width: calc(100% - 20px) !important;
+    box-sizing: border-box !important;
+    padding: 0 16px !important;
   }
 
   #settingsContainerMobile #calls .calls-content {
@@ -603,6 +609,32 @@
     background: transparent !important;
     padding-top: 68px !important;
     box-sizing: border-box !important;
+  }
+
+  #settingsContainerMobile #mini-games .mini-games-content.coin-tapper-content {
+    gap: 36px !important;
+    padding-top: 64px !important;
+    padding-right: 24px !important;
+    padding-bottom: calc(var(--bottom-nav-height, 72px) + 70px) !important;
+    padding-left: 24px !important;
+  }
+
+  #settingsContainerMobile #mini-games .coin-tapper-kicker {
+    margin-bottom: -4px !important;
+  }
+
+  #settingsContainerMobile #mini-games .coin-tapper-balance {
+    margin-top: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  #settingsContainerMobile #mini-games .coin-tapper-button {
+    margin-top: 12px !important;
+  }
+
+  #settingsContainerMobile #mini-games .coin-tapper-rate {
+    margin-top: 16px !important;
+    padding: 14px 20px !important;
   }
 
   #settingsContainerMobile .settings-header h2 {

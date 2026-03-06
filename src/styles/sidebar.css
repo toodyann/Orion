@@ -16,15 +16,30 @@
   }
 
   .sidebar.compact .chats-list {
-    padding: 12px 0;
+    padding: 0 0 8px;
     align-items: center;
   }
 
   .sidebar.compact .chat-item {
-    width: auto;
-    margin: 6px 0;
-    padding: 8px 0;
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
+    min-height: 64px;
+    margin: 0 auto 6px;
+    padding: 0;
+    display: flex;
+    align-items: center;
     justify-content: center;
+  }
+
+  .search-input {
+    border-color: color-mix(in srgb, var(--primary-color) 38%, var(--border-color));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary-color) 16%, transparent);
+  }
+
+  .search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 30%, transparent);
   }
 
   .sidebar.compact .chat-item:hover {
@@ -346,6 +361,7 @@ html:not(.dark-theme) .profile-menu-wrapper .bottom-nav-item.active {
   color: white;
   font-weight: 600;
   font-size: 18px;
+  line-height: 1;
   flex-shrink: 0;
 }
 
