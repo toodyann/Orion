@@ -523,6 +523,467 @@ export class ChatAppMessagingMethods {
     });
   }
 
+  setupImageViewerEvents() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    const overlay = document.getElementById('imageViewerOverlay');
+    const stage = document.getElementById('imageViewerStage');
+    const zoomInBtn = document.getElementById('imageViewerZoomInBtn');
+    const zoomOutBtn = document.getElementById('imageViewerZoomOutBtn');
+    const deleteBtn = document.getElementById('imageViewerDeleteBtn');
+    const forwardBtn = document.getElementById('imageViewerForwardBtn');
+
+    if (!messagesContainer || !overlay || !stage || !zoomInBtn || !zoomOutBtn || !deleteBtn || !forwardBtn) return;
+    if (overlay.dataset.bound === 'true') return;
+    overlay.dataset.bound = 'true';
+
+    messagesContainer.addEventListener('click', (event) => {
+      const imageEl = event.target.closest('.message-image');
+      if (!imageEl) return;
+      const messageEl = imageEl.closest('.message');
+      const src = imageEl.currentSrc || imageEl.getAttribute('src');
+      if (!src) return;
+      event.preventDefault();
+      this.openImageViewer(src, imageEl.getAttribute('alt') || 'Надіслане фото', {
+        messageId: Number(messageEl?.dataset.id || 0),
+        messageFrom: messageEl?.dataset.from || ''
+      });
+    });
+
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) {
+        this.closeImageViewer();
+      }
+    });
+
+    zoomInBtn.addEventListener('click', () => {
+      const state = this.getImageViewerState();
+      this.setImageViewerScale(state.scale + 0.25);
+    });
+    zoomOutBtn.addEventListener('click', () => {
+      const state = this.getImageViewerState();
+      this.setImageViewerScale(state.scale - 0.25);
+    });
+    deleteBtn.addEventListener('click', () => this.deleteImageFromViewer());
+    forwardBtn.addEventListener('click', () => this.forwardImageFromViewer());
+
+    stage.addEventListener('dblclick', (event) => {
+      const state = this.getImageViewerState();
+      if (state.scale <= state.minScale + 0.001) {
+        this.setImageViewerScale(2, { clientX: event.clientX, clientY: event.clientY });
+        return;
+      }
+      this.resetImageViewerZoom();
+    });
+
+    stage.addEventListener('wheel', (event) => {
+      if (!this.isImageViewerOpen()) return;
+      event.preventDefault();
+      const state = this.getImageViewerState();
+      let delta = event.deltaY;
+      if (event.deltaMode === 1) delta *= 16;
+      if (event.deltaMode === 2) delta *= window.innerHeight;
+      const zoomFactor = Math.exp(-delta * 0.0032);
+      const nextScale = state.scale * zoomFactor;
+      this.setImageViewerScale(nextScale, { clientX: event.clientX, clientY: event.clientY });
+    }, { passive: false });
+
+    stage.addEventListener('click', (event) => {
+      if (!this.isImageViewerOpen()) return;
+      const state = this.getImageViewerState();
+      if (state.movedDuringPointer) {
+        state.movedDuringPointer = false;
+        return;
+      }
+      const target = event.target;
+      if (target instanceof Element && target.closest('#imageViewerImage')) return;
+      this.closeImageViewer();
+    });
+
+    const handlePointerEnd = (event) => {
+      const state = this.getImageViewerState();
+      if (!state.pointers.has(event.pointerId)) return;
+      state.pointers.delete(event.pointerId);
+      if (stage.hasPointerCapture(event.pointerId)) {
+        stage.releasePointerCapture(event.pointerId);
+      }
+      if (state.pointers.size < 2) {
+        state.pinchStartDistance = 0;
+      }
+      if (state.pointers.size === 1 && state.scale > state.minScale + 0.001) {
+        const [point] = state.pointers.values();
+        state.dragging = true;
+        state.lastPointerX = point.x;
+        state.lastPointerY = point.y;
+      } else {
+        state.dragging = false;
+      }
+    };
+
+    stage.addEventListener('pointerdown', (event) => {
+      if (!this.isImageViewerOpen()) return;
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      event.preventDefault();
+
+      const state = this.getImageViewerState();
+      stage.setPointerCapture(event.pointerId);
+      state.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (state.pointers.size >= 2) {
+        const [first, second] = [...state.pointers.values()];
+        state.pinchStartDistance = this.getImageViewerDistance(first, second);
+        state.pinchStartScale = state.scale;
+        state.movedDuringPointer = false;
+        state.dragging = false;
+        return;
+      }
+
+      state.movedDuringPointer = false;
+      if (state.scale > state.minScale + 0.001) {
+        state.dragging = true;
+        state.lastPointerX = event.clientX;
+        state.lastPointerY = event.clientY;
+      }
+    });
+
+    stage.addEventListener('pointermove', (event) => {
+      if (!this.isImageViewerOpen()) return;
+      const state = this.getImageViewerState();
+      if (!state.pointers.has(event.pointerId)) return;
+      event.preventDefault();
+
+      state.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (state.pointers.size >= 2) {
+        const [first, second] = [...state.pointers.values()];
+        const currentDistance = this.getImageViewerDistance(first, second);
+        if (state.pinchStartDistance > 0) {
+          if (Math.abs(currentDistance - state.pinchStartDistance) > 1) {
+            state.movedDuringPointer = true;
+          }
+          const centerX = (first.x + second.x) / 2;
+          const centerY = (first.y + second.y) / 2;
+          this.setImageViewerScale(
+            state.pinchStartScale * (currentDistance / state.pinchStartDistance),
+            { clientX: centerX, clientY: centerY }
+          );
+        }
+        return;
+      }
+
+      if (!state.dragging || state.scale <= state.minScale + 0.001) return;
+      const dx = event.clientX - state.lastPointerX;
+      const dy = event.clientY - state.lastPointerY;
+      state.lastPointerX = event.clientX;
+      state.lastPointerY = event.clientY;
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        state.movedDuringPointer = true;
+      }
+      state.translateX += dx;
+      state.translateY += dy;
+      this.clampImageViewerTranslation();
+      this.applyImageViewerTransform();
+    });
+
+    stage.addEventListener('pointerup', handlePointerEnd);
+    stage.addEventListener('pointercancel', handlePointerEnd);
+
+    document.addEventListener('keydown', (event) => {
+      if (!this.isImageViewerOpen()) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.closeImageViewer();
+        return;
+      }
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        const state = this.getImageViewerState();
+        this.setImageViewerScale(state.scale + 0.25);
+        return;
+      }
+      if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        const state = this.getImageViewerState();
+        this.setImageViewerScale(state.scale - 0.25);
+        return;
+      }
+      if (event.key === '0') {
+        event.preventDefault();
+        this.resetImageViewerZoom();
+      }
+    });
+  }
+
+  getImageViewerState() {
+    if (this.imageViewerState) return this.imageViewerState;
+    this.imageViewerState = {
+      scale: 1,
+      minScale: 1,
+      maxScale: 5,
+      translateX: 0,
+      translateY: 0,
+      imageSrc: '',
+      imageAlt: '',
+      messageId: null,
+      messageFrom: '',
+      movedDuringPointer: false,
+      dragging: false,
+      lastPointerX: 0,
+      lastPointerY: 0,
+      pinchStartDistance: 0,
+      pinchStartScale: 1,
+      pointers: new Map()
+    };
+    return this.imageViewerState;
+  }
+
+  getImageViewerElements() {
+    return {
+      overlay: document.getElementById('imageViewerOverlay'),
+      stage: document.getElementById('imageViewerStage'),
+      image: document.getElementById('imageViewerImage')
+    };
+  }
+
+  isImageViewerOpen() {
+    const { overlay } = this.getImageViewerElements();
+    return Boolean(overlay?.classList.contains('active'));
+  }
+
+  openImageViewer(src, alt = 'Надіслане фото', options = {}) {
+    if (!src) return;
+    const { overlay, image } = this.getImageViewerElements();
+    if (!overlay || !image) return;
+
+    image.src = src;
+    image.alt = alt;
+
+    const state = this.getImageViewerState();
+    state.scale = state.minScale;
+    state.translateX = 0;
+    state.translateY = 0;
+    state.imageSrc = src;
+    state.imageAlt = alt;
+    state.messageId = Number.isFinite(options.messageId) && options.messageId > 0 ? options.messageId : null;
+    state.messageFrom = options.messageFrom || '';
+    state.movedDuringPointer = false;
+    state.pointers.clear();
+    state.dragging = false;
+    state.pinchStartDistance = 0;
+    state.pinchStartScale = state.minScale;
+    this.applyImageViewerTransform();
+
+    overlay.classList.add('active');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.documentElement.classList.add('image-viewer-open');
+    document.body.classList.add('image-viewer-open');
+
+    const applyInitialFit = () => {
+      if (!this.isImageViewerOpen()) return;
+      this.resetImageViewerZoom();
+    };
+
+    if (image.complete && image.naturalWidth > 0) {
+      window.requestAnimationFrame(applyInitialFit);
+    } else {
+      image.addEventListener('load', applyInitialFit, { once: true });
+      image.addEventListener('error', applyInitialFit, { once: true });
+    }
+  }
+
+  closeImageViewer() {
+    const { overlay, stage, image } = this.getImageViewerElements();
+    if (!overlay || !stage || !image) return;
+
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    stage.classList.remove('is-zoomed');
+
+    document.documentElement.classList.remove('image-viewer-open');
+    document.body.classList.remove('image-viewer-open');
+
+    const state = this.getImageViewerState();
+    state.scale = state.minScale;
+    state.translateX = 0;
+    state.translateY = 0;
+    state.imageSrc = '';
+    state.imageAlt = '';
+    state.messageId = null;
+    state.messageFrom = '';
+    state.movedDuringPointer = false;
+    state.dragging = false;
+    state.pointers.clear();
+    state.pinchStartDistance = 0;
+    state.pinchStartScale = state.minScale;
+    image.style.removeProperty('transform');
+    image.removeAttribute('src');
+  }
+
+  resetImageViewerZoom() {
+    const state = this.getImageViewerState();
+    state.scale = state.minScale;
+    state.translateX = 0;
+    state.translateY = 0;
+    this.applyImageViewerTransform();
+  }
+
+  setImageViewerScale(nextScale, focalPoint = null) {
+    const { stage } = this.getImageViewerElements();
+    if (!stage) return;
+
+    const state = this.getImageViewerState();
+    const targetScale = Math.min(state.maxScale, Math.max(state.minScale, Number(nextScale) || state.minScale));
+    const previousScale = state.scale || state.minScale;
+    if (Math.abs(targetScale - previousScale) < 0.001) return;
+
+    if (focalPoint && Number.isFinite(focalPoint.clientX) && Number.isFinite(focalPoint.clientY)) {
+      const stageRect = stage.getBoundingClientRect();
+      const centerX = stageRect.left + stageRect.width / 2;
+      const centerY = stageRect.top + stageRect.height / 2;
+      const pointerX = focalPoint.clientX - centerX;
+      const pointerY = focalPoint.clientY - centerY;
+      const offsetX = pointerX - state.translateX;
+      const offsetY = pointerY - state.translateY;
+      state.translateX = pointerX - (offsetX / previousScale) * targetScale;
+      state.translateY = pointerY - (offsetY / previousScale) * targetScale;
+    } else {
+      const ratio = targetScale / previousScale;
+      state.translateX *= ratio;
+      state.translateY *= ratio;
+    }
+
+    state.scale = targetScale;
+    if (targetScale <= state.minScale + 0.001) {
+      state.translateX = 0;
+      state.translateY = 0;
+    }
+
+    this.clampImageViewerTranslation();
+    this.applyImageViewerTransform();
+  }
+
+  getImageViewerBaseSize() {
+    const { stage, image } = this.getImageViewerElements();
+    if (!stage || !image) return { width: 0, height: 0 };
+
+    const stageWidth = stage.clientWidth || 0;
+    const stageHeight = stage.clientHeight || 0;
+    const imageWidth = image.naturalWidth || image.clientWidth || stageWidth;
+    const imageHeight = image.naturalHeight || image.clientHeight || stageHeight;
+
+    if (!stageWidth || !stageHeight || !imageWidth || !imageHeight) {
+      return { width: stageWidth, height: stageHeight };
+    }
+
+    const imageRatio = imageWidth / imageHeight;
+    const stageRatio = stageWidth / stageHeight;
+    if (imageRatio >= stageRatio) {
+      return { width: stageWidth, height: stageWidth / imageRatio };
+    }
+    return { width: stageHeight * imageRatio, height: stageHeight };
+  }
+
+  clampImageViewerTranslation() {
+    const { stage } = this.getImageViewerElements();
+    if (!stage) return;
+    const state = this.getImageViewerState();
+    if (state.scale <= state.minScale + 0.001) {
+      state.translateX = 0;
+      state.translateY = 0;
+      return;
+    }
+
+    const stageWidth = stage.clientWidth || 0;
+    const stageHeight = stage.clientHeight || 0;
+    const baseSize = this.getImageViewerBaseSize();
+    const scaledWidth = baseSize.width * state.scale;
+    const scaledHeight = baseSize.height * state.scale;
+    const maxOffsetX = Math.max(0, (scaledWidth - stageWidth) / 2);
+    const maxOffsetY = Math.max(0, (scaledHeight - stageHeight) / 2);
+
+    state.translateX = Math.min(maxOffsetX, Math.max(-maxOffsetX, state.translateX));
+    state.translateY = Math.min(maxOffsetY, Math.max(-maxOffsetY, state.translateY));
+  }
+
+  applyImageViewerTransform() {
+    const { stage, image } = this.getImageViewerElements();
+    if (!stage || !image) return;
+    const state = this.getImageViewerState();
+    image.style.transform = `translate3d(${state.translateX}px, ${state.translateY}px, 0) scale(${state.scale})`;
+    stage.classList.toggle('is-zoomed', state.scale > state.minScale + 0.001);
+  }
+
+  async deleteImageFromViewer() {
+    const state = this.getImageViewerState();
+    if (!this.currentChat || !Number.isFinite(state.messageId) || state.messageId <= 0) return;
+
+    const confirmed = await this.showConfirm('Видалити це фото?', 'Видалення фото');
+    if (!confirmed) return;
+
+    this.closeImageViewer();
+    this.deleteMessageById(state.messageId);
+  }
+
+  async forwardImageFromViewer() {
+    const state = this.getImageViewerState();
+    if (!state.imageSrc) return;
+
+    if (!Array.isArray(this.chats) || this.chats.length === 0) {
+      await this.showAlert('Немає чатів для пересилання.');
+      return;
+    }
+
+    const targetList = this.chats
+      .slice()
+      .sort((a, b) => Number(a.id || 0) - Number(b.id || 0))
+      .map(chat => `#${chat.id} — ${chat.name}`)
+      .join('\n');
+
+    const rawTargetId = window.prompt(`Введіть ID чату для пересилання:\n${targetList}`, this.currentChat ? String(this.currentChat.id) : '');
+    if (rawTargetId === null) return;
+
+    const targetId = Number.parseInt(rawTargetId.trim(), 10);
+    if (!Number.isFinite(targetId)) {
+      await this.showAlert('Невірний ID чату.');
+      return;
+    }
+
+    const targetChat = this.chats.find(chat => chat.id === targetId);
+    if (!targetChat) {
+      await this.showAlert('Чат із таким ID не знайдено.');
+      return;
+    }
+
+    const now = new Date();
+    const forwardedMessage = {
+      id: this.getNextMessageId(targetChat),
+      text: '',
+      type: 'image',
+      imageUrl: state.imageSrc,
+      from: 'own',
+      time: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+      date: now.toISOString().slice(0, 10),
+      replyTo: null
+    };
+
+    if (!Array.isArray(targetChat.messages)) {
+      targetChat.messages = [];
+    }
+    targetChat.messages.push(forwardedMessage);
+    this.saveChats();
+
+    if (this.currentChat?.id === targetChat.id) {
+      this.renderChat(forwardedMessage.id);
+    }
+    this.renderChatsList();
+    await this.showNotice('Фото переслано!');
+  }
+
+  getImageViewerDistance(firstPoint, secondPoint) {
+    const dx = firstPoint.x - secondPoint.x;
+    const dy = firstPoint.y - secondPoint.y;
+    return Math.hypot(dx, dy);
+  }
+
   // Метод-обгортка для імпортованої функції getSettingsTemplate
   getSettingsTemplate(sectionName) {
     return getSettingsTemplate(sectionName);

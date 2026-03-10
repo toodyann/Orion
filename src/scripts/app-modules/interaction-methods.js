@@ -202,6 +202,7 @@ export class ChatAppInteractionMethods {
         this.closeCameraCapture();
       }
     });
+    this.setupImageViewerEvents();
 
     document.getElementById('searchInput').addEventListener('input', (e) => this.filterChats(e.target.value));
 

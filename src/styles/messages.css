@@ -159,6 +159,9 @@ html.dark-theme .message.own .message-content {
   max-width: 100%;
   border-radius: 12px;
   object-fit: cover;
+  cursor: zoom-in;
+  user-select: none;
+  -webkit-user-drag: none;
   opacity: 0;
   filter: blur(6px);
   transform: scale(0.985);

@@ -1493,3 +1493,151 @@ html:not(.dark-theme) .alert-overlay {
   border-radius: 50%;
   background: #fff;
 }
+
+html.image-viewer-open,
+body.image-viewer-open {
+  overflow: hidden;
+}
+
+.image-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: none;
+  background: rgba(6, 10, 18, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.image-viewer-overlay.active {
+  display: block;
+}
+
+.image-viewer-shell {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.image-viewer-toolbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 18px;
+  pointer-events: none;
+}
+
+.image-viewer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.image-viewer-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.92);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.image-viewer-btn:hover {
+  opacity: 1;
+  color: #ffffff;
+}
+
+.image-viewer-btn:active {
+  transform: scale(0.96);
+}
+
+.image-viewer-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  cursor: default;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.image-viewer-stage.is-zoomed {
+  cursor: default;
+}
+
+.image-viewer-stage.is-zoomed:active {
+  cursor: default;
+}
+
+.image-viewer-image {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: auto;
+  cursor: default;
+  transform-origin: center center;
+  transition: none;
+  will-change: transform;
+}
+
+.image-viewer-stage.is-zoomed .image-viewer-image {
+  transition: none;
+}
+
+html:not(.dark-theme) .image-viewer-shell {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+html:not(.dark-theme) .image-viewer-btn {
+  color: rgba(18, 24, 36, 0.84);
+}
+
+html:not(.dark-theme) .image-viewer-btn:hover {
+  color: rgba(18, 24, 36, 1);
+}
+
+@media (max-width: 768px) {
+  .image-viewer-toolbar {
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    padding: 0 12px;
+  }
+
+  .image-viewer-actions {
+    gap: 6px;
+  }
+
+  .image-viewer-btn {
+    width: 38px;
+    height: 38px;
+  }
+}

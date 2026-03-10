@@ -721,12 +721,14 @@ export class ChatAppCoreMethods {
       const messages = document.getElementById('messagesContainer');
       const chatsList = document.getElementById('chatsList');
       const sidebar = document.querySelector('.sidebar');
+      const imageViewer = document.getElementById('imageViewerOverlay');
       if (!messages) return;
       const target = event.target;
       const withinMessages = target instanceof Node && messages.contains(target);
       const withinChatsList = target instanceof Node && chatsList?.contains(target);
       const withinSidebar = target instanceof Node && sidebar?.contains(target);
-      if (!withinMessages && !withinChatsList && !withinSidebar) {
+      const withinImageViewer = target instanceof Node && imageViewer?.contains(target);
+      if (!withinMessages && !withinChatsList && !withinSidebar && !withinImageViewer) {
         event.preventDefault();
       }
     };
