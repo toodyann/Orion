@@ -54,19 +54,16 @@ export class ChatAppCoreMethods {
     this.updateProfileDisplay();
   }
 
-  formatCoinBalance(value, wholeDigits = 8) {
+  formatCoinBalance(value, wholeDigits = 1) {
     const cents = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
-    const whole = String(Math.floor(cents / 100)).padStart(wholeDigits, '0');
+    const minWholeDigits = Number.isFinite(wholeDigits) ? Math.max(1, Math.floor(wholeDigits)) : 1;
+    const whole = String(Math.floor(cents / 100)).padStart(minWholeDigits, '0');
     const fraction = String(cents % 100).padStart(2, '0');
     return `${whole},${fraction}`;
   }
 
   formatShopIslandBalance(value) {
-    const cents = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
-    const wholeNumber = Math.floor(cents / 100);
-    const whole = wholeNumber === 0 ? '0' : `0${wholeNumber}`;
-    const fraction = String(cents % 100).padStart(2, '0');
-    return `${whole},${fraction}`;
+    return this.formatCoinBalance(value, 1);
   }
 
   getTapLevelThreshold(level = 1) {
@@ -542,6 +539,9 @@ export class ChatAppCoreMethods {
       messagePreview: true,
       readReceipts: true,
       lastSeen: true,
+      twoFactorAuth: true,
+      profileVisibility: 'friends',
+      hideBlockedChats: true,
       enterToSend: true,
       autoPlayMedia: true,
       autoSaveMedia: false,
@@ -564,6 +564,7 @@ export class ChatAppCoreMethods {
     root.classList.toggle('no-animations', settings.animationsEnabled === false);
     root.classList.toggle('compact-mode', settings.compactMode === true);
     root.classList.toggle('no-message-preview', settings.messagePreview === false);
+    root.setAttribute('lang', settings.language === 'en' ? 'en' : 'uk');
     this.updateProfileDisplay();
   }
 

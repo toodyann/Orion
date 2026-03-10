@@ -454,6 +454,66 @@
     min-height: 40px !important;
   }
 
+  #settingsContainerMobile .settings-subsection .settings-header {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 3 !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 10px 0 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    pointer-events: none !important;
+  }
+
+  #settingsContainerMobile .settings-subsection .settings-header .settings-subsection-title {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    min-height: 46px !important;
+    margin: 0 auto !important;
+    padding: 0 16px !important;
+    width: 208px !important;
+    max-width: calc(100% - 20px) !important;
+    box-sizing: border-box !important;
+    border-radius: 14px !important;
+    position: static !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    font-size: 18px !important;
+  }
+
+  #settingsContainerMobile .settings-subsection .settings-header .settings-subsection-back {
+    position: absolute !important;
+    left: 12px !important;
+    top: 10px !important;
+    transform: none !important;
+    z-index: 10 !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    pointer-events: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #settingsContainerMobile .settings-subsection .settings-content {
+    padding-top: 68px !important;
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+    padding-bottom: calc(var(--bottom-nav-height, 72px) + 96px) !important;
+  }
+
+  #settingsContainerMobile .settings-subsection .settings-buttons {
+    padding-top: 12px !important;
+  }
+
   /* Hide back button in messenger-settings (main menu), show only in subsections */
   #settingsContainerMobile #messenger-settings .btn-back-settings {
     display: none !important;
@@ -556,7 +616,7 @@
     align-items: center !important;
     justify-content: center !important;
     min-height: 46px !important;
-    border-radius: 999px !important;
+    border-radius: 14px !important;
     font-size: 18px !important;
     font-weight: 600 !important;
     pointer-events: auto !important;
@@ -587,7 +647,7 @@
     justify-content: center !important;
     min-height: 46px !important;
     margin: 0 auto !important;
-    border-radius: 999px !important;
+    border-radius: 14px !important;
     font-size: 18px !important;
     font-weight: 600 !important;
     color: var(--text-primary) !important;

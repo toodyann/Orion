@@ -117,7 +117,7 @@
   gap: 10px;
   min-height: 40px;
   padding: 0 14px;
-  border-radius: 999px;
+  border-radius: 14px;
   opacity: 0;
   transform: translateY(-10px) scale(0.96);
   pointer-events: none;
@@ -166,7 +166,7 @@
   min-height: 40px;
   margin: 0 auto;
   padding: 0 50px;
-  border-radius: 999px;
+  border-radius: 14px;
   font-size: 22px;
   font-weight: 600;
   pointer-events: auto;
@@ -272,7 +272,7 @@ html.dark-theme #messenger-settings .shop-balance-island {
   gap: 8px;
   min-height: 40px;
   margin: 0 auto;
-  border-radius: 999px;
+  border-radius: 14px;
   font-size: 22px;
   font-weight: 600;
   color: var(--text-primary);
@@ -294,14 +294,14 @@ html.dark-theme #messenger-settings .shop-balance-island {
   height: 40px;
   padding: 0;
   margin: 0;
-  border-radius: 999px;
+  border-radius: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   pointer-events: auto;
   color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  border: none;
+  background: transparent;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -324,8 +324,8 @@ html:not(.dark-theme) #profile-items .profile-items-header h2 {
 }
 
 html:not(.dark-theme) #profile-items .profile-items-back-island {
-  border: 1px solid rgba(20, 24, 36, 0.1);
-  background: rgba(255, 255, 255, 0.58);
+  border: none;
+  background: transparent;
   box-shadow:
     0 10px 22px rgba(15, 19, 32, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.62);
@@ -343,11 +343,16 @@ html.dark-theme #profile-items .profile-items-header h2 {
 }
 
 html.dark-theme #profile-items .profile-items-back-island {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  border: none;
+  background: transparent;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+}
+
+#profile-items .profile-items-back-island:hover,
+#profile-items .profile-items-back-island:active {
+  background: transparent;
 }
 
 #calls .calls-content,
@@ -357,6 +362,121 @@ html.dark-theme #profile-items .profile-items-back-island {
   overflow-y: auto;
   background: transparent;
   padding-top: 70px;
+  box-sizing: border-box;
+}
+
+.settings-subsection {
+  position: relative;
+  background: transparent;
+}
+
+.settings-subsection .settings-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 14px 0 0;
+  min-height: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.settings-subsection .settings-header .settings-subsection-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  margin: 0 auto;
+  padding: 0 20px;
+  width: 240px;
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  pointer-events: auto;
+  position: static;
+  transform: none;
+}
+
+.settings-subsection .settings-header .settings-subsection-title svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.settings-subsection .settings-subsection-back {
+  position: absolute;
+  top: 14px;
+  left: 24px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  color: var(--text-primary);
+  border: none;
+  background: transparent;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.settings-subsection .settings-subsection-back svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+html:not(.dark-theme) .settings-subsection .settings-subsection-title {
+  border: 1px solid rgba(20, 24, 36, 0.1);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow:
+    0 10px 22px rgba(15, 19, 32, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html:not(.dark-theme) .settings-subsection .settings-subsection-back {
+  background: transparent;
+  box-shadow:
+    0 10px 22px rgba(15, 19, 32, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html.dark-theme .settings-subsection .settings-subsection-title {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+html.dark-theme .settings-subsection .settings-subsection-back {
+  background: transparent;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.settings-subsection .settings-content {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  background: transparent;
+  padding: 70px 20px calc(var(--bottom-nav-height, 72px) + 24px);
   box-sizing: border-box;
 }
 
@@ -497,6 +617,37 @@ html.dark-theme #profile-items .profile-items-back-island {
   outline: none;
 }
 
+.settings-item-action {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.settings-item-action:active {
+  transform: scale(0.98);
+}
+
+.settings-item-action-select {
+  min-width: 132px;
+}
+
 .form-select:hover {
   border-color: var(--primary-color);
 }
@@ -506,7 +657,15 @@ html.dark-theme #profile-items .profile-items-back-island {
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
-.settings-buttons,
+.settings-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px;
+  margin-top: auto;
+  background-color: var(--bg-color);
+}
+
 .about-buttons,
 .help-buttons {
   display: flex;
@@ -514,6 +673,23 @@ html.dark-theme #profile-items .profile-items-back-island {
   padding: 20px;
   margin-top: auto;
   background-color: var(--bg-color);
+}
+
+.settings-subsection .settings-buttons {
+  padding: 10px 0 0;
+  margin-top: 0;
+  background: transparent;
+}
+
+.settings-subsection .settings-buttons .btn {
+  min-height: 46px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 68%, transparent);
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  font-weight: 700;
 }
 
 .about-header {
@@ -2175,7 +2351,7 @@ html.dark-theme .profile-settings-card {
   min-height: 36px;
   padding: 0;
   border-radius: var(--radius-control);
-  border: 1px solid color-mix(in srgb, var(--border-color) 92%, #8a8f99);
+  border: none;
   background: transparent;
   color: var(--text-secondary);
   font-family: inherit;
@@ -2183,7 +2359,6 @@ html.dark-theme .profile-settings-card {
   font-weight: 700;
   cursor: pointer;
   transition:
-    border-color 0.2s ease,
     color 0.2s ease,
     background-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -2196,7 +2371,6 @@ html.dark-theme .profile-settings-card {
 
 .profile-items-view-btn.is-active {
   color: color-mix(in srgb, var(--text-primary) 80%, #8a8f99);
-  border-color: color-mix(in srgb, var(--text-secondary) 78%, var(--border-color));
   background: transparent;
   box-shadow: none;
 }
@@ -3185,6 +3359,7 @@ html.dark-theme .profile-settings-card {
 
 #profile-settings .settings-buttons {
   display: flex;
+  justify-content: flex-end;
   gap: 12px;
   flex-wrap: wrap;
   padding: 18px 0 0;
@@ -3461,8 +3636,8 @@ html.dark-theme .profile-settings-card {
   align-items: flex-start;
   gap: 0;
   min-width: 120px;
-  padding: 10px 12px;
-  border-radius: 16px;
+  padding: 5px 12px;
+  border-radius: 14px;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-color) 90%, transparent);
   backdrop-filter: blur(10px);
@@ -3474,14 +3649,18 @@ html.dark-theme .profile-settings-card {
 }
 
 .coin-level-island::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 2px;
   left: 2px;
   bottom: 2px;
   width: max(0px, calc(var(--coin-level-progress) - 4px));
-  border-radius: 12px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--primary-color) 24%, transparent) 0%, color-mix(in srgb, var(--primary-color) 56%, transparent) 100%);
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary-color) 24%, transparent) 0%,
+    color-mix(in srgb, var(--primary-color) 56%, transparent) 100%
+  );
   transition: width 0.22s ease;
   z-index: 0;
 }
@@ -3596,7 +3775,7 @@ html.dark-theme .profile-settings-card {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: 999px;
+  border-radius: 14px;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-color) 78%, transparent);
   color: var(--text-secondary);

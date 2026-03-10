@@ -765,14 +765,20 @@ html:not(.dark-theme) #newChatModal .new-chat-footer .btn {
   border-radius: 22px;
   color: var(--text-primary);
   background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.04)),
-    linear-gradient(145deg, rgba(16, 22, 34, 0.22), rgba(12, 18, 30, 0.1));
+    linear-gradient(155deg, rgba(88, 74, 60, 0.58), rgba(58, 48, 42, 0.5)),
+    linear-gradient(145deg, rgba(20, 19, 21, 0.93), rgba(14, 13, 16, 0.9));
   border: 1px solid color-mix(in srgb, var(--border-color) 70%, rgba(255, 255, 255, 0.42));
   box-shadow:
     0 22px 54px rgba(0, 0, 0, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
-  backdrop-filter: blur(34px) saturate(145%);
-  -webkit-backdrop-filter: blur(34px) saturate(145%);
+  backdrop-filter: blur(22px) saturate(118%);
+  -webkit-backdrop-filter: blur(22px) saturate(118%);
+}
+
+.alert-overlay.is-notice .alert-modal {
+  background:
+    linear-gradient(155deg, rgba(46, 66, 54, 0.56), rgba(30, 45, 38, 0.48)),
+    linear-gradient(145deg, rgba(18, 20, 24, 0.93), rgba(12, 14, 18, 0.9));
 }
 
 .alert-modal.active {
@@ -781,12 +787,18 @@ html:not(.dark-theme) #newChatModal .new-chat-footer .btn {
 
 html:not(.dark-theme) .alert-modal {
   background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.3)),
-    linear-gradient(145deg, rgba(245, 249, 255, 0.34), rgba(240, 246, 255, 0.12));
+    linear-gradient(155deg, rgba(255, 253, 249, 0.96), rgba(248, 241, 232, 0.9)),
+    linear-gradient(145deg, rgba(239, 228, 214, 0.72), rgba(234, 224, 212, 0.66));
   border-color: rgba(20, 24, 36, 0.12);
   box-shadow:
     0 20px 50px rgba(15, 19, 32, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+html:not(.dark-theme) .alert-overlay.is-notice .alert-modal {
+  background:
+    linear-gradient(155deg, rgba(247, 255, 248, 0.96), rgba(237, 252, 240, 0.9)),
+    linear-gradient(145deg, rgba(233, 246, 236, 0.72), rgba(226, 241, 230, 0.66));
 }
 
 .alert-modal-inner {
@@ -800,6 +812,7 @@ html:not(.dark-theme) .alert-modal {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  min-height: 196px;
 }
 
 .alert-modal-inner::before {
@@ -822,12 +835,28 @@ html:not(.dark-theme) .alert-modal {
   transform: translateX(-10%) translateY(0) scaleX(1.05);
   transform-origin: center center;
   animation: alertRedWave 7.2s ease-in-out infinite;
+  will-change: transform, opacity;
   z-index: 0;
   pointer-events: none;
 }
 
+.alert-overlay.is-notice .alert-modal-inner::before {
+  background:
+    radial-gradient(
+      120% 120% at 50% 0%,
+      rgba(34, 197, 94, 0.34) 0%,
+      rgba(34, 197, 94, 0.18) 38%,
+      rgba(34, 197, 94, 0) 72%
+    );
+  animation: alertGreenWave 7.2s ease-in-out infinite;
+}
+
 html:not(.dark-theme) .alert-modal-inner::before {
   opacity: 0.5;
+}
+
+html:not(.dark-theme) .alert-overlay.is-notice .alert-modal-inner::before {
+  opacity: 0.52;
 }
 
 .alert-modal-inner > * {
@@ -881,6 +910,7 @@ html:not(.dark-theme) .alert-modal-inner::before {
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.55;
+  min-height: 44px;
   overflow-y: auto;
   max-height: min(38vh, 240px);
   white-space: pre-wrap;
@@ -894,6 +924,11 @@ html:not(.dark-theme) .alert-modal-inner::before {
 }
 
 .alert-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
   min-height: 46px;
   padding: 0 16px;
   border-radius: 12px;
@@ -1040,7 +1075,7 @@ html:not(.dark-theme) .alert-actions .btn {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(10, 14, 24, 0.28);
+  background: rgba(10, 14, 24, 0.56);
   display: none;
   z-index: 1100;
   backdrop-filter: blur(6px);
@@ -1049,7 +1084,7 @@ html:not(.dark-theme) .alert-actions .btn {
 }
 
 html:not(.dark-theme) .alert-overlay {
-  background: rgba(15, 19, 32, 0.14);
+  background: rgba(15, 19, 32, 0.34);
 }
 
 .alert-overlay.active {
@@ -1064,27 +1099,38 @@ html:not(.dark-theme) .alert-overlay {
   0% {
     opacity: 0;
     transform: translateY(20px) scale(0.94);
-    filter: blur(8px);
   }
   60% {
     opacity: 1;
     transform: translateY(-2px) scale(1.01);
-    filter: blur(0);
   }
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 }
 
 @keyframes alertRedWave {
   0%,
   100% {
-    transform: translateX(-10%) translateY(0) scaleX(1.04);
+    transform: translateX(-10%) translateY(0) scaleX(1);
+    opacity: 0.6;
   }
   50% {
-    transform: translateX(10%) translateY(-8px) scaleX(0.96);
+    transform: translateX(10%) translateY(0) scaleX(1);
+    opacity: 0.74;
+  }
+}
+
+@keyframes alertGreenWave {
+  0%,
+  100% {
+    transform: translateX(-10%) translateY(0) scaleX(1);
+    opacity: 0.56;
+  }
+  50% {
+    transform: translateX(10%) translateY(0) scaleX(1);
+    opacity: 0.7;
   }
 }
 
@@ -1097,6 +1143,7 @@ html:not(.dark-theme) .alert-overlay {
   .alert-modal-inner {
     padding: 16px;
     gap: 14px;
+    min-height: 184px;
   }
 
   .alert-header h3 {

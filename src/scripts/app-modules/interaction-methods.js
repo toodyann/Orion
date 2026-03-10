@@ -1,5 +1,6 @@
 import {
   showAlert,
+  showNotice,
   showConfirm,
   setupEmojiPicker,
   insertAtCursor,
@@ -458,6 +459,10 @@ export class ChatAppInteractionMethods {
     return showAlert(message, title);
   }
 
+  showNotice(message, title = 'Повідомлення') {
+    return showNotice(message, title);
+  }
+
   showConfirm(message, title = 'Підтвердження') {
     return showConfirm(message, title);
   }
@@ -781,13 +786,19 @@ export class ChatAppInteractionMethods {
     const sortedChats = this.getSortedChats();
     
     if (sortedChats.length === 0) {
+      const blockedCount = typeof this.getBlockedChatIds === 'function'
+        ? this.getBlockedChatIds().length
+        : 0;
+      const allHiddenByBlock = this.chats.length > 0
+        && blockedCount > 0
+        && this.settings?.hideBlockedChats !== false;
       const emptyState = document.createElement('div');
       emptyState.className = 'chats-list-empty';
       emptyState.innerHTML = `
         <div class="empty-state-content">
           <div class="empty-state-emoji">💬</div>
-          <div class="empty-state-text">Чатів ще немає</div>
-          <div class="empty-state-hint">Натисніть + щоб почати розмову</div>
+          <div class="empty-state-text">${allHiddenByBlock ? 'Усі чати приховано' : 'Чатів ще немає'}</div>
+          <div class="empty-state-hint">${allHiddenByBlock ? 'Вимкніть "Приховувати заблоковані чати" в налаштуваннях приватності' : 'Натисніть + щоб почати розмову'}</div>
         </div>
       `;
       chatsList.appendChild(emptyState);
@@ -839,9 +850,16 @@ export class ChatAppInteractionMethods {
   }
 
   getSortedChats() {
+    const hideBlockedChats = this.settings?.hideBlockedChats !== false;
+    const blockedIds = hideBlockedChats && typeof this.getBlockedChatIds === 'function'
+      ? new Set(this.getBlockedChatIds())
+      : new Set();
+    const sourceChats = hideBlockedChats
+      ? this.chats.filter((chat) => !blockedIds.has(Number(chat.id)))
+      : this.chats;
     const pinned = [];
     const normal = [];
-    this.chats.forEach(c => (c.isPinned ? pinned : normal).push(c));
+    sourceChats.forEach(c => (c.isPinned ? pinned : normal).push(c));
     pinned.sort((a, b) => (b.pinnedAt || 0) - (a.pinnedAt || 0));
     return [...pinned, ...normal];
   }

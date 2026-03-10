@@ -670,6 +670,157 @@ export class ChatAppFeaturesMethods {
     }
   }
 
+  mapFontSliderToPreset(sliderValue) {
+    const safeValue = Number.isFinite(sliderValue) ? sliderValue : 15;
+    if (safeValue <= 14) return 'small';
+    if (safeValue <= 16) return 'medium';
+    return 'large';
+  }
+
+  getBlockedChatIds() {
+    const stored = this.readJsonStorage('bridge_blocked_chat_ids', []);
+    if (!Array.isArray(stored)) return [];
+    const normalized = stored
+      .map(value => Number.parseInt(String(value), 10))
+      .filter(value => Number.isFinite(value) && value > 0);
+    return [...new Set(normalized)];
+  }
+
+  saveBlockedChatIds(ids) {
+    const normalized = [...new Set(
+      (Array.isArray(ids) ? ids : [])
+        .map(value => Number.parseInt(String(value), 10))
+        .filter(value => Number.isFinite(value) && value > 0)
+    )];
+
+    try {
+      window.localStorage.setItem('bridge_blocked_chat_ids', JSON.stringify(normalized));
+    } catch {
+      // Ignore storage failures.
+    }
+    return normalized;
+  }
+
+  updateBlockedUsersSummary(settingsContainer) {
+    const summaryEl = settingsContainer?.querySelector('#blockedUsersSummary');
+    if (!summaryEl) return;
+    const count = this.getBlockedChatIds().length;
+    summaryEl.textContent = count > 0 ? `Заблоковано чатів: ${count}` : 'Список порожній';
+  }
+
+  async openBlockedUsersManager(settingsContainer) {
+    const chats = Array.isArray(this.chats) ? this.chats : [];
+    if (!chats.length) {
+      await this.showAlert('Наразі немає чатів для блокування.');
+      return;
+    }
+
+    const blockedSet = new Set(this.getBlockedChatIds());
+    const preview = chats
+      .slice(0, 14)
+      .map(chat => `${chat.id} — ${chat.name}${blockedSet.has(chat.id) ? ' (заблоковано)' : ''}`)
+      .join('\n');
+
+    const rawValue = window.prompt(
+      `Введіть ID чату для блокування/розблокування:\n${preview}`,
+      ''
+    );
+    if (rawValue === null) return;
+
+    const chatId = Number.parseInt(rawValue.trim(), 10);
+    if (!Number.isFinite(chatId)) {
+      await this.showAlert('Невірний ID чату.');
+      return;
+    }
+
+    const targetChat = chats.find(chat => chat.id === chatId);
+    if (!targetChat) {
+      await this.showAlert('Чат із таким ID не знайдено.');
+      return;
+    }
+
+    const isBlocked = blockedSet.has(chatId);
+    if (isBlocked) {
+      blockedSet.delete(chatId);
+    } else {
+      blockedSet.add(chatId);
+    }
+
+    this.saveBlockedChatIds([...blockedSet]);
+    this.updateBlockedUsersSummary(settingsContainer);
+    this.renderChatsList();
+
+    await this.showAlert(
+      isBlocked
+        ? `Чат "${targetChat.name}" розблоковано.`
+        : `Чат "${targetChat.name}" заблоковано.`
+    );
+  }
+
+  updateDesktopNotificationStatus(settingsContainer) {
+    const stateEl = settingsContainer?.querySelector('#desktopNotificationState');
+    const actionBtn = settingsContainer?.querySelector('#desktopNotificationActionBtn');
+    if (!stateEl || !actionBtn) return;
+
+    if (!('Notification' in window)) {
+      stateEl.textContent = 'Браузер не підтримує системні сповіщення';
+      actionBtn.textContent = 'Недоступно';
+      actionBtn.disabled = true;
+      return;
+    }
+
+    actionBtn.disabled = false;
+    if (Notification.permission === 'granted') {
+      stateEl.textContent = 'Доступ надано';
+      actionBtn.textContent = 'Тест';
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      stateEl.textContent = 'Доступ заблоковано у браузері';
+      actionBtn.textContent = 'Заблоковано';
+      actionBtn.disabled = true;
+      return;
+    }
+
+    stateEl.textContent = 'Доступ не надано';
+    actionBtn.textContent = 'Надати доступ';
+  }
+
+  async handleDesktopNotificationAction(settingsContainer) {
+    if (!('Notification' in window)) {
+      await this.showAlert('Цей браузер не підтримує системні сповіщення.');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      const notification = new Notification('Orion', {
+        body: 'Тестове сповіщення працює.',
+        silent: !this.settings?.soundNotifications
+      });
+      window.setTimeout(() => notification.close(), 3500);
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    this.settings = {
+      ...(this.settings || {}),
+      desktopNotifications: permission === 'granted'
+    };
+    this.saveSettings(this.settings);
+    this.updateDesktopNotificationStatus(settingsContainer);
+
+    if (permission !== 'granted') {
+      await this.showAlert('Браузер не надав доступ до системних сповіщень.');
+    }
+  }
+
+  applyThemeMode(mode) {
+    const themeMode = ['light', 'dark', 'system'].includes(mode) ? mode : 'system';
+    this.settings = { ...(this.settings || {}), theme: themeMode };
+    this.saveSettings(this.settings);
+    this.loadTheme();
+  }
+
   // Метод-обгортка для імпортованої функції setupSettingsSwipeBack
   setupSettingsSwipeBack(settingsContainer) {
     setupSettingsSwipeBack(settingsContainer, this);
@@ -894,17 +1045,40 @@ export class ChatAppFeaturesMethods {
         this.initProfileItems(settingsContainer);
       }
       
-      // Завантаження значень для підрозділів
+      const bindLiveSave = (element, eventName = 'change', afterChange = null) => {
+        if (!element || element.dataset.liveBound === 'true') return;
+        element.dataset.liveBound = 'true';
+        element.addEventListener(eventName, async () => {
+          await this.saveMessengerSettings({ silent: true });
+          if (typeof afterChange === 'function') afterChange();
+        });
+      };
+
+      // Завантаження значень для підрозділів + live-функціонал
       if (sectionName === 'notifications-settings') {
         const soundNotif = settingsContainer.querySelector('#soundNotifications');
         const desktopNotif = settingsContainer.querySelector('#desktopNotifications');
         const vibrationEnabled = settingsContainer.querySelector('#vibrationEnabled');
         const messagePreview = settingsContainer.querySelector('#messagePreview');
+        const desktopNotificationActionBtn = settingsContainer.querySelector('#desktopNotificationActionBtn');
         
         if (soundNotif) soundNotif.checked = this.settings.soundNotifications ?? true;
         if (desktopNotif) desktopNotif.checked = this.settings.desktopNotifications ?? true;
         if (vibrationEnabled) vibrationEnabled.checked = this.settings.vibrationEnabled ?? true;
         if (messagePreview) messagePreview.checked = this.settings.messagePreview ?? true;
+
+        bindLiveSave(soundNotif);
+        bindLiveSave(desktopNotif, 'change', () => this.updateDesktopNotificationStatus(settingsContainer));
+        bindLiveSave(vibrationEnabled);
+        bindLiveSave(messagePreview);
+
+        this.updateDesktopNotificationStatus(settingsContainer);
+        if (desktopNotificationActionBtn && desktopNotificationActionBtn.dataset.bound !== 'true') {
+          desktopNotificationActionBtn.dataset.bound = 'true';
+          desktopNotificationActionBtn.addEventListener('click', async () => {
+            await this.handleDesktopNotificationAction(settingsContainer);
+          });
+        }
       }
       
       if (sectionName === 'privacy-settings') {
@@ -912,11 +1086,34 @@ export class ChatAppFeaturesMethods {
         const typingIndic = settingsContainer.querySelector('#showTypingIndicator');
         const readReceipts = settingsContainer.querySelector('#readReceipts');
         const lastSeen = settingsContainer.querySelector('#lastSeen');
+        const twoFactorAuth = settingsContainer.querySelector('#twoFactorAuth');
+        const profileVisibility = settingsContainer.querySelector('#profileVisibility');
+        const hideBlockedChats = settingsContainer.querySelector('#hideBlockedChats');
+        const manageBlockedUsersBtn = settingsContainer.querySelector('#manageBlockedUsersBtn');
         
         if (onlineStatus) onlineStatus.checked = this.settings.showOnlineStatus ?? true;
         if (typingIndic) typingIndic.checked = this.settings.showTypingIndicator ?? true;
         if (readReceipts) readReceipts.checked = this.settings.readReceipts ?? true;
         if (lastSeen) lastSeen.checked = this.settings.lastSeen ?? true;
+        if (twoFactorAuth) twoFactorAuth.checked = this.settings.twoFactorAuth ?? true;
+        if (profileVisibility) profileVisibility.value = this.settings.profileVisibility || 'friends';
+        if (hideBlockedChats) hideBlockedChats.checked = this.settings.hideBlockedChats ?? true;
+        this.updateBlockedUsersSummary(settingsContainer);
+
+        bindLiveSave(onlineStatus);
+        bindLiveSave(typingIndic);
+        bindLiveSave(readReceipts);
+        bindLiveSave(lastSeen);
+        bindLiveSave(twoFactorAuth);
+        bindLiveSave(profileVisibility);
+        bindLiveSave(hideBlockedChats, 'change', () => this.renderChatsList());
+
+        if (manageBlockedUsersBtn && manageBlockedUsersBtn.dataset.bound !== 'true') {
+          manageBlockedUsersBtn.dataset.bound = 'true';
+          manageBlockedUsersBtn.addEventListener('click', async () => {
+            await this.openBlockedUsersManager(settingsContainer);
+          });
+        }
       }
       
       if (sectionName === 'messages-settings') {
@@ -927,6 +1124,10 @@ export class ChatAppFeaturesMethods {
         if (enterToSend) enterToSend.checked = this.settings.enterToSend ?? true;
         if (autoPlayMedia) autoPlayMedia.checked = this.settings.autoPlayMedia ?? true;
         if (autoSaveMedia) autoSaveMedia.checked = this.settings.autoSaveMedia ?? false;
+
+        bindLiveSave(enterToSend);
+        bindLiveSave(autoPlayMedia);
+        bindLiveSave(autoSaveMedia);
       }
       
       if (sectionName === 'appearance-settings') {
@@ -935,6 +1136,7 @@ export class ChatAppFeaturesMethods {
         const fontPreview = settingsContainer.querySelector('#fontPreview');
         const animationsEnabled = settingsContainer.querySelector('#animationsEnabled');
         const compactMode = settingsContainer.querySelector('#compactMode');
+        const themeMode = settingsContainer.querySelector('#themeMode');
         
         if (fontSizeSlider) {
           const currentFontSize = this.settings.fontSize || 'medium';
@@ -959,16 +1161,27 @@ export class ChatAppFeaturesMethods {
             const fontSize = parseInt(e.target.value);
             updateSliderBackground(fontSize);
             this.updateFontPreview(fontSize, fontSizeDisplay, fontPreview);
+            this.applyFontSize(this.mapFontSliderToPreset(fontSize));
           });
+
+          bindLiveSave(fontSizeSlider, 'change');
+        }
+        
+        if (themeMode) {
+          themeMode.value = this.settings.theme || 'system';
+          bindLiveSave(themeMode);
         }
         
         if (animationsEnabled) animationsEnabled.checked = this.settings.animationsEnabled ?? true;
         if (compactMode) compactMode.checked = this.settings.compactMode ?? false;
+        bindLiveSave(animationsEnabled);
+        bindLiveSave(compactMode);
       }
       
       if (sectionName === 'language-settings') {
         const language = settingsContainer.querySelector('#language');
         if (language) language.value = this.settings.language || 'uk';
+        bindLiveSave(language);
       }
       
       // Обробник кнопки назад для підрозділів
@@ -1005,21 +1218,10 @@ export class ChatAppFeaturesMethods {
         this.setupSettingsSwipeBack(settingsContainer);
       }
       
-      const themeToggleCheckbox = settingsContainer.querySelector('#themeToggleCheckbox');
-      if (themeToggleCheckbox) {
-        const isDark = document.documentElement.classList.contains('dark-theme');
-        themeToggleCheckbox.checked = isDark;
-        
-        themeToggleCheckbox.addEventListener('change', () => {
-          this.toggleTheme();
-          themeToggleCheckbox.checked = document.documentElement.classList.contains('dark-theme');
-        });
-      }
-      
       const closeButtons = settingsContainer.querySelectorAll('.btn-secondary:not(.btn-change-avatar)');
       closeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-          if (sectionName === 'profile-settings' && btn.closest('.settings-buttons')) {
+          if ((sectionName === 'profile-settings' || sectionName.endsWith('-settings')) && btn.closest('.settings-buttons')) {
             this.showSettings(this.settingsParentSection || 'profile');
             return;
           }
@@ -1078,65 +1280,67 @@ export class ChatAppFeaturesMethods {
     };
     
     this.saveUserProfile(profileData);
-    await this.showAlert('Налаштування профілю збережено!');
+    await this.showNotice('Налаштування профілю збережено!');
     
     if (this.currentChat) {
       this.renderChat();
     }
   }
 
-  async saveMessengerSettings() {
-    const soundNotifications = document.getElementById('soundNotifications')?.checked ?? true;
-    const desktopNotifications = document.getElementById('desktopNotifications')?.checked ?? true;
-    const showOnlineStatus = document.getElementById('showOnlineStatus')?.checked ?? true;
-    const showTypingIndicator = document.getElementById('showTypingIndicator')?.checked ?? true;
-    const vibrationEnabled = document.getElementById('vibrationEnabled')?.checked ?? true;
-    const messagePreview = document.getElementById('messagePreview')?.checked ?? true;
-    const readReceipts = document.getElementById('readReceipts')?.checked ?? true;
-    const lastSeen = document.getElementById('lastSeen')?.checked ?? true;
-    const enterToSend = document.getElementById('enterToSend')?.checked ?? true;
-    const autoPlayMedia = document.getElementById('autoPlayMedia')?.checked ?? true;
-    const autoSaveMedia = document.getElementById('autoSaveMedia')?.checked ?? false;
-    const animationsEnabled = document.getElementById('animationsEnabled')?.checked ?? true;
-    const compactMode = document.getElementById('compactMode')?.checked ?? false;
-    const language = document.getElementById('language')?.value || 'uk';
-    
-    // Отримуємо розмір шрифту з slider
-    const fontSizeSlider = document.getElementById('fontSizeSlider');
-    let fontSize = 'medium';
-    if (fontSizeSlider) {
-      const sliderValue = parseInt(fontSizeSlider.value);
-      if (sliderValue <= 14) fontSize = 'small';
-      else if (sliderValue <= 16) fontSize = 'medium';
-      else fontSize = 'large';
-    } else {
-      fontSize = document.getElementById('fontSize')?.value || 'medium';
-    }
-    
-    const settings = {
-      soundNotifications,
-      desktopNotifications,
-      showOnlineStatus,
-      showTypingIndicator,
-      vibrationEnabled,
-      messagePreview,
-      readReceipts,
-      lastSeen,
-      enterToSend,
-      autoPlayMedia,
-      autoSaveMedia,
-      animationsEnabled,
-      compactMode,
-      language,
-      fontSize
+  async saveMessengerSettings(options = {}) {
+    const { silent = false } = options;
+    const previousSettings = { ...(this.settings || this.loadSettings()) };
+    const settings = { ...previousSettings };
+
+    const assignCheckbox = (id, key) => {
+      const element = document.getElementById(id);
+      if (element) settings[key] = Boolean(element.checked);
     };
-    
+    const assignValue = (id, key) => {
+      const element = document.getElementById(id);
+      if (element) settings[key] = element.value;
+    };
+
+    assignCheckbox('soundNotifications', 'soundNotifications');
+    assignCheckbox('desktopNotifications', 'desktopNotifications');
+    assignCheckbox('showOnlineStatus', 'showOnlineStatus');
+    assignCheckbox('showTypingIndicator', 'showTypingIndicator');
+    assignCheckbox('vibrationEnabled', 'vibrationEnabled');
+    assignCheckbox('messagePreview', 'messagePreview');
+    assignCheckbox('readReceipts', 'readReceipts');
+    assignCheckbox('lastSeen', 'lastSeen');
+    assignCheckbox('twoFactorAuth', 'twoFactorAuth');
+    assignValue('profileVisibility', 'profileVisibility');
+    assignCheckbox('hideBlockedChats', 'hideBlockedChats');
+    assignCheckbox('enterToSend', 'enterToSend');
+    assignCheckbox('autoPlayMedia', 'autoPlayMedia');
+    assignCheckbox('autoSaveMedia', 'autoSaveMedia');
+    assignCheckbox('animationsEnabled', 'animationsEnabled');
+    assignCheckbox('compactMode', 'compactMode');
+    assignValue('language', 'language');
+    assignValue('themeMode', 'theme');
+
+    const fontSizeSlider = document.getElementById('fontSizeSlider');
+    if (fontSizeSlider) {
+      const sliderValue = Number.parseInt(fontSizeSlider.value, 10);
+      settings.fontSize = this.mapFontSliderToPreset(sliderValue);
+    }
+
     this.saveSettings(settings);
-    
-    this.applyFontSize(fontSize);
+    this.applyFontSize(settings.fontSize || 'medium');
     this.applySettingsToUI();
-    
-    await this.showAlert('Налаштування месенджера збережено!');
+
+    if ((settings.theme || 'system') !== (previousSettings.theme || 'system')) {
+      this.loadTheme();
+    }
+
+    if ((settings.hideBlockedChats ?? true) !== (previousSettings.hideBlockedChats ?? true)) {
+      this.renderChatsList();
+    }
+
+    if (!silent) {
+      await this.showNotice('Налаштування збережено!');
+    }
   }
 
   applyFontSize(size) {

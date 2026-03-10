@@ -1,5 +1,20 @@
 // UI допоміжні функції
 
+const ALERT_VARIANT_CLASSES = ['is-error', 'is-notice'];
+
+function setAlertVariant(overlay, variant = 'error') {
+  overlay.classList.remove(...ALERT_VARIANT_CLASSES);
+  if (variant === 'notice') {
+    overlay.classList.add('is-notice');
+    return;
+  }
+  overlay.classList.add('is-error');
+}
+
+function clearAlertVariant(overlay) {
+  overlay.classList.remove(...ALERT_VARIANT_CLASSES);
+}
+
 /**
  * Показати alert-повідомлення
  * @param {string} message - Текст повідомлення
@@ -22,6 +37,7 @@ export function showAlert(message, title = 'Помилка') {
   titleEl.textContent = title;
   messageEl.textContent = message;
   cancelBtn.style.display = 'none';
+  setAlertVariant(overlay, 'error');
 
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
@@ -30,6 +46,61 @@ export function showAlert(message, title = 'Помилка') {
     const cleanup = () => {
       overlay.classList.remove('active');
       overlay.setAttribute('aria-hidden', 'true');
+      clearAlertVariant(overlay);
+      okBtn.removeEventListener('click', onOk);
+      closeBtn.removeEventListener('click', onOk);
+      overlay.removeEventListener('click', onOverlay);
+      document.removeEventListener('keydown', onEnter);
+    };
+    const onOk = () => {
+      cleanup();
+      resolve();
+    };
+    const onOverlay = (e) => {
+      if (e.target === overlay) onOk();
+    };
+    const onEnter = (e) => {
+      if (e.key === 'Enter') onOk();
+    };
+    okBtn.addEventListener('click', onOk);
+    closeBtn.addEventListener('click', onOk);
+    overlay.addEventListener('click', onOverlay);
+    document.addEventListener('keydown', onEnter);
+  });
+}
+
+/**
+ * Показати інформаційне повідомлення
+ * @param {string} message - Текст повідомлення
+ * @param {string} title - Заголовок
+ * @returns {Promise<void>}
+ */
+export function showNotice(message, title = 'Повідомлення') {
+  const overlay = document.getElementById('alertOverlay');
+  const titleEl = document.getElementById('alertTitle');
+  const messageEl = document.getElementById('alertMessage');
+  const okBtn = document.getElementById('alertOkBtn');
+  const cancelBtn = document.getElementById('alertCancelBtn');
+  const closeBtn = document.getElementById('alertCloseBtn');
+
+  if (!overlay || !titleEl || !messageEl || !okBtn || !cancelBtn || !closeBtn) {
+    alert(message);
+    return Promise.resolve();
+  }
+
+  titleEl.textContent = title;
+  messageEl.textContent = message;
+  cancelBtn.style.display = 'none';
+  setAlertVariant(overlay, 'notice');
+
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  return new Promise(resolve => {
+    const cleanup = () => {
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
+      clearAlertVariant(overlay);
       okBtn.removeEventListener('click', onOk);
       closeBtn.removeEventListener('click', onOk);
       overlay.removeEventListener('click', onOverlay);
@@ -73,6 +144,7 @@ export function showConfirm(message, title = 'Підтвердження') {
   titleEl.textContent = title;
   messageEl.textContent = message;
   cancelBtn.style.display = 'inline-flex';
+  setAlertVariant(overlay, 'error');
 
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
@@ -81,6 +153,7 @@ export function showConfirm(message, title = 'Підтвердження') {
     const cleanup = () => {
       overlay.classList.remove('active');
       overlay.setAttribute('aria-hidden', 'true');
+      clearAlertVariant(overlay);
       okBtn.removeEventListener('click', onOk);
       cancelBtn.removeEventListener('click', onCancel);
       closeBtn.removeEventListener('click', onCancel);

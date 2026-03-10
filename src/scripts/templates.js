@@ -268,7 +268,7 @@ export const settingsTemplates = {
       <span class="profile-items-kicker">ІНВЕНТАР</span>
       <div class="profile-items-balance-row">
         <span>Баланс</span>
-        <strong id="profileItemsBalance">00000000,00</strong>
+        <strong id="profileItemsBalance">0,00</strong>
       </div>
       <div class="profile-items-balance-row">
         <span>Куплено предметів</span>
@@ -316,7 +316,7 @@ export const settingsTemplates = {
       <div class="shop-balance-meta">
         <div>
           <div class="shop-balance-label">Доступний баланс</div>
-          <div class="shop-balance-value" id="shopBalanceValue">00000000,00</div>
+          <div class="shop-balance-value" id="shopBalanceValue">0,00</div>
         </div>
       </div>
       <p class="shop-balance-note">Прокачуйте профіль предметами, які купуються лише за монети.</p>
@@ -377,12 +377,12 @@ export const settingsTemplates = {
           <div class="shop-price-range">
             <div class="shop-price-row">
               <span>Від</span>
-              <strong id="shopPriceMinValue">00000000,00</strong>
+              <strong id="shopPriceMinValue">0,00</strong>
             </div>
             <input type="range" id="shopPriceMin" min="0" max="0" step="1" value="0" />
             <div class="shop-price-row">
               <span>До</span>
-              <strong id="shopPriceMaxValue">00000000,00</strong>
+              <strong id="shopPriceMaxValue">0,00</strong>
             </div>
             <input type="range" id="shopPriceMax" min="0" max="0" step="1" value="0" />
           </div>
@@ -410,10 +410,19 @@ export const settingsTemplates = {
   `.trim(),
 
   'notifications-settings': `
-<div class="settings-section" id="notifications-settings">
-  <div class="settings-header">
-    <button class="btn-back-subsection">‹</button>
-    <h2>Сповіщення</h2>
+<div class="settings-section settings-subsection" id="notifications-settings">
+  <div class="settings-header settings-subsection-header">
+    <button type="button" class="btn-back-subsection settings-subsection-back" aria-label="Назад">
+      <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+        <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+      </svg>
+    </button>
+    <h2 class="settings-subsection-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Сповіщення</span>
+    </h2>
   </div>
 
   <div class="settings-content">
@@ -424,7 +433,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Відтворювати звук при новому повідомленні</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="soundNotifications" checked />
+          <input type="checkbox" id="soundNotifications" data-settings-key="soundNotifications" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -435,9 +444,17 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Показувати сповіщення на робочому столі</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="desktopNotifications" checked />
+          <input type="checkbox" id="desktopNotifications" data-settings-key="desktopNotifications" checked />
           <span class="toggle-slider"></span>
         </label>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Дозвіл браузера</span>
+          <p class="settings-item-desc" id="desktopNotificationState">Натисніть, щоб перевірити або надати доступ</p>
+        </div>
+        <button type="button" class="settings-item-action" id="desktopNotificationActionBtn">Перевірити</button>
       </div>
 
       <div class="settings-item">
@@ -446,7 +463,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Вібрувати при отриманні повідомлення</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="vibrationEnabled" checked />
+          <input type="checkbox" id="vibrationEnabled" data-settings-key="vibrationEnabled" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -457,7 +474,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Показувати текст повідомлення в сповіщенні</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="messagePreview" checked />
+          <input type="checkbox" id="messagePreview" data-settings-key="messagePreview" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -472,10 +489,20 @@ export const settingsTemplates = {
   `.trim(),
 
   'privacy-settings': `
-<div class="settings-section" id="privacy-settings">
-  <div class="settings-header">
-    <button class="btn-back-subsection">‹</button>
-    <h2>Конфіденційність</h2>
+<div class="settings-section settings-subsection" id="privacy-settings">
+  <div class="settings-header settings-subsection-header">
+    <button type="button" class="btn-back-subsection settings-subsection-back" aria-label="Назад">
+      <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+        <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+      </svg>
+    </button>
+    <h2 class="settings-subsection-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+      <span>Конфіденційність</span>
+    </h2>
   </div>
 
   <div class="settings-content">
@@ -486,7 +513,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Дозволити іншим бачити, коли ви онлайн</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="showOnlineStatus" checked />
+          <input type="checkbox" id="showOnlineStatus" data-settings-key="showOnlineStatus" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -497,7 +524,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Показувати, коли ви набираєте повідомлення</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="showTypingIndicator" checked />
+          <input type="checkbox" id="showTypingIndicator" data-settings-key="showTypingIndicator" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -508,7 +535,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Відправляти підтвердження прочитання повідомлень</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="readReceipts" checked />
+          <input type="checkbox" id="readReceipts" data-settings-key="readReceipts" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -519,7 +546,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Показувати час останнього входу</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="lastSeen" checked />
+          <input type="checkbox" id="lastSeen" data-settings-key="lastSeen" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -530,7 +557,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Додатковий захист для входу в акаунт</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="twoFactorAuth" checked />
+          <input type="checkbox" id="twoFactorAuth" data-settings-key="twoFactorAuth" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -540,15 +567,30 @@ export const settingsTemplates = {
           <span>Видимість профілю</span>
           <p class="settings-item-desc">Хто може бачити ваш профіль</p>
         </div>
-        <button class="settings-item-action">Друзі</button>
+        <select class="form-select settings-item-action-select" id="profileVisibility" data-settings-key="profileVisibility">
+          <option value="everyone">Усі</option>
+          <option value="friends">Лише друзі</option>
+          <option value="nobody">Ніхто</option>
+        </select>
       </div>
 
       <div class="settings-item">
         <div class="settings-item-label">
           <span>Заблоковані користувачі</span>
-          <p class="settings-item-desc">Керування списком блокувань</p>
+          <p class="settings-item-desc" id="blockedUsersSummary">Список порожній</p>
         </div>
-        <button class="settings-item-action">Керувати</button>
+        <button type="button" class="settings-item-action" id="manageBlockedUsersBtn">Керувати</button>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Приховувати заблоковані чати</span>
+          <p class="settings-item-desc">Заблоковані діалоги не показуються у списку чатів</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="hideBlockedChats" data-settings-key="hideBlockedChats" checked />
+          <span class="toggle-slider"></span>
+        </label>
       </div>
     </div>
 
@@ -561,10 +603,19 @@ export const settingsTemplates = {
   `.trim(),
 
   'messages-settings': `
-<div class="settings-section" id="messages-settings">
-  <div class="settings-header">
-    <button class="btn-back-subsection">‹</button>
-    <h2>Повідомлення</h2>
+<div class="settings-section settings-subsection" id="messages-settings">
+  <div class="settings-header settings-subsection-header">
+    <button type="button" class="btn-back-subsection settings-subsection-back" aria-label="Назад">
+      <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+        <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+      </svg>
+    </button>
+    <h2 class="settings-subsection-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>Повідомлення</span>
+    </h2>
   </div>
 
   <div class="settings-content">
@@ -575,7 +626,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Натискання Enter відправляє повідомлення</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="enterToSend" checked />
+          <input type="checkbox" id="enterToSend" data-settings-key="enterToSend" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -586,7 +637,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Автоматично відтворювати відео та GIF</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="autoPlayMedia" checked />
+          <input type="checkbox" id="autoPlayMedia" data-settings-key="autoPlayMedia" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -597,7 +648,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Автоматично зберігати отримані фото та відео</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="autoSaveMedia" />
+          <input type="checkbox" id="autoSaveMedia" data-settings-key="autoSaveMedia" />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -612,10 +663,20 @@ export const settingsTemplates = {
   `.trim(),
 
   'appearance-settings': `
-<div class="settings-section" id="appearance-settings">
-  <div class="settings-header">
-    <button class="btn-back-subsection">‹</button>
-    <h2>Інтерфейс</h2>
+<div class="settings-section settings-subsection" id="appearance-settings">
+  <div class="settings-header settings-subsection-header">
+    <button type="button" class="btn-back-subsection settings-subsection-back" aria-label="Назад">
+      <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+        <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+      </svg>
+    </button>
+    <h2 class="settings-subsection-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
+        <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+      <span>Інтерфейс</span>
+    </h2>
   </div>
 
   <div class="settings-content">
@@ -649,13 +710,14 @@ export const settingsTemplates = {
 
       <div class="settings-item">
         <div class="settings-item-label">
-          <span>Тема оформлення</span>
-          <p class="settings-item-desc">Вибір між світлою та темною темою</p>
+          <span>Режим теми</span>
+          <p class="settings-item-desc">Світла, темна або автоматично за системою</p>
         </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="themeToggleCheckbox" />
-          <span class="toggle-slider"></span>
-        </label>
+        <select class="form-select settings-item-action-select" id="themeMode" data-settings-key="theme">
+          <option value="system">Системна</option>
+          <option value="light">Світла</option>
+          <option value="dark">Темна</option>
+        </select>
       </div>
 
       <div class="settings-item">
@@ -664,7 +726,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Увімкнути анімації інтерфейсу</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="animationsEnabled" checked />
+          <input type="checkbox" id="animationsEnabled" data-settings-key="animationsEnabled" checked />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -675,7 +737,7 @@ export const settingsTemplates = {
           <p class="settings-item-desc">Зменшити відступи між елементами</p>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="compactMode" />
+          <input type="checkbox" id="compactMode" data-settings-key="compactMode" />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -701,7 +763,7 @@ export const settingsTemplates = {
 
     <span class="coin-tapper-kicker">ORION VALUE</span>
     <div class="coin-tapper-balance-label">Загальний баланс</div>
-    <div class="coin-tapper-balance" id="coinTapBalance">00000000,00</div>
+    <div class="coin-tapper-balance" id="coinTapBalance">0,00</div>
 
     <button class="coin-tapper-button" id="coinTapBtn" type="button" aria-label="Заробити монети">
       <img class="coin-tapper-image" src="${orionValueAssetUrl}" alt="Orion Value" />
@@ -717,10 +779,20 @@ export const settingsTemplates = {
   `.trim(),
 
   'language-settings': `
-<div class="settings-section" id="language-settings">
-  <div class="settings-header">
-    <button class="btn-back-subsection">‹</button>
-    <h2>Мова</h2>
+<div class="settings-section settings-subsection" id="language-settings">
+  <div class="settings-header settings-subsection-header">
+    <button type="button" class="btn-back-subsection settings-subsection-back" aria-label="Назад">
+      <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+        <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+      </svg>
+    </button>
+    <h2 class="settings-subsection-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
+        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+      <span>Мова</span>
+    </h2>
   </div>
 
   <div class="settings-content">
@@ -730,7 +802,7 @@ export const settingsTemplates = {
           <span>Мова інтерфейсу</span>
           <p class="settings-item-desc">Виберіть мову інтерфейсу додатку</p>
         </div>
-        <select class="form-select" id="language">
+        <select class="form-select settings-item-action-select" id="language" data-settings-key="language">
           <option value="uk" selected>Українська</option>
           <option value="en">English</option>
         </select>
