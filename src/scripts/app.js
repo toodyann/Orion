@@ -39,6 +39,13 @@ class ChatApp {
     this.cameraCaptureOpen = false;
     this.cameraStream = null;
     this.cameraFacingMode = 'environment';
+    this.voiceRecorder = null;
+    this.voiceRecordingStream = null;
+    this.voiceRecordingChunks = [];
+    this.voiceRecordingStartedAt = 0;
+    this.voiceRecordingActive = false;
+    this.voiceRecordingDiscarded = false;
+    this.activeVoiceAudio = null;
     this.chatEnterAnimation = null;
     this.chatCloseAnimation = null;
     this.attachSheetTouchStartY = 0;

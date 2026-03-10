@@ -16,7 +16,7 @@
   }
 
   .sidebar.compact .chats-list {
-    padding: 0 0 8px;
+    padding: 8px 0 8px;
     align-items: center;
   }
 
@@ -66,10 +66,12 @@
 }
 
 html.dark-theme .profile-menu-wrapper .bottom-nav {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(6px);
+  background: rgba(17, 20, 28, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px) saturate(1.12);
 }
 
 html.dark-theme .profile-menu-wrapper .bottom-nav-item {
@@ -90,12 +92,12 @@ html.dark-theme .profile-menu-wrapper .bottom-nav-item.active {
 }
 
 html:not(.dark-theme) .profile-menu-wrapper .bottom-nav {
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(20, 24, 36, 0.1);
+  background: rgba(248, 250, 255, 0.9);
+  border: 1px solid rgba(20, 24, 36, 0.14);
   box-shadow:
-    0 10px 22px rgba(15, 19, 32, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(12px);
+    0 12px 24px rgba(15, 19, 32, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(18px) saturate(1.08);
 }
 
 html:not(.dark-theme) .profile-menu-wrapper .bottom-nav-item {
@@ -248,25 +250,21 @@ html.dark-theme .search-box .btn-new-chat {
   width: calc(100% - 16px);
   text-align: left;
   position: relative;
-  background: var(--surface-soft);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(6px);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .chat-item:hover {
-  background-color: rgba(140, 140, 140, 0.1);
-  border-color: rgba(170, 170, 170, 0.22);
+  background-color: transparent;
+  border-color: transparent;
 }
 
 .chat-item.pinned {
-  background: linear-gradient(
-    135deg,
-    rgba(128, 128, 128, 0.04) 0%,
-    rgba(169, 169, 169, 0.04) 100%
-  );
-  border-left: 3px solid var(--primary-color);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+  background: transparent;
+  border-left: none;
+  box-shadow: none;
 }
 
 .chat-item.pinned::after {
@@ -293,8 +291,8 @@ html.dark-theme .search-box .btn-new-chat {
 }
 
 .chat-item.active {
-  background-color: rgba(140, 140, 140, 0.16);
-  border-color: rgba(170, 170, 170, 0.3);
+  background-color: transparent;
+  border-color: transparent;
   color: var(--primary-color);
 }
 
@@ -447,7 +445,7 @@ html.dark-theme .search-box .btn-new-chat {
   gap: 8px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0 2px 2px;
+  padding: 4px 2px 2px;
   scrollbar-width: thin;
   flex-wrap: nowrap;
   align-items: center;
@@ -966,4 +964,14 @@ html.dark-theme .search-box .btn-new-chat {
   .sidebar.nav-menu-vertical .profile-menu-wrapper .bottom-nav-item {
     animation: none !important;
   }
+}
+
+/* Keep bottom nav surface consistent with shop-filter-summary in all nav modes */
+.profile-menu-wrapper .bottom-nav,
+.profile-menu-wrapper.in-sidebar-slot .bottom-nav,
+.sidebar.nav-menu-vertical .profile-menu-wrapper .bottom-nav,
+.profile-menu-wrapper[data-nav-mode="sidebar-vertical"] .bottom-nav {
+  background: var(--surface-soft) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: blur(18px) saturate(1.08) !important;
 }

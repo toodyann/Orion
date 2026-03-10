@@ -471,6 +471,18 @@ html.dark-theme .settings-subsection .settings-subsection-back {
   -webkit-backdrop-filter: blur(6px);
 }
 
+/* Use the same island surface as .shop-filter-summary for all header islands */
+#messenger-settings .shop-header h2,
+#messenger-settings .shop-balance-island,
+#calls .calls-header h2,
+#profile-items .profile-items-header h2,
+.settings-subsection .settings-header .settings-subsection-title,
+#profile-items .profile-items-back-island,
+.settings-subsection .settings-subsection-back {
+  background: var(--surface-soft) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
 .settings-subsection .settings-content {
   flex: 1;
   width: 100%;

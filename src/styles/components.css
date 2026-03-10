@@ -40,31 +40,104 @@
 .btn-send {
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
   border: none;
-  background-color: var(--primary-color);
-  color: white;
+  background: transparent;
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-send:hover {
-  background-color: var(--primary-strong);
-  transform: scale(1.05);
+  background: transparent;
+  color: var(--primary-color);
+  transform: none;
+}
+
+.btn-send .send-icon {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  display: block;
+  flex-shrink: 0;
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+}
+
+.btn-send .send-icon-idle {
+  color: var(--text-secondary);
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.btn-send .send-icon-active {
+  color: var(--primary-color);
+  opacity: 0;
+  transform: translateY(7px) scale(0.86);
+}
+
+.btn-send.has-text {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-send.has-text .send-icon-idle {
+  opacity: 0;
+  transform: translateY(-7px) scale(0.86);
+}
+
+.btn-send.has-text .send-icon-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.btn-send.is-recording .send-icon-idle {
+  color: #ff5f5f;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  animation: voiceMicPulse 1.1s ease-in-out infinite;
+}
+
+.btn-send.is-recording .send-icon-active {
+  opacity: 0;
+  transform: translateY(7px) scale(0.86);
 }
 
 .btn-send:active {
-  transform: scale(0.95);
+  background: transparent;
+  color: var(--primary-color);
+  transform: none;
 }
 
 .btn-send:disabled {
-  background-color: var(--text-secondary);
+  background: transparent;
+  color: var(--text-secondary);
   cursor: not-allowed;
   transform: none;
+}
+
+@keyframes voiceMicPulse {
+  0% {
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 0 0 rgba(255, 95, 95, 0));
+  }
+  50% {
+    transform: translateY(0) scale(1.08);
+    filter: drop-shadow(0 0 8px rgba(255, 95, 95, 0.6));
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 0 0 rgba(255, 95, 95, 0));
+  }
 }
 
 .btn-close {
@@ -252,6 +325,7 @@
   border-radius: 50%;
   border: none;
   background: none;
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 20px;
   display: flex;
@@ -265,9 +339,18 @@
   background-color: var(--bg-secondary);
 }
 
+.btn-emoji svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  flex-shrink: 0;
+}
+
 .btn-attach {
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
   border: none;
   background: none;
@@ -283,4 +366,11 @@
 .btn-attach:hover {
   background: none;
   color: var(--text-secondary);
+}
+
+.btn-attach svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  flex-shrink: 0;
 }

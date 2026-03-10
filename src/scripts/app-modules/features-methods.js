@@ -846,6 +846,12 @@ export class ChatAppFeaturesMethods {
     if (chatContainer) chatContainer.classList.remove('active');
     if (welcomeScreen) welcomeScreen.classList.add('hidden');
     const appEl = document.querySelector('.bridge-app');
+    if (typeof this.stopVoiceRecording === 'function') {
+      this.stopVoiceRecording({ discard: true, silent: true });
+    }
+    if (typeof this.stopActiveVoicePlayback === 'function') {
+      this.stopActiveVoicePlayback();
+    }
     this.currentChat = null;
     this.updateChatHeader();
     if (appEl) {

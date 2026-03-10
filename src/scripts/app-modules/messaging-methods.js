@@ -12,9 +12,11 @@ export class ChatAppMessagingMethods {
     messageEl.className = `message ${msg.from}${highlightClass}`;
     messageEl.dataset.id = msg.id;
     messageEl.dataset.from = msg.from;
-    messageEl.dataset.text = (msg.type === 'image' && msg.imageUrl) ? (msg.text || 'Фото') : (msg.text || '');
+    messageEl.dataset.type = msg.type || 'text';
+    messageEl.dataset.text = this.getMessageContextText(msg);
     messageEl.dataset.date = msg.date || '';
     messageEl.dataset.time = msg.time || '';
+    messageEl.dataset.editable = String(this.isTextMessageEditable(msg));
     
     let avatarHtml = '';
     let senderNameHtml = '';
@@ -30,6 +32,7 @@ export class ChatAppMessagingMethods {
     const editedLabel = msg.edited ? '<span class="message-edited">• редаговано</span>' : '';
     const editedClass = msg.edited ? ' edited' : '';
     const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
+    const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
     const replyHtml = msg.replyTo
       ? `<div class="message-reply">
           <div class="message-reply-name">${msg.replyTo.from === 'own' ? this.user.name : this.currentChat.name}</div>
@@ -41,7 +44,7 @@ export class ChatAppMessagingMethods {
       ${avatarHtml}
       <div class="message-bubble">
         ${senderNameHtml}
-        <div class="message-content${editedClass}${imageClass}">
+        <div class="message-content${editedClass}${imageClass}${voiceClass}">
           ${replyHtml}
           ${this.buildMessageBodyHtml(msg)}
           <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>
@@ -53,15 +56,212 @@ export class ChatAppMessagingMethods {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
+  getMessagePreviewText(msg) {
+    if (!msg) return 'Немає повідомлень';
+    if (msg.type === 'image' && msg.imageUrl) {
+      return (msg.text || '').trim() || 'Фото';
+    }
+    if (msg.type === 'voice' && msg.audioUrl) {
+      return 'Голосове повідомлення';
+    }
+    const text = (msg.text || '').trim();
+    return text || 'Немає повідомлень';
+  }
+
+  getMessageContextText(msg) {
+    if (!msg) return '';
+    if (msg.type === 'image' && msg.imageUrl) {
+      return (msg.text || 'Фото');
+    }
+    if (msg.type === 'voice' && msg.audioUrl) {
+      return 'Голосове повідомлення';
+    }
+    return msg.text || '';
+  }
+
+  isTextMessageEditable(msg) {
+    if (!msg || msg.from !== 'own') return false;
+    return !msg.type || msg.type === 'text';
+  }
+
+  updateComposerPrimaryButtonState(hasText = null) {
+    const sendBtn = document.getElementById('sendBtn');
+    if (!sendBtn) return;
+    const input = document.getElementById('messageInput');
+    const computedHasText = typeof hasText === 'boolean'
+      ? hasText
+      : Boolean(input?.value.trim().length);
+
+    sendBtn.classList.toggle('has-text', computedHasText);
+    sendBtn.classList.toggle('is-recording', !computedHasText && this.voiceRecordingActive);
+
+    if (computedHasText) {
+      sendBtn.setAttribute('aria-label', 'Надіслати повідомлення');
+      return;
+    }
+    if (this.voiceRecordingActive) {
+      sendBtn.setAttribute('aria-label', 'Зупинити запис голосового повідомлення');
+      return;
+    }
+    sendBtn.setAttribute('aria-label', 'Записати голосове повідомлення');
+  }
+
+  handleSendButtonAction() {
+    const input = document.getElementById('messageInput');
+    const hasText = Boolean(input?.value.trim().length);
+    if (hasText) {
+      this.sendMessage();
+      return;
+    }
+
+    if (!this.currentChat) {
+      this.showAlert('Спочатку оберіть чат.');
+      return;
+    }
+
+    this.toggleVoiceRecording();
+  }
+
+  async toggleVoiceRecording() {
+    if (this.voiceRecordingActive) {
+      this.stopVoiceRecording();
+      return;
+    }
+    await this.startVoiceRecording();
+  }
+
+  async startVoiceRecording() {
+    if (this.voiceRecordingActive || !this.currentChat) return;
+    if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+      this.showAlert('Запис голосу недоступний у цьому браузері.');
+      return;
+    }
+
+    const input = document.getElementById('messageInput');
+    if (input?.value.trim().length) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorderOptions = {};
+      if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        recorderOptions.mimeType = 'audio/webm;codecs=opus';
+      }
+      const recorder = new MediaRecorder(stream, recorderOptions);
+      this.voiceRecorder = recorder;
+      this.voiceRecordingStream = stream;
+      this.voiceRecordingChunks = [];
+      this.voiceRecordingStartedAt = Date.now();
+      this.voiceRecordingDiscarded = false;
+      this.voiceRecordingActive = true;
+
+      recorder.addEventListener('dataavailable', (event) => {
+        if (!event.data || event.data.size <= 0) return;
+        this.voiceRecordingChunks.push(event.data);
+      });
+      recorder.addEventListener('stop', () => {
+        this.finalizeVoiceRecording().catch(() => {
+          this.showAlert('Не вдалося обробити голосове повідомлення.');
+        });
+      }, { once: true });
+
+      if (input) {
+        if (!input.dataset.defaultPlaceholder) {
+          input.dataset.defaultPlaceholder = input.placeholder || '';
+        }
+        input.readOnly = true;
+        input.placeholder = 'Запис голосового...';
+        input.blur();
+      }
+      this.updateComposerPrimaryButtonState(false);
+      recorder.start(150);
+    } catch (_) {
+      this.voiceRecordingActive = false;
+      this.voiceRecorder = null;
+      if (this.voiceRecordingStream) {
+        this.voiceRecordingStream.getTracks().forEach((track) => track.stop());
+        this.voiceRecordingStream = null;
+      }
+      this.showAlert('Не вдалося розпочати запис. Перевірте доступ до мікрофона.');
+      this.updateComposerPrimaryButtonState(false);
+    }
+  }
+
+  stopVoiceRecording({ discard = false, silent = false } = {}) {
+    this.voiceRecordingDiscarded = Boolean(discard);
+    this.voiceRecordingActive = false;
+
+    const input = document.getElementById('messageInput');
+    if (input) {
+      input.readOnly = false;
+      input.placeholder = input.dataset.defaultPlaceholder || 'Напишіть повідомлення...';
+    }
+    this.updateComposerPrimaryButtonState(Boolean(input?.value.trim().length));
+
+    const recorder = this.voiceRecorder;
+    if (recorder && recorder.state !== 'inactive') {
+      try {
+        recorder.stop();
+      } catch (_) {
+        this.resetVoiceRecordingState();
+        if (!silent) this.showAlert('Не вдалося завершити запис голосу.');
+      }
+    } else {
+      this.resetVoiceRecordingState();
+    }
+
+    if (this.voiceRecordingStream) {
+      this.voiceRecordingStream.getTracks().forEach((track) => track.stop());
+      this.voiceRecordingStream = null;
+    }
+  }
+
+  resetVoiceRecordingState() {
+    this.voiceRecorder = null;
+    this.voiceRecordingStream = null;
+    this.voiceRecordingChunks = [];
+    this.voiceRecordingStartedAt = 0;
+    this.voiceRecordingActive = false;
+    this.voiceRecordingDiscarded = false;
+  }
+
+  async finalizeVoiceRecording() {
+    const chunks = Array.isArray(this.voiceRecordingChunks) ? [...this.voiceRecordingChunks] : [];
+    const startedAt = this.voiceRecordingStartedAt;
+    const shouldDiscard = this.voiceRecordingDiscarded;
+    this.resetVoiceRecordingState();
+
+    if (shouldDiscard) return;
+    if (!this.currentChat || chunks.length === 0) return;
+
+    const blob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' });
+    if (!blob.size) return;
+
+    const audioUrl = await this.blobToDataUrl(blob);
+    if (!audioUrl) return;
+
+    const elapsedMs = startedAt > 0 ? (Date.now() - startedAt) : 0;
+    const durationSeconds = Math.max(1, Math.round(elapsedMs / 1000));
+    this.sendVoiceMessage(audioUrl, durationSeconds);
+  }
+
+  blobToDataUrl(blob) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(blob);
+    });
+  }
+
   sendMessage() {
     const input = document.getElementById('messageInput');
-    const message = input.value.trim();
+    const message = input?.value.trim() || '';
 
     if (!message || !this.currentChat) return;
 
     if (this.editingMessageId) {
       const msg = this.currentChat.messages.find(m => m.id === this.editingMessageId);
-      if (!msg) {
+      if (!msg || !this.isTextMessageEditable(msg)) {
         this.editingMessageId = null;
         return;
       }
@@ -111,6 +311,9 @@ export class ChatAppMessagingMethods {
   }
 
   openImagePicker() {
+    if (this.voiceRecordingActive) {
+      this.stopVoiceRecording({ discard: true, silent: true });
+    }
     this.forceComposerFocusUntil = 0;
     if (window.innerWidth > 900) {
       this.launchNativePicker(document.getElementById('galleryPickerInput'));
@@ -395,6 +598,41 @@ export class ChatAppMessagingMethods {
     }
   }
 
+  sendVoiceMessage(audioUrl, durationSeconds = 0) {
+    if (!audioUrl || !this.currentChat) return;
+    const input = document.getElementById('messageInput');
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    const newMessage = {
+      id: this.getNextMessageId(this.currentChat),
+      text: '',
+      type: 'voice',
+      audioUrl,
+      audioDuration: Math.max(0, Number(durationSeconds) || 0),
+      from: 'own',
+      time,
+      date: now.toISOString().slice(0, 10),
+      replyTo: this.replyTarget
+        ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
+        : null
+    };
+
+    this.currentChat.messages.push(newMessage);
+    this.saveChats();
+    this.clearReplyTarget();
+    if (this.currentChat.messages.length === 1) {
+      this.renderChat(newMessage.id);
+    } else {
+      this.appendMessage(newMessage, ' new-message');
+    }
+    this.renderChatsList();
+
+    if (input && window.innerWidth <= 900) {
+      input.focus({ preventScroll: true });
+    }
+  }
+
   openNewChatModal() {
     document.getElementById('newChatModal').classList.add('active');
     document.getElementById('modalOverlay').classList.add('active');
@@ -466,7 +704,7 @@ export class ChatAppMessagingMethods {
   beginEditMessage(messageId) {
     if (!this.currentChat) return;
     const msg = this.currentChat.messages.find(m => m.id === messageId);
-    if (!msg || msg.from !== 'own') return;
+    if (!msg || !this.isTextMessageEditable(msg)) return;
 
     const input = document.getElementById('messageInput');
     if (!input) return;
@@ -482,8 +720,17 @@ export class ChatAppMessagingMethods {
   }
 
   showWelcomeScreen() {
-    document.getElementById('welcomeScreen').classList.remove('hidden');
-    document.getElementById('chatContainer').classList.remove('active');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const chatContainer = document.getElementById('chatContainer');
+    if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+    if (chatContainer) {
+      chatContainer.classList.remove('active');
+      chatContainer.style.removeProperty('display');
+      chatContainer.style.removeProperty('flex-direction');
+      chatContainer.style.removeProperty('height');
+      chatContainer.style.removeProperty('padding-bottom');
+      chatContainer.style.removeProperty('background-color');
+    }
   }
 
   // Метод-обгортка для імпортованої функції escapeHtml
@@ -502,7 +749,33 @@ export class ChatAppMessagingMethods {
       const captionHtml = caption ? `<div class="message-image-caption">${this.formatMessageText(caption)}</div>` : '';
       return `<img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="lazy" />${captionHtml}`;
     }
+    if (msg?.type === 'voice' && msg.audioUrl) {
+      const safeUrl = this.escapeAttr(msg.audioUrl);
+      const durationValue = Number.isFinite(Number(msg.audioDuration)) ? Number(msg.audioDuration) : 0;
+      const durationLabel = this.formatVoiceDuration(durationValue);
+      return `
+        <div class="message-voice" data-duration="${durationValue}">
+          <button type="button" class="voice-play-btn" aria-label="Відтворити голосове повідомлення">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+              <path d="M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27ZM80,215.94V40l143.83,88Z"></path>
+            </svg>
+          </button>
+          <div class="voice-track" aria-hidden="true">
+            <span class="voice-track-progress"></span>
+          </div>
+          <span class="voice-duration">${durationLabel}</span>
+          <audio class="voice-audio" preload="metadata" src="${safeUrl}"></audio>
+        </div>
+      `;
+    }
     return this.formatMessageText(msg?.text || '');
+  }
+
+  formatVoiceDuration(seconds = 0) {
+    const safeSeconds = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 0;
+    const minutes = Math.floor(safeSeconds / 60);
+    const secs = safeSeconds % 60;
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
   }
 
   initMessageImageTransitions(rootEl) {
@@ -521,6 +794,117 @@ export class ChatAppMessagingMethods {
       img.addEventListener('load', markLoaded, { once: true });
       img.addEventListener('error', markLoaded, { once: true });
     });
+  }
+
+  setupVoiceMessageEvents() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (!messagesContainer || messagesContainer.dataset.voiceBound === 'true') return;
+
+    messagesContainer.dataset.voiceBound = 'true';
+    messagesContainer.addEventListener('click', (event) => {
+      const playBtn = event.target.closest('.voice-play-btn');
+      if (!playBtn) return;
+      const voiceEl = playBtn.closest('.message-voice');
+      if (!voiceEl) return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.toggleVoiceMessagePlayback(voiceEl);
+    });
+  }
+
+  toggleVoiceMessagePlayback(voiceEl) {
+    if (!voiceEl) return;
+    const audioEl = voiceEl.querySelector('.voice-audio');
+    if (!audioEl) return;
+
+    this.bindVoiceMessageAudio(voiceEl, audioEl);
+    if (audioEl.paused) {
+      if (this.activeVoiceAudio && this.activeVoiceAudio !== audioEl) {
+        this.activeVoiceAudio.pause();
+      }
+      const playAttempt = audioEl.play();
+      if (playAttempt && typeof playAttempt.catch === 'function') {
+        playAttempt.catch(() => {
+          this.updateVoiceMessageVisualState(voiceEl, audioEl);
+          this.showAlert('Не вдалося відтворити голосове повідомлення.');
+        });
+      }
+      this.activeVoiceAudio = audioEl;
+      return;
+    }
+
+    audioEl.pause();
+    if (this.activeVoiceAudio === audioEl) {
+      this.activeVoiceAudio = null;
+    }
+  }
+
+  bindVoiceMessageAudio(voiceEl, audioEl) {
+    if (!voiceEl || !audioEl) return;
+    if (audioEl.dataset.voiceUiBound === 'true') {
+      this.updateVoiceMessageVisualState(voiceEl, audioEl);
+      return;
+    }
+
+    const syncUi = () => this.updateVoiceMessageVisualState(voiceEl, audioEl);
+    audioEl.dataset.voiceUiBound = 'true';
+    audioEl.addEventListener('loadedmetadata', syncUi);
+    audioEl.addEventListener('timeupdate', syncUi);
+    audioEl.addEventListener('play', syncUi);
+    audioEl.addEventListener('pause', syncUi);
+    audioEl.addEventListener('ended', () => {
+      audioEl.currentTime = 0;
+      if (this.activeVoiceAudio === audioEl) {
+        this.activeVoiceAudio = null;
+      }
+      syncUi();
+    });
+    syncUi();
+  }
+
+  updateVoiceMessageVisualState(voiceEl, audioEl) {
+    if (!voiceEl || !audioEl) return;
+
+    const progressEl = voiceEl.querySelector('.voice-track-progress');
+    const durationEl = voiceEl.querySelector('.voice-duration');
+    const playBtn = voiceEl.querySelector('.voice-play-btn');
+    const durationFromMeta = Number.isFinite(audioEl.duration) && audioEl.duration > 0
+      ? audioEl.duration
+      : Number(voiceEl.dataset.duration || 0);
+    const safeDuration = durationFromMeta > 0 ? durationFromMeta : 0;
+
+    if (safeDuration > 0) {
+      voiceEl.dataset.duration = String(safeDuration);
+    }
+    if (durationEl) {
+      durationEl.textContent = this.formatVoiceDuration(safeDuration);
+    }
+    if (progressEl) {
+      const progress = safeDuration > 0
+        ? Math.min(100, Math.max(0, (audioEl.currentTime / safeDuration) * 100))
+        : 0;
+      progressEl.style.width = `${progress}%`;
+    }
+
+    const isPlaying = !audioEl.paused && !audioEl.ended;
+    voiceEl.classList.toggle('is-playing', isPlaying);
+    if (playBtn) {
+      playBtn.setAttribute('aria-label', isPlaying ? 'Пауза' : 'Відтворити голосове повідомлення');
+    }
+  }
+
+  stopActiveVoicePlayback(resetTime = true) {
+    if (!this.activeVoiceAudio) return;
+    const audioEl = this.activeVoiceAudio;
+    this.activeVoiceAudio = null;
+    audioEl.pause();
+    if (resetTime) {
+      audioEl.currentTime = 0;
+    }
+    const voiceEl = audioEl.closest('.message-voice');
+    if (voiceEl) {
+      this.updateVoiceMessageVisualState(voiceEl, audioEl);
+    }
   }
 
   setupImageViewerEvents() {

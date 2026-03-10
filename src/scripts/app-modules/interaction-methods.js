@@ -100,6 +100,12 @@ export class ChatAppInteractionMethods {
         if (profileMenu) profileMenu.classList.remove('floating-nav');
         
         // Clear current chat and show welcome screen
+        if (typeof this.stopVoiceRecording === 'function') {
+          this.stopVoiceRecording({ discard: true, silent: true });
+        }
+        if (typeof this.stopActiveVoicePlayback === 'function') {
+          this.stopActiveVoicePlayback();
+        }
         this.currentChat = null;
         this.updateChatHeader();
         if (appEl) {
@@ -123,17 +129,17 @@ export class ChatAppInteractionMethods {
       const keepComposerFocus = (e) => {
         e.preventDefault();
       };
-      const triggerSend = (e) => {
+      const triggerPrimaryAction = (e) => {
         e.preventDefault();
         const now = Date.now();
         if (now - this.lastSendTriggerAt < 220) return;
         this.lastSendTriggerAt = now;
-        this.sendMessage();
+        this.handleSendButtonAction();
       };
       sendBtn.addEventListener('mousedown', keepComposerFocus);
       sendBtn.addEventListener('touchstart', keepComposerFocus, { passive: false });
-      sendBtn.addEventListener('touchend', triggerSend, { passive: false });
-      sendBtn.addEventListener('click', triggerSend);
+      sendBtn.addEventListener('touchend', triggerPrimaryAction, { passive: false });
+      sendBtn.addEventListener('click', triggerPrimaryAction);
     }
     const messageInput = document.getElementById('messageInput');
     if (messageInput) {
@@ -203,6 +209,7 @@ export class ChatAppInteractionMethods {
       }
     });
     this.setupImageViewerEvents();
+    this.setupVoiceMessageEvents();
 
     document.getElementById('searchInput').addEventListener('input', (e) => this.filterChats(e.target.value));
 
@@ -479,15 +486,24 @@ export class ChatAppInteractionMethods {
   resizeMessageInput(inputEl = null) {
     const input = inputEl || document.getElementById('messageInput');
     if (!input) return;
+    const sendBtn = document.getElementById('sendBtn');
+    const hasText = input.value.trim().length > 0;
+    if (sendBtn) {
+      sendBtn.classList.toggle('has-text', hasText);
+    }
+    if (typeof this.updateComposerPrimaryButtonState === 'function') {
+      this.updateComposerPrimaryButtonState(hasText);
+    }
 
-    if (window.innerWidth > 900) {
-      input.style.height = '36px';
+    const minHeight = window.innerWidth <= 768 ? 36 : 34;
+    const maxHeight = 132;
+
+    if (!hasText) {
+      input.style.height = `${minHeight}px`;
       input.style.overflowY = 'hidden';
       return;
     }
 
-    const minHeight = window.innerWidth <= 768 ? 40 : 34;
-    const maxHeight = 132;
     input.style.height = 'auto';
     const nextHeight = Math.min(maxHeight, Math.max(minHeight, input.scrollHeight));
     input.style.height = `${nextHeight}px`;
@@ -743,7 +759,9 @@ export class ChatAppInteractionMethods {
       engageKeyboardGuard();
       if (appEl) appEl.classList.add('composer-focus');
       this.syncMobileKeyboardState(inputEl);
-      requestAnimationFrame(updateHeight);
+      if (inputEl.value.trim().length > 0) {
+        requestAnimationFrame(updateHeight);
+      }
       if (window.innerWidth > 900) {
         window.setTimeout(() => {
           inputEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -809,6 +827,8 @@ export class ChatAppInteractionMethods {
 
     sortedChats.forEach(chat => {
       const lastMessage = chat.messages[chat.messages.length - 1];
+      const previewText = this.getMessagePreviewText(lastMessage);
+      const safePreviewText = this.escapeHtml(previewText || 'Немає повідомлень');
       const chatItem = document.createElement('button');
       const pinnedClass = chat.isPinned ? ' pinned' : '';
       chatItem.className = `chat-item ${this.currentChat?.id === chat.id ? 'active' : ''}${pinnedClass}`;
@@ -820,7 +840,7 @@ export class ChatAppInteractionMethods {
         <div class="chat-avatar" style="background: ${color}">${initials}</div>
         <div class="chat-info">
           <span class="chat-name">${chat.name}</span>
-          <span class="chat-preview">${lastMessage?.text || 'Немає повідомлень'}</span>
+          <span class="chat-preview">${safePreviewText}</span>
         </div>
         <span class="chat-time">${lastMessage?.time || ''}</span>
         ${chat.isPinned ? `
@@ -993,6 +1013,12 @@ export class ChatAppInteractionMethods {
   }
 
   selectChat(chatId) {
+    if (typeof this.stopVoiceRecording === 'function') {
+      this.stopVoiceRecording({ discard: true, silent: true });
+    }
+    if (typeof this.stopActiveVoicePlayback === 'function') {
+      this.stopActiveVoicePlayback();
+    }
     this.currentChat = this.chats.find(c => c.id === chatId);
     document.getElementById('newContactInput').value = '';
     
@@ -1116,13 +1142,24 @@ export class ChatAppInteractionMethods {
   }
 
   finalizeCloseChatState() {
+    if (typeof this.stopVoiceRecording === 'function') {
+      this.stopVoiceRecording({ discard: true, silent: true });
+    }
+    if (typeof this.stopActiveVoicePlayback === 'function') {
+      this.stopActiveVoicePlayback();
+    }
     const chatContainer = document.getElementById('chatContainer');
     if (chatContainer) {
       chatContainer.classList.remove('active', 'swiping');
+      chatContainer.style.removeProperty('display');
       chatContainer.style.removeProperty('transition');
       chatContainer.style.removeProperty('transform');
       chatContainer.style.removeProperty('opacity');
       chatContainer.style.removeProperty('will-change');
+      chatContainer.style.removeProperty('flex-direction');
+      chatContainer.style.removeProperty('height');
+      chatContainer.style.removeProperty('padding-bottom');
+      chatContainer.style.removeProperty('background-color');
     }
     this.currentChat = null;
     document.getElementById('messageInput').value = '';
@@ -1226,6 +1263,9 @@ export class ChatAppInteractionMethods {
   }
 
   renderChat(highlightId = null) {
+    if (typeof this.stopActiveVoicePlayback === 'function') {
+      this.stopActiveVoicePlayback(true);
+    }
     const messagesContainer = document.getElementById('messagesContainer');
     messagesContainer.innerHTML = '';
     messagesContainer.classList.remove('has-content');
@@ -1268,9 +1308,11 @@ export class ChatAppInteractionMethods {
       messageEl.className = `message ${msg.from}${highlightClass}`;
       messageEl.dataset.id = msg.id;
       messageEl.dataset.from = msg.from;
-      messageEl.dataset.text = (msg.type === 'image' && msg.imageUrl) ? (msg.text || 'Фото') : (msg.text || '');
+      messageEl.dataset.type = msg.type || 'text';
+      messageEl.dataset.text = this.getMessageContextText(msg);
       messageEl.dataset.date = msg.date || '';
       messageEl.dataset.time = msg.time || '';
+      messageEl.dataset.editable = String(this.isTextMessageEditable(msg));
       
       let avatarHtml = '';
       let senderNameHtml = '';
@@ -1286,6 +1328,7 @@ export class ChatAppInteractionMethods {
       const editedLabel = msg.edited ? '<span class="message-edited">• редаговано</span>' : '';
       const editedClass = msg.edited ? ' edited' : '';
       const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
+      const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
       const replyHtml = msg.replyTo
         ? `<div class="message-reply">
             <div class="message-reply-name">${msg.replyTo.from === 'own' ? this.user.name : this.currentChat.name}</div>
@@ -1297,7 +1340,7 @@ export class ChatAppInteractionMethods {
         ${avatarHtml}
         <div class="message-bubble">
           ${senderNameHtml}
-          <div class="message-content${editedClass}${imageClass}">
+          <div class="message-content${editedClass}${imageClass}${voiceClass}">
             ${replyHtml}
             ${this.buildMessageBodyHtml(msg)}
             <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>
@@ -1391,6 +1434,7 @@ export class ChatAppInteractionMethods {
       }
       const from = messageEl.dataset.from;
       const text = messageEl.dataset.text || '';
+      const isEditable = messageEl.dataset.editable === 'true';
       const date = messageEl.dataset.date || new Date().toISOString().slice(0,10);
       const time = messageEl.dataset.time || '';
 
@@ -1400,7 +1444,7 @@ export class ChatAppInteractionMethods {
       const formatted = this.formatMessageDateTime(date, time);
       menuDate.textContent = formatted;
 
-      if (from === 'own') {
+      if (from === 'own' && isEditable) {
         btnEdit.classList.remove('disabled');
       } else {
         btnEdit.classList.add('disabled');

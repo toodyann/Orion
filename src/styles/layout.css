@@ -79,6 +79,32 @@ html:not(.dark-theme) .app-header {
 }
 
 @media (min-width: 769px) {
+  .bridge-app.chat-open .app-header,
+  .bridge-app.chat-active .app-header {
+    position: absolute;
+    top: 12px;
+    left: 370px;
+    right: auto;
+    width: calc(100% - 370px);
+    z-index: 30;
+    pointer-events: none;
+  }
+
+  .bridge-app.chat-open:has(.sidebar.compact) .app-header,
+  .bridge-app.chat-active:has(.sidebar.compact) .app-header {
+    left: 88px;
+    width: calc(100% - 88px);
+  }
+
+  .bridge-app.chat-open .app-header .app-header-left,
+  .bridge-app.chat-open .app-header .app-header-right,
+  .bridge-app.chat-open .app-header .app-chat-info,
+  .bridge-app.chat-active .app-header .app-header-left,
+  .bridge-app.chat-active .app-header .app-header-right,
+  .bridge-app.chat-active .app-header .app-chat-info {
+    pointer-events: auto;
+  }
+
   .bridge-app:not(.chat-open):not(.chat-active) .app-header {
     height: 0 !important;
     min-height: 0 !important;
@@ -152,6 +178,24 @@ html:not(.dark-theme) .app-header {
   top: 50%;
   transform: translate(-50%, -50%);
   margin: 0 auto;
+  padding: 6px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-soft);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+html:not(.dark-theme) .bridge-app.chat-open .app-chat-info,
+html:not(.dark-theme) .bridge-app.chat-active .app-chat-info {
+  background: var(--surface-soft);
+  border-color: var(--border-color);
+  box-shadow:
+    0 10px 24px rgba(15, 19, 32, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .app-chat-avatar {
@@ -188,6 +232,75 @@ html:not(.dark-theme) .app-header {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.bridge-app.chat-open .app-chat-info .app-chat-name,
+.bridge-app.chat-active .app-chat-info .app-chat-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bridge-app.chat-open .app-chat-info .app-chat-status,
+.bridge-app.chat-active .app-chat-info .app-chat-status {
+  width: 7px;
+  height: 7px;
+}
+
+.bridge-app.chat-open .app-header-right,
+.bridge-app.chat-active .app-header-right {
+  position: absolute;
+  right: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  gap: 12px;
+  margin: 0;
+}
+
+.bridge-app.chat-open .app-header-left,
+.bridge-app.chat-active .app-header-left {
+  position: static;
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.bridge-app.chat-open .app-header-right .btn-icon,
+.bridge-app.chat-active .app-header-right .btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-primary);
+}
+
+.bridge-app.chat-open .app-header-right .btn-icon:hover,
+.bridge-app.chat-active .app-header-right .btn-icon:hover {
+  background: transparent;
+}
+
+.bridge-app.chat-open .app-header-left .btn-back,
+.bridge-app.chat-active .app-header-left .btn-back {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 31;
+  color: var(--text-primary);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+.bridge-app.chat-open .app-header-left .btn-back:hover,
+.bridge-app.chat-active .app-header-left .btn-back:hover {
+  background: transparent;
 }
 
 .app-chat-status {
@@ -262,26 +375,14 @@ html:not(.dark-theme) .app-header {
   gap: 6px;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(
-      120% 170% at 0% 0%,
-      rgba(255, 255, 255, 0.36),
-      transparent 48%
-    ),
-    radial-gradient(
-      125% 170% at 100% 100%,
-      rgba(97, 142, 255, 0.24),
-      transparent 58%
-    ),
-    var(--glass-strong);
+  background: var(--surface-soft);
   border-radius: 50px;
   padding: 10px 12px;
   box-shadow:
-    var(--shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+    0 12px 24px rgba(15, 19, 32, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
   border: 1px solid var(--border-color);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(18px) saturate(1.08);
   position: relative;
 }
 
@@ -358,11 +459,6 @@ html:not(.dark-theme) .app-header {
 }
 
 @media (min-width: 769px) {
-  .bridge-app.chat-open .app-header-left .btn-back,
-  .bridge-app.chat-active .app-header-left .btn-back {
-    display: none !important;
-  }
-
   :root {
     --bottom-nav-height: 72px;
   }
@@ -379,10 +475,12 @@ html:not(.dark-theme) .app-header {
     flex-direction: row;
     border-radius: 50px;
     padding: 10px 12px;
-    background: transparent;
-    box-shadow: none;
-    border: none;
-    backdrop-filter: none;
+    background: var(--surface-soft);
+    border: 1px solid var(--border-color);
+    box-shadow:
+      0 12px 24px rgba(15, 19, 32, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(18px) saturate(1.08);
   }
 
   .bottom-nav-indicator {
@@ -527,22 +625,12 @@ html:not(.dark-theme) .app-header {
 }
 
 .dark-theme .bottom-nav {
-  background:
-    radial-gradient(
-      120% 170% at 0% 0%,
-      rgba(255, 255, 255, 0.12),
-      transparent 50%
-    ),
-    radial-gradient(
-      130% 180% at 100% 100%,
-      rgba(76, 122, 255, 0.2),
-      transparent 60%
-    ),
-    var(--bg-secondary);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+    0 12px 24px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px) saturate(1.12);
 }
 
 .dark-theme .bottom-nav-item:hover {
@@ -777,7 +865,7 @@ html:not(.dark-theme) .app-header {
 }
 
 .message-input-area {
-  padding: 16px;
+  padding: 10px 12px;
   border-top: 1px solid var(--border-color);
   background-color: var(--bg-elevated);
   backdrop-filter: blur(12px);
@@ -786,14 +874,14 @@ html:not(.dark-theme) .app-header {
 
 .input-wrapper {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   background: transparent;
 }
 
 .message-input {
   flex: 1;
-  padding: 6px 12px;
+  padding: 5px 12px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-control);
   font-size: 14px;
@@ -822,12 +910,11 @@ html:not(.dark-theme) .app-header {
 
 @media (min-width: 769px) {
   .chat-area .message-input {
-    height: 36px;
-    min-height: 36px;
-    max-height: 36px;
-    padding: 8px 12px;
-    line-height: 20px;
-    overflow: hidden;
+    min-height: 34px;
+    max-height: 132px;
+    padding: 5px 12px;
+    line-height: 18px;
+    overflow-y: hidden;
     transition:
       border-color 0.2s ease,
       box-shadow 0.2s ease;
@@ -997,12 +1084,12 @@ html:not(.dark-theme) .app-header {
     gap: 6px !important;
     padding: 12px 19px !important;
     border-radius: 50px !important;
-    background: rgba(255, 255, 255, 0.78) !important;
-    border: 1px solid rgba(20, 24, 36, 0.12) !important;
+    background: var(--surface-soft) !important;
+    border: 1px solid var(--border-color) !important;
     box-shadow:
-      0 10px 22px rgba(15, 19, 32, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-    backdrop-filter: blur(12px) !important;
+      0 12px 24px rgba(15, 19, 32, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.48) !important;
+    backdrop-filter: blur(18px) saturate(1.08) !important;
   }
 
   .bottom-nav-item {
@@ -1042,10 +1129,12 @@ html:not(.dark-theme) .app-header {
   }
 
   .dark-theme .bottom-nav {
-    background: rgba(255, 255, 255, 0.04) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14) !important;
-    backdrop-filter: blur(6px) !important;
+    background: var(--surface-soft) !important;
+    border-color: var(--border-color) !important;
+    box-shadow:
+      0 12px 24px rgba(0, 0, 0, 0.34),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(18px) saturate(1.12) !important;
   }
 
   .dark-theme .bottom-nav-item {
