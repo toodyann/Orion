@@ -53,6 +53,7 @@ export class ChatAppMessagingMethods {
     `;
     messagesContainer.appendChild(messageEl);
     this.initMessageImageTransitions(messageEl);
+    this.initVoiceMessageElements(messageEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
@@ -756,12 +757,20 @@ export class ChatAppMessagingMethods {
       return `
         <div class="message-voice" data-duration="${durationValue}">
           <button type="button" class="voice-play-btn" aria-label="Відтворити голосове повідомлення">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
-              <path d="M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27ZM80,215.94V40l143.83,88Z"></path>
-            </svg>
+            <span class="voice-play-icon voice-play-icon--play" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#000000" viewBox="0 0 256 256">
+                <path d="M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27ZM80,215.94V40l143.83,88Z"></path>
+              </svg>
+            </span>
+            <span class="voice-play-icon voice-play-icon--pause" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#000000" viewBox="0 0 256 256">
+                <path d="M200,32H160a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16h40a16,16,0,0,0,16-16V48A16,16,0,0,0,200,32Zm0,176H160V48h40ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Zm0,176H56V48H96Z"></path>
+              </svg>
+            </span>
           </button>
           <div class="voice-track" aria-hidden="true">
             <span class="voice-track-progress"></span>
+            ${this.buildVoiceWaveBarsHtml()}
           </div>
           <span class="voice-duration">${durationLabel}</span>
           <audio class="voice-audio" preload="metadata" src="${safeUrl}"></audio>
@@ -776,6 +785,132 @@ export class ChatAppMessagingMethods {
     const minutes = Math.floor(safeSeconds / 60);
     const secs = safeSeconds % 60;
     return `${minutes}:${String(secs).padStart(2, '0')}`;
+  }
+
+  buildVoiceWaveBarsHtml(count = 48) {
+    const safeCount = Math.max(16, Number(count) || 48);
+    return Array.from({ length: safeCount }, (_, index) => {
+      const fallbackHeight = index % 2 === 0 ? 42 : 32;
+      return `<span class="voice-wave-bar" style="--voice-bar-height: ${fallbackHeight}%; --voice-bar-index: ${index};"></span>`;
+    }).join('');
+  }
+
+  async ensureVoiceWaveform(voiceEl, audioEl) {
+    if (!voiceEl || !audioEl || voiceEl.dataset.waveformReady === 'true') return;
+    const bars = voiceEl.querySelectorAll('.voice-wave-bar');
+    if (!bars.length) return;
+    const source = audioEl.currentSrc || audioEl.getAttribute('src');
+    if (!source) return;
+    if (!this.voiceWaveformCache) this.voiceWaveformCache = new Map();
+
+    const cachedPeaks = this.voiceWaveformCache.get(source);
+    if (cachedPeaks?.length) {
+      this.applyVoiceWaveformBars(voiceEl, cachedPeaks);
+      voiceEl.dataset.waveformReady = 'true';
+      return;
+    }
+    if (voiceEl.dataset.waveformLoading === 'true') return;
+
+    voiceEl.dataset.waveformLoading = 'true';
+    try {
+      const peaks = await this.extractVoiceWaveformPeaks(source, bars.length);
+      if (peaks.length) {
+        this.voiceWaveformCache.set(source, peaks);
+        this.applyVoiceWaveformBars(voiceEl, peaks);
+      }
+    } catch (error) {
+      // Fallback bars are already rendered in markup.
+    } finally {
+      voiceEl.dataset.waveformLoading = 'false';
+      voiceEl.dataset.waveformReady = 'true';
+    }
+  }
+
+  applyVoiceWaveformBars(voiceEl, peaks = []) {
+    if (!voiceEl || !Array.isArray(peaks) || !peaks.length) return;
+    const bars = voiceEl.querySelectorAll('.voice-wave-bar');
+    if (!bars.length) return;
+    const defaultHeight = peaks[peaks.length - 1] || 40;
+
+    bars.forEach((barEl, index) => {
+      const height = Number.isFinite(peaks[index]) ? peaks[index] : defaultHeight;
+      barEl.style.setProperty('--voice-bar-height', `${height}%`);
+    });
+  }
+
+  async extractVoiceWaveformPeaks(source, barsCount = 24) {
+    if (!source || barsCount < 1 || typeof fetch !== 'function') return [];
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return [];
+
+    const response = await fetch(source);
+    if (!response.ok) return [];
+    const data = await response.arrayBuffer();
+    if (!data?.byteLength) return [];
+
+    if (!this.voiceWaveformAudioContext) {
+      this.voiceWaveformAudioContext = new AudioContextCtor();
+    }
+    const audioBuffer = await this.decodeVoiceAudioData(this.voiceWaveformAudioContext, data);
+    if (!audioBuffer) return [];
+    return this.buildVoiceWaveformPeaksFromBuffer(audioBuffer, barsCount);
+  }
+
+  decodeVoiceAudioData(audioContext, arrayBuffer) {
+    if (!audioContext || !arrayBuffer) return Promise.resolve(null);
+    try {
+      const decodeResult = audioContext.decodeAudioData(arrayBuffer.slice(0));
+      if (decodeResult && typeof decodeResult.then === 'function') {
+        return decodeResult.then((decoded) => decoded || null);
+      }
+      return Promise.resolve(null);
+    } catch (error) {
+      return new Promise((resolve, reject) => {
+        audioContext.decodeAudioData(arrayBuffer.slice(0), (decoded) => resolve(decoded || null), reject);
+      });
+    }
+  }
+
+  buildVoiceWaveformPeaksFromBuffer(audioBuffer, barsCount = 24) {
+    const sampleLength = Number(audioBuffer?.length || 0);
+    if (!sampleLength || barsCount < 1) return [];
+
+    const channelsCount = Math.max(1, Number(audioBuffer.numberOfChannels || 1));
+    const channels = [];
+    for (let channelIndex = 0; channelIndex < channelsCount; channelIndex += 1) {
+      channels.push(audioBuffer.getChannelData(channelIndex));
+    }
+
+    const blockSize = Math.max(1, Math.floor(sampleLength / barsCount));
+    const peaks = [];
+
+    for (let barIndex = 0; barIndex < barsCount; barIndex += 1) {
+      const start = barIndex * blockSize;
+      const end = Math.min(sampleLength, start + blockSize);
+      let peak = 0;
+
+      for (let sampleIndex = start; sampleIndex < end; sampleIndex += 2) {
+        for (let channelIndex = 0; channelIndex < channelsCount; channelIndex += 1) {
+          const value = Math.abs(channels[channelIndex][sampleIndex] || 0);
+          if (value > peak) peak = value;
+        }
+      }
+      peaks.push(peak);
+    }
+
+    const smoothed = peaks.map((value, index) => {
+      const left = peaks[index - 1] ?? value;
+      const right = peaks[index + 1] ?? value;
+      return (left + value + right) / 3;
+    });
+    const maxPeak = Math.max(...smoothed, 0.001);
+    const minHeight = 16;
+    const maxHeight = 92;
+
+    return smoothed.map((value) => {
+      const normalized = value / maxPeak;
+      return Math.round(minHeight + normalized * (maxHeight - minHeight));
+    });
   }
 
   initMessageImageTransitions(rootEl) {
@@ -796,6 +931,16 @@ export class ChatAppMessagingMethods {
     });
   }
 
+  initVoiceMessageElements(rootEl) {
+    if (!rootEl) return;
+    const voiceMessages = rootEl.querySelectorAll ? rootEl.querySelectorAll('.message-voice') : [];
+    voiceMessages.forEach((voiceEl) => {
+      const audioEl = voiceEl.querySelector('.voice-audio');
+      if (!audioEl) return;
+      this.bindVoiceMessageAudio(voiceEl, audioEl);
+    });
+  }
+
   setupVoiceMessageEvents() {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer || messagesContainer.dataset.voiceBound === 'true') return;
@@ -803,13 +948,184 @@ export class ChatAppMessagingMethods {
     messagesContainer.dataset.voiceBound = 'true';
     messagesContainer.addEventListener('click', (event) => {
       const playBtn = event.target.closest('.voice-play-btn');
-      if (!playBtn) return;
-      const voiceEl = playBtn.closest('.message-voice');
+      if (playBtn) {
+        const voiceEl = playBtn.closest('.message-voice');
+        if (!voiceEl) return;
+        event.preventDefault();
+        event.stopPropagation();
+        this.toggleVoiceMessagePlayback(voiceEl);
+        return;
+      }
+
+      const trackEl = event.target.closest('.voice-track');
+      if (!trackEl) return;
+      const voiceEl = trackEl.closest('.message-voice');
       if (!voiceEl) return;
+
       event.preventDefault();
       event.stopPropagation();
-      this.toggleVoiceMessagePlayback(voiceEl);
+      const progress = this.getVoiceTrackProgressFromEvent(trackEl, event);
+      this.seekVoiceMessageToProgress(voiceEl, progress);
+      const targetAudioEl = voiceEl.querySelector('.voice-audio');
+      const shouldStartTarget = Boolean(
+        targetAudioEl
+        && this.activeVoiceAudio
+        && this.activeVoiceAudio !== targetAudioEl
+      );
+      if (shouldStartTarget) {
+        this.playVoiceMessage(voiceEl, { showError: true });
+      }
+      this.updateVoiceTrackHoverPreview(voiceEl, progress);
     });
+
+    messagesContainer.addEventListener('pointermove', (event) => {
+      if (event.pointerType && event.pointerType !== 'mouse') return;
+
+      const trackEl = event.target.closest('.voice-track');
+      if (!trackEl) {
+        if (this.hoveredVoiceMessageEl) {
+          this.clearVoiceTrackHoverPreview(this.hoveredVoiceMessageEl);
+          this.hoveredVoiceMessageEl = null;
+        }
+        return;
+      }
+
+      const voiceEl = trackEl.closest('.message-voice');
+      if (!voiceEl) return;
+      if (this.hoveredVoiceMessageEl && this.hoveredVoiceMessageEl !== voiceEl) {
+        this.clearVoiceTrackHoverPreview(this.hoveredVoiceMessageEl);
+      }
+      this.hoveredVoiceMessageEl = voiceEl;
+      const progress = this.getVoiceTrackProgressFromEvent(trackEl, event);
+      this.updateVoiceTrackHoverPreview(voiceEl, progress);
+    });
+
+    messagesContainer.addEventListener('pointerleave', () => {
+      if (!this.hoveredVoiceMessageEl) return;
+      this.clearVoiceTrackHoverPreview(this.hoveredVoiceMessageEl);
+      this.hoveredVoiceMessageEl = null;
+    });
+  }
+
+  getVoiceTrackProgressFromEvent(trackEl, event) {
+    if (!trackEl) return 0;
+    const pointerX = Number.isFinite(Number(event?.clientX))
+      ? Number(event.clientX)
+      : null;
+
+    const bars = trackEl.querySelectorAll('.voice-wave-bar');
+    if (bars.length) {
+      const firstBarRect = bars[0].getBoundingClientRect();
+      const lastBarRect = bars[bars.length - 1].getBoundingClientRect();
+      const left = firstBarRect.left;
+      const right = lastBarRect.right;
+      const width = right - left;
+      if (width > 0) {
+        const safePointerX = pointerX ?? (left + width / 2);
+        const rawProgress = ((safePointerX - left) / width) * 100;
+        return Math.min(100, Math.max(0, rawProgress));
+      }
+    }
+
+    const rect = trackEl.getBoundingClientRect();
+    if (!rect.width) return 0;
+    const safePointerX = pointerX ?? (rect.left + rect.width / 2);
+    const rawProgress = ((safePointerX - rect.left) / rect.width) * 100;
+    return Math.min(100, Math.max(0, rawProgress));
+  }
+
+  seekVoiceMessageToProgress(voiceEl, progress = 0) {
+    if (!voiceEl) return;
+    const audioEl = voiceEl.querySelector('.voice-audio');
+    if (!audioEl) return;
+    this.bindVoiceMessageAudio(voiceEl, audioEl);
+
+    const durationFromMeta = Number.isFinite(audioEl.duration) && audioEl.duration > 0
+      ? audioEl.duration
+      : Number(voiceEl.dataset.duration || 0);
+    const safeDuration = durationFromMeta > 0 ? durationFromMeta : 0;
+    if (!safeDuration) return;
+
+    const normalizedProgress = Math.min(100, Math.max(0, Number(progress) || 0)) / 100;
+    const targetTime = normalizedProgress * safeDuration;
+    try {
+      audioEl.currentTime = Math.min(safeDuration, Math.max(0, targetTime));
+    } catch (_) {
+      return;
+    }
+
+    this.updateVoiceMessageVisualState(voiceEl, audioEl);
+  }
+
+  updateVoiceTrackHoverPreview(voiceEl, progress = 0) {
+    if (!voiceEl) return;
+    const bars = voiceEl.querySelectorAll('.voice-wave-bar');
+    if (!bars.length) return;
+
+    const safeProgress = Math.min(100, Math.max(0, Number(progress) || 0));
+    const hoveredBars = Math.max(0, Math.min(
+      bars.length,
+      Math.round((safeProgress / 100) * bars.length)
+    ));
+    bars.forEach((barEl, index) => {
+      barEl.classList.toggle('is-hovered', index < hoveredBars);
+    });
+  }
+
+  clearVoiceTrackHoverPreview(voiceEl) {
+    if (!voiceEl) return;
+    const bars = voiceEl.querySelectorAll('.voice-wave-bar.is-hovered');
+    bars.forEach((barEl) => {
+      barEl.classList.remove('is-hovered');
+    });
+  }
+
+  playVoiceMessage(voiceEl, { showError = true } = {}) {
+    if (!voiceEl) return;
+    const audioEl = voiceEl.querySelector('.voice-audio');
+    if (!audioEl) return;
+
+    this.bindVoiceMessageAudio(voiceEl, audioEl);
+    if (this.activeVoiceAudio && this.activeVoiceAudio !== audioEl) {
+      this.activeVoiceAudio.pause();
+    }
+
+    const playAttempt = audioEl.play();
+    if (playAttempt && typeof playAttempt.catch === 'function') {
+      playAttempt.catch(() => {
+        if (this.activeVoiceAudio === audioEl) {
+          this.activeVoiceAudio = null;
+        }
+        this.updateVoiceMessageVisualState(voiceEl, audioEl);
+        if (showError) {
+          this.showAlert('Не вдалося відтворити голосове повідомлення.');
+        }
+      });
+    }
+    this.activeVoiceAudio = audioEl;
+  }
+
+  getNextVoiceMessageElement(currentVoiceEl) {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (!messagesContainer || !currentVoiceEl) return null;
+    const voiceMessages = Array.from(messagesContainer.querySelectorAll('.message-voice'));
+    if (!voiceMessages.length) return null;
+    const currentIndex = voiceMessages.indexOf(currentVoiceEl);
+    if (currentIndex < 0) return null;
+
+    for (let index = currentIndex + 1; index < voiceMessages.length; index += 1) {
+      const nextVoiceEl = voiceMessages[index];
+      if (nextVoiceEl?.querySelector('.voice-audio')) {
+        return nextVoiceEl;
+      }
+    }
+    return null;
+  }
+
+  playNextVoiceMessage(currentVoiceEl) {
+    const nextVoiceEl = this.getNextVoiceMessageElement(currentVoiceEl);
+    if (!nextVoiceEl) return;
+    this.playVoiceMessage(nextVoiceEl, { showError: false });
   }
 
   toggleVoiceMessagePlayback(voiceEl) {
@@ -819,17 +1135,7 @@ export class ChatAppMessagingMethods {
 
     this.bindVoiceMessageAudio(voiceEl, audioEl);
     if (audioEl.paused) {
-      if (this.activeVoiceAudio && this.activeVoiceAudio !== audioEl) {
-        this.activeVoiceAudio.pause();
-      }
-      const playAttempt = audioEl.play();
-      if (playAttempt && typeof playAttempt.catch === 'function') {
-        playAttempt.catch(() => {
-          this.updateVoiceMessageVisualState(voiceEl, audioEl);
-          this.showAlert('Не вдалося відтворити голосове повідомлення.');
-        });
-      }
-      this.activeVoiceAudio = audioEl;
+      this.playVoiceMessage(voiceEl, { showError: true });
       return;
     }
 
@@ -839,25 +1145,69 @@ export class ChatAppMessagingMethods {
     }
   }
 
+  startVoiceUiAnimation(voiceEl, audioEl) {
+    if (!voiceEl || !audioEl || typeof window.requestAnimationFrame !== 'function') return;
+    if (!this.voiceUiAnimationFrames) {
+      this.voiceUiAnimationFrames = new WeakMap();
+    }
+    this.stopVoiceUiAnimation(audioEl);
+
+    const tick = () => {
+      if (!audioEl || audioEl.paused || audioEl.ended) {
+        this.stopVoiceUiAnimation(audioEl);
+        return;
+      }
+      this.updateVoiceMessageVisualState(voiceEl, audioEl);
+      const rafId = window.requestAnimationFrame(tick);
+      this.voiceUiAnimationFrames.set(audioEl, rafId);
+    };
+
+    const rafId = window.requestAnimationFrame(tick);
+    this.voiceUiAnimationFrames.set(audioEl, rafId);
+  }
+
+  stopVoiceUiAnimation(audioEl) {
+    if (!audioEl || !this.voiceUiAnimationFrames || typeof window.cancelAnimationFrame !== 'function') return;
+    const rafId = this.voiceUiAnimationFrames.get(audioEl);
+    if (!rafId) return;
+    window.cancelAnimationFrame(rafId);
+    this.voiceUiAnimationFrames.delete(audioEl);
+  }
+
   bindVoiceMessageAudio(voiceEl, audioEl) {
     if (!voiceEl || !audioEl) return;
     if (audioEl.dataset.voiceUiBound === 'true') {
+      this.ensureVoiceWaveform(voiceEl, audioEl);
+      if (!audioEl.paused && !audioEl.ended) {
+        this.startVoiceUiAnimation(voiceEl, audioEl);
+      } else {
+        this.stopVoiceUiAnimation(audioEl);
+      }
       this.updateVoiceMessageVisualState(voiceEl, audioEl);
       return;
     }
 
     const syncUi = () => this.updateVoiceMessageVisualState(voiceEl, audioEl);
     audioEl.dataset.voiceUiBound = 'true';
+    this.ensureVoiceWaveform(voiceEl, audioEl);
     audioEl.addEventListener('loadedmetadata', syncUi);
     audioEl.addEventListener('timeupdate', syncUi);
-    audioEl.addEventListener('play', syncUi);
-    audioEl.addEventListener('pause', syncUi);
+    audioEl.addEventListener('play', () => {
+      this.startVoiceUiAnimation(voiceEl, audioEl);
+      syncUi();
+    });
+    audioEl.addEventListener('pause', () => {
+      this.stopVoiceUiAnimation(audioEl);
+      syncUi();
+    });
     audioEl.addEventListener('ended', () => {
+      this.stopVoiceUiAnimation(audioEl);
       audioEl.currentTime = 0;
       if (this.activeVoiceAudio === audioEl) {
         this.activeVoiceAudio = null;
       }
       syncUi();
+      this.playNextVoiceMessage(voiceEl);
     });
     syncUi();
   }
@@ -868,6 +1218,7 @@ export class ChatAppMessagingMethods {
     const progressEl = voiceEl.querySelector('.voice-track-progress');
     const durationEl = voiceEl.querySelector('.voice-duration');
     const playBtn = voiceEl.querySelector('.voice-play-btn');
+    const bars = voiceEl.querySelectorAll('.voice-wave-bar');
     const durationFromMeta = Number.isFinite(audioEl.duration) && audioEl.duration > 0
       ? audioEl.duration
       : Number(voiceEl.dataset.duration || 0);
@@ -884,6 +1235,15 @@ export class ChatAppMessagingMethods {
         ? Math.min(100, Math.max(0, (audioEl.currentTime / safeDuration) * 100))
         : 0;
       progressEl.style.width = `${progress}%`;
+      if (bars.length) {
+        const playedBars = Math.max(0, Math.min(
+          bars.length,
+          Math.round((progress / 100) * bars.length)
+        ));
+        bars.forEach((barEl, index) => {
+          barEl.classList.toggle('is-played', index < playedBars);
+        });
+      }
     }
 
     const isPlaying = !audioEl.paused && !audioEl.ended;

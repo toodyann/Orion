@@ -38,5 +38,6 @@ forwardMethods(ChatAppChatRenderMethods, ChatAppMessagingMethods, [
   'formatMessageText',
   'buildMessageBodyHtml',
   'initMessageImageTransitions',
+  'initVoiceMessageElements',
   'renderSidebarAvatarsStrip'
 ]);

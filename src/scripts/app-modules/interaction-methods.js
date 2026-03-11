@@ -495,8 +495,16 @@ export class ChatAppInteractionMethods {
       this.updateComposerPrimaryButtonState(hasText);
     }
 
-    const minHeight = window.innerWidth <= 768 ? 36 : 34;
-    const maxHeight = 132;
+    const isMobile = window.innerWidth <= 768;
+    const minHeight = 36;
+    const maxHeight = isMobile ? 132 : 36;
+
+    // Keep desktop composer height static to avoid input-area jumps while typing.
+    if (!isMobile) {
+      input.style.height = `${minHeight}px`;
+      input.style.overflowY = 'hidden';
+      return;
+    }
 
     if (!hasText) {
       input.style.height = `${minHeight}px`;
@@ -1352,6 +1360,7 @@ export class ChatAppInteractionMethods {
 
     this.bindMessageContextMenu();
     this.initMessageImageTransitions(messagesContainer);
+    this.initVoiceMessageElements(messagesContainer);
 
     // Auto-scroll to bottom
     setTimeout(() => {
