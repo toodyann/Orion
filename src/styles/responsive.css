@@ -592,38 +592,153 @@
 
   #settingsContainerMobile #messenger-settings .shop-content {
     background: transparent !important;
-    padding-top: 70px !important;
+    padding: 62px 10px calc(var(--bottom-nav-height, 72px) + 72px) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+    margin-top: 4px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger {
+    width: 100% !important;
+    min-height: 48px !important;
+    padding: 0 14px !important;
+    border-radius: 14px !important;
+    border-color: color-mix(in srgb, var(--border-color) 84%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 94%, transparent) !important;
+    display: grid !important;
+    grid-template-columns: 18px 1fr 18px !important;
+    align-items: center !important;
+    column-gap: 10px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    justify-items: center !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger span {
+    grid-column: 2 !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger::after {
+    content: '' !important;
+    grid-column: 3 !important;
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger svg {
+    width: 18px !important;
+    height: 18px !important;
+    flex: 0 0 18px !important;
+    grid-column: 1 !important;
+    position: static !important;
+    transform: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger.is-open svg {
+    transform: rotate(180deg) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger.is-open {
+    color: #ffffff !important;
+    border-color: color-mix(in srgb, #9ca3af 52%, var(--border-color)) !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, #6b7280 86%, #9ca3af 14%),
+      color-mix(in srgb, #4b5563 92%, #374151 8%)
+    ) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-summary {
+    width: 100% !important;
+    min-height: 48px !important;
+    padding: 0 14px !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    border-color: color-mix(in srgb, var(--border-color) 84%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent) !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-item-card,
+  #settingsContainerMobile #messenger-settings .shop-item-card.equipped {
+    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent) !important;
+    box-shadow:
+      0 10px 24px rgba(15, 19, 32, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel {
+    padding: 0 !important;
+    border-color: transparent !important;
+    background: transparent !important;
   }
 
   #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
     position: fixed !important;
-    top: calc(var(--app-header-height, 56px) + 28px) !important;
-    left: 12px !important;
-    right: 12px !important;
-    bottom: calc(var(--bottom-nav-height, 72px) + 64px + env(safe-area-inset-bottom)) !important;
+    top: calc(var(--app-header-height, 56px) + 10px) !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: calc(var(--bottom-nav-height, 72px) + 72px + env(safe-area-inset-bottom)) !important;
     z-index: 90 !important;
     max-height: none !important;
     overflow: hidden !important;
     overflow-x: hidden !important;
-    padding: 16px !important;
-    padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
-    border-radius: 24px !important;
-    border-color: var(--border-color) !important;
-    background: var(--bg-color) !important;
+    padding: 0 !important;
+    border-radius: 22px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent) !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-color) 92%, #111824 8%),
+      color-mix(in srgb, var(--bg-color) 96%, #0d1320 4%)
+    ) !important;
     box-shadow:
-      0 18px 42px rgba(15, 19, 32, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+      0 24px 48px rgba(6, 10, 18, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 44px;
+    height: 4px;
+    border-radius: 999px;
+    transform: translateX(-50%);
+    background: color-mix(in srgb, var(--text-secondary) 64%, transparent);
+    opacity: 0.9;
+    pointer-events: none;
   }
 
   #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll {
     height: 100% !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    padding-right: 4px !important;
+    padding: 18px 12px calc(14px + env(safe-area-inset-bottom)) !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-gutter: stable !important;
     scrollbar-width: thin !important;
     scrollbar-color: color-mix(in srgb, var(--primary-color) 56%, var(--border-color)) transparent !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
   }
 
   #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll::-webkit-scrollbar {
@@ -643,6 +758,341 @@
   #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open::-webkit-scrollbar-thumb {
     border-radius: 999px;
     background: color-mix(in srgb, var(--primary-color) 56%, var(--border-color));
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+    margin: -6px 0 2px !important;
+    padding: 8px 2px 10px !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-color) 94%, #111824 6%) 0%,
+      color-mix(in srgb, var(--bg-color) 94%, transparent) 100%
+    ) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-title {
+    font-size: 14px !important;
+    letter-spacing: 0.06em !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-close {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+    border-color: color-mix(in srgb, var(--border-color) 84%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 90%, transparent) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section {
+    gap: 10px !important;
+    padding: 10px !important;
+    border-radius: 14px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section-title {
+    font-size: 11px !important;
+    letter-spacing: 0.08em !important;
+    text-align: center !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-options {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn {
+    width: 100% !important;
+    min-height: 40px !important;
+    padding: 7px 8px !important;
+    border-radius: 10px !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn.active {
+    color: #ffffff !important;
+    border-color: color-mix(in srgb, #9ca3af 54%, var(--border-color)) !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, #6b7280 88%, #9ca3af 12%),
+      color-mix(in srgb, #4b5563 92%, #374151 8%)
+    ) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-price-range {
+    gap: 10px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-price-row {
+    font-size: 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-price-range input[type="range"] {
+    height: 20px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    padding-top: 12px !important;
+    margin-top: 2px !important;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--bg-color) 94%, #111824 6%) 26%
+    ) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-reset,
+  #settingsContainerMobile #messenger-settings .shop-filter-apply {
+    width: 100% !important;
+    min-height: 42px !important;
+    border-radius: 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-apply {
+    color: #ffffff !important;
+    border-color: color-mix(in srgb, #9ca3af 54%, var(--border-color)) !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, #6b7280 88%, #9ca3af 12%),
+      color-mix(in srgb, #4b5563 92%, #374151 8%)
+    ) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  }
+
+  /* Final mobile behavior: full-screen filter overlay */
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 140 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: color-mix(in srgb, var(--bg-color) 96%, #0c121d 4%) !important;
+    box-shadow: none !important;
+    transform: none !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll {
+    height: 100% !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 14px) !important;
+    gap: 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 3 !important;
+    padding: 2px 0 10px !important;
+    margin: 0 !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-color) 96%, #0c121d 4%) 0%,
+      color-mix(in srgb, var(--bg-color) 96%, transparent) 100%
+    ) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section {
+    background: color-mix(in srgb, var(--surface-soft) 90%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn {
+    min-height: 42px !important;
+    border-radius: 11px !important;
+    border-color: color-mix(in srgb, var(--border-color) 80%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-color) 86%, transparent) !important;
+    color: color-mix(in srgb, var(--text-primary) 86%, #ffffff 14%) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn.active {
+    color: #ffffff !important;
+    border-color: color-mix(in srgb, #a7b1bf 64%, var(--border-color)) !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, #6b7280 72%, #9ca3af 28%) 0%,
+      color-mix(in srgb, #4b5563 84%, #374151 16%) 100%
+    ) !important;
+    box-shadow:
+      0 8px 16px rgba(15, 23, 42, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 2 !important;
+    padding-top: 10px !important;
+    margin-top: 2px !important;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--bg-color) 96%, #0c121d 4%) 30%
+    ) !important;
+  }
+
+  /* Shop filter mobile redesign v2: compact inline card */
+  #settingsContainerMobile #messenger-settings .shop-filter-toolbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 2px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger {
+    min-height: 44px !important;
+    padding: 0 12px !important;
+    border-radius: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    font-size: 13px !important;
+    position: static !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger span {
+    flex: 0 1 auto !important;
+    width: auto !important;
+    text-align: center !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger svg {
+    width: 16px !important;
+    height: 16px !important;
+    position: static !important;
+    transform: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger.is-open svg {
+    transform: rotate(180deg) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-summary {
+    min-height: 44px !important;
+    padding: 0 12px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    margin-top: 6px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border-radius: 14px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 92%, transparent) !important;
+    box-shadow:
+      0 10px 24px rgba(15, 19, 32, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open::before {
+    display: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 0 4px !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-title {
+    font-size: 12px !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-close {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section {
+    gap: 8px !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-color) 84%, transparent) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section-title {
+    font-size: 11px !important;
+    text-align: left !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn {
+    min-height: 38px !important;
+    padding: 6px 8px !important;
+    border-radius: 10px !important;
+    font-size: 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-actions {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding-top: 4px !important;
+    margin-top: 0 !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-reset,
+  #settingsContainerMobile #messenger-settings .shop-filter-apply {
+    min-height: 40px !important;
+    border-radius: 10px !important;
   }
 
   #settingsContainerMobile #messenger-settings .shop-header h2 {
@@ -1528,6 +1978,149 @@
     z-index: 1200 !important;
     bottom: 56px;
   }
+
+  /* Final shop filter fallback: clean full-screen mobile modal */
+  .bridge-app:has(#settingsContainerMobile #messenger-settings #shopFilterPanel.is-open) .profile-menu-wrapper {
+    display: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-toolbar {
+    gap: 8px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger,
+  #settingsContainerMobile #messenger-settings .shop-filter-summary {
+    min-height: 44px !important;
+    border-radius: 12px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 92%, transparent) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 0 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger span {
+    width: auto !important;
+    flex: 0 1 auto !important;
+    text-align: center !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger svg {
+    position: static !important;
+    width: 16px !important;
+    height: 16px !important;
+    transform: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-summary {
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 150 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--bg-color) !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open::before {
+    display: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll {
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px) !important;
+    gap: 10px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 4 !important;
+    margin: 0 !important;
+    padding: 2px 0 8px !important;
+    background: var(--bg-color) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-close {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section {
+    padding: 10px !important;
+    border-radius: 12px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 90%, transparent) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section-title {
+    text-align: left !important;
+    font-size: 11px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-options {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn {
+    min-height: 40px !important;
+    border-radius: 10px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-color) 86%, transparent) !important;
+    color: var(--text-primary) !important;
+    font-size: 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn.active {
+    color: #fff !important;
+    border-color: color-mix(in srgb, var(--primary-color) 56%, var(--border-color)) !important;
+    background: linear-gradient(
+      135deg,
+      var(--primary-color),
+      color-mix(in srgb, var(--primary-strong) 76%, #ffb547)
+    ) !important;
+    box-shadow:
+      0 8px 16px color-mix(in srgb, var(--primary-color) 20%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 3 !important;
+    padding-top: 8px !important;
+    margin-top: 0 !important;
+    background: var(--bg-color) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-reset,
+  #settingsContainerMobile #messenger-settings .shop-filter-apply {
+    min-height: 42px !important;
+    border-radius: 10px !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1635,6 +2228,20 @@
     height: 32px;
   }
 
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
+    position: fixed !important;
+    inset: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll {
+    padding: calc(env(safe-area-inset-top) + 12px) 10px calc(env(safe-area-inset-bottom) + 12px) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-options {
+    grid-template-columns: 1fr !important;
+  }
+
   .message-content {
     max-width: 94%;
     font-size: 15px;
@@ -1698,6 +2305,17 @@
   .search-box .btn-new-chat svg {
     width: 21px;
     height: 21px;
+  }
+
+  /* Keep the same clean full-screen shop filter on narrow phones */
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
+    position: fixed !important;
+    inset: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll {
+    padding: calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 10px) !important;
   }
 }
 
@@ -1805,4 +2423,239 @@
 .btn-send.has-text {
   background: transparent !important;
   color: var(--primary-color) !important;
+}
+
+@media (max-width: 768px) {
+  /* Authoritative mobile shop filter layout: between app header and bottom nav */
+  #settingsContainerMobile #messenger-settings .shop-filter-panel,
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
+    position: fixed !important;
+    top: var(--app-header-height, 40px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 260 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--bg-color) !important;
+    box-shadow: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    pointer-events: auto !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll {
+    height: 100% !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 58px 8px calc(env(safe-area-inset-bottom) + 110px) !important;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 12px !important;
+    align-items: center !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll > .shop-filter-section,
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll > .shop-price-range,
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll > .shop-filter-summary {
+    width: min(calc(100% - 4px), 352px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
+    position: fixed !important;
+    top: var(--app-header-height, 40px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 52px !important;
+    z-index: 8 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    background: var(--bg-color) !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent) !important;
+    pointer-events: auto !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-title {
+    position: absolute !important;
+    top: 50% !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: translateY(-50%) !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 56px !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    line-height: 1.1 !important;
+    z-index: 9 !important;
+    pointer-events: none !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    letter-spacing: 0.08em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section {
+    width: min(calc(100% - 4px), 352px) !important;
+    max-width: min(calc(100% - 4px), 352px) !important;
+    align-self: center !important;
+    margin: 0 auto !important;
+    padding: 0 2px 4px !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section-title {
+    width: 100% !important;
+    text-align: center !important;
+    margin-bottom: 8px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-options {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-price-range {
+    width: 100% !important;
+    margin: 0 auto !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    min-height: 44px !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-close {
+    position: fixed !important;
+    top: calc(var(--app-header-height, 40px) + 8px) !important;
+    left: 12px !important;
+    z-index: 10 !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    margin: 0 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-close svg {
+    transform: rotate(-90deg) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open::after {
+    content: '' !important;
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: calc(env(safe-area-inset-bottom) + 72px) !important;
+    z-index: 10 !important;
+    pointer-events: none !important;
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 62%, transparent) !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-color) 0%, transparent) 0%,
+      color-mix(in srgb, var(--bg-color) 88%, transparent) 34%,
+      var(--bg-color) 100%
+    ) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-actions {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: calc(env(safe-area-inset-bottom) + 6px) !important;
+    z-index: 12 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    margin-top: 0 !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-reset,
+  #settingsContainerMobile #messenger-settings .shop-filter-apply {
+    width: 100% !important;
+    min-height: 42px !important;
+    touch-action: manipulation !important;
+  }
+
+  /* Disable custom scrollbar styling for mobile shop filter */
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll {
+    scrollbar-width: auto !important;
+    scrollbar-color: auto !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll::-webkit-scrollbar,
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll::-webkit-scrollbar-track,
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open .shop-filter-panel-scroll::-webkit-scrollbar-thumb,
+  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open::-webkit-scrollbar-thumb {
+    width: initial !important;
+    height: initial !important;
+    margin: initial !important;
+    background: initial !important;
+    border-radius: initial !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Final hard centering for mobile shop filter content */
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-title {
+    left: 50% !important;
+    right: auto !important;
+    width: calc(100vw - 112px) !important;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-panel-content {
+    width: min(calc(100vw - 16px), 352px) !important;
+    max-width: min(calc(100vw - 16px), 352px) !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-section {
+    position: static !important;
+    left: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-price-range,
+  #settingsContainerMobile #messenger-settings .shop-filter-options,
+  #settingsContainerMobile #messenger-settings .shop-filter-btn {
+    width: 100% !important;
+  }
 }

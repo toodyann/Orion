@@ -332,74 +332,76 @@ export const settingsTemplates = {
       <div class="shop-filter-summary" id="shopFilterSummary">Усі товари</div>
     </div>
 
-    <div class="shop-filter-panel" id="shopFilterPanel" aria-label="Розширений фільтр товарів">
-      <div class="shop-filter-panel-scroll">
-        <div class="shop-filter-panel-head">
-          <span class="shop-filter-panel-title">Параметри фільтра</span>
-          <button type="button" class="shop-filter-close" id="shopFilterClose" aria-label="Закрити фільтр">
+	    <div class="shop-filter-panel" id="shopFilterPanel" aria-label="Розширений фільтр товарів">
+	      <div class="shop-filter-panel-scroll">
+	        <div class="shop-filter-panel-head">
+	          <span class="shop-filter-panel-title">Параметри фільтра</span>
+	          <button type="button" class="shop-filter-close" id="shopFilterClose" aria-label="Закрити фільтр">
             <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
               <path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z"></path>
-            </svg>
-          </button>
-        </div>
+	            </svg>
+	          </button>
+	        </div>
 
-        <div class="shop-filter-section">
-          <span class="shop-filter-section-title">Категорія</span>
-          <div class="shop-filter-options">
-            <button type="button" class="shop-filter-btn active" data-shop-filter-group="category" data-shop-filter-value="all">Усе</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="frame">Аватар</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="aura">Фон</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="motion">Анімація</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="badge">Значки</button>
-          </div>
-        </div>
+	        <div class="shop-filter-panel-content">
+	          <div class="shop-filter-section">
+	            <span class="shop-filter-section-title">Категорія</span>
+	            <div class="shop-filter-options">
+	              <button type="button" class="shop-filter-btn active" data-shop-filter-group="category" data-shop-filter-value="all">Усе</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="frame">Аватар</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="aura">Фон</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="motion">Анімація</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="badge">Значки</button>
+	            </div>
+	          </div>
 
-        <div class="shop-filter-section">
-          <span class="shop-filter-section-title">Власність</span>
-          <div class="shop-filter-options">
-            <button type="button" class="shop-filter-btn active" data-shop-filter-group="ownership" data-shop-filter-value="all">Усе</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="ownership" data-shop-filter-value="owned">Куплені</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="ownership" data-shop-filter-value="unowned">Не куплені</button>
-          </div>
-        </div>
+	          <div class="shop-filter-section">
+	            <span class="shop-filter-section-title">Власність</span>
+	            <div class="shop-filter-options">
+	              <button type="button" class="shop-filter-btn active" data-shop-filter-group="ownership" data-shop-filter-value="all">Усе</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="ownership" data-shop-filter-value="owned">Куплені</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="ownership" data-shop-filter-value="unowned">Не куплені</button>
+	            </div>
+	          </div>
 
-        <div class="shop-filter-section">
-          <span class="shop-filter-section-title">Стан</span>
-          <div class="shop-filter-options">
-            <button type="button" class="shop-filter-btn active" data-shop-filter-group="availability" data-shop-filter-value="all">Будь-який</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="availability" data-shop-filter-value="equipped">Встановлені</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="availability" data-shop-filter-value="can-buy">Можна купити</button>
-          </div>
-        </div>
+	          <div class="shop-filter-section">
+	            <span class="shop-filter-section-title">Стан</span>
+	            <div class="shop-filter-options">
+	              <button type="button" class="shop-filter-btn active" data-shop-filter-group="availability" data-shop-filter-value="all">Будь-який</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="availability" data-shop-filter-value="equipped">Встановлені</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="availability" data-shop-filter-value="can-buy">Можна купити</button>
+	            </div>
+	          </div>
 
-        <div class="shop-filter-section">
-          <span class="shop-filter-section-title">Ціна</span>
-          <div class="shop-price-range">
-            <div class="shop-price-row">
-              <span>Від</span>
-              <strong id="shopPriceMinValue">0,00</strong>
-            </div>
-            <input type="range" id="shopPriceMin" min="0" max="0" step="1" value="0" />
-            <div class="shop-price-row">
-              <span>До</span>
-              <strong id="shopPriceMaxValue">0,00</strong>
-            </div>
-            <input type="range" id="shopPriceMax" min="0" max="0" step="1" value="0" />
-          </div>
-        </div>
+	          <div class="shop-filter-section">
+	            <span class="shop-filter-section-title">Ціна</span>
+	            <div class="shop-price-range">
+	              <div class="shop-price-row">
+	                <span>Від</span>
+	                <strong id="shopPriceMinValue">0,00</strong>
+	              </div>
+	              <input type="range" id="shopPriceMin" min="0" max="0" step="1" value="0" />
+	              <div class="shop-price-row">
+	                <span>До</span>
+	                <strong id="shopPriceMaxValue">0,00</strong>
+	              </div>
+	              <input type="range" id="shopPriceMax" min="0" max="0" step="1" value="0" />
+	            </div>
+	          </div>
 
-        <div class="shop-filter-section">
-          <span class="shop-filter-section-title">Сортування</span>
-          <div class="shop-filter-options">
-            <button type="button" class="shop-filter-btn active" data-shop-filter-group="sort" data-shop-filter-value="default">За замовчуванням</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="sort" data-shop-filter-value="price-asc">Спочатку дешеві</button>
-            <button type="button" class="shop-filter-btn" data-shop-filter-group="sort" data-shop-filter-value="price-desc">Спочатку дорогі</button>
-          </div>
-        </div>
-
-        <div class="shop-filter-actions">
-          <button type="button" class="shop-filter-reset" id="shopFilterReset">Скинути</button>
-          <button type="button" class="shop-filter-apply" id="shopFilterApply">Застосувати</button>
+	          <div class="shop-filter-section">
+	            <span class="shop-filter-section-title">Сортування</span>
+	            <div class="shop-filter-options">
+	              <button type="button" class="shop-filter-btn active" data-shop-filter-group="sort" data-shop-filter-value="default">За замовчуванням</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="sort" data-shop-filter-value="price-asc">Спочатку дешеві</button>
+	              <button type="button" class="shop-filter-btn" data-shop-filter-group="sort" data-shop-filter-value="price-desc">Спочатку дорогі</button>
+	            </div>
+	          </div>
+	        </div>
+	
+	        <div class="shop-filter-actions">
+	          <button type="button" class="shop-filter-reset" id="shopFilterReset">Скинути</button>
+	          <button type="button" class="shop-filter-apply" id="shopFilterApply">Застосувати</button>
         </div>
       </div>
     </div>

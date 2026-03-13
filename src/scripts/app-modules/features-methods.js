@@ -128,6 +128,14 @@ export class ChatAppFeaturesMethods {
       }
     };
 
+    const closeFilterPanel = (event) => {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      setFilterPanelOpen(false);
+    };
+
     const syncShopFloatingIslands = () => {
       const currentScrollTop = shopContentEl.scrollTop || 0;
       const balanceCardReached = balanceCardEl
@@ -237,6 +245,10 @@ export class ChatAppFeaturesMethods {
     if (filterPanelEl && filterPanelEl.dataset.bound !== 'true') {
       filterPanelEl.dataset.bound = 'true';
       filterPanelEl.addEventListener('click', (event) => {
+        if (event.target.closest('#shopFilterClose')) {
+          closeFilterPanel(event);
+          return;
+        }
         const filterBtn = event.target.closest('[data-shop-filter-group]');
         if (!filterBtn) return;
         const group = filterBtn.dataset.shopFilterGroup;
@@ -295,9 +307,9 @@ export class ChatAppFeaturesMethods {
 
     if (filterCloseEl && filterCloseEl.dataset.bound !== 'true') {
       filterCloseEl.dataset.bound = 'true';
-      filterCloseEl.addEventListener('click', () => {
-        setFilterPanelOpen(false);
-      });
+      filterCloseEl.addEventListener('click', closeFilterPanel);
+      filterCloseEl.addEventListener('pointerup', closeFilterPanel);
+      filterCloseEl.addEventListener('touchend', closeFilterPanel, { passive: false });
     }
 
     if (gridEl.dataset.bound === 'true') return;

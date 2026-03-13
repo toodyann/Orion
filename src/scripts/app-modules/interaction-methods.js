@@ -705,7 +705,7 @@ export class ChatAppInteractionMethods {
       const backBtnEl = targetEl.closest('#contactProfileBackBtn');
       if (backBtnEl) {
         event.preventDefault();
-        this.closeContactProfileSection();
+        this.closeContactProfileSection(); 
         return;
       }
       if (!contactProfileMoreWrap) return;
@@ -1774,6 +1774,9 @@ export class ChatAppInteractionMethods {
         y = msgRect.top - menuRect.height - 6;
       }
       y = Math.max(8, Math.min(y, window.innerHeight - menuRect.height - 8));
+      const opensAboveMessage = y < msgRect.top;
+      menu.style.setProperty('--menu-origin-x', from === 'own' ? '100%' : '0%');
+      menu.style.setProperty('--menu-origin-y', opensAboveMessage ? '100%' : '0%');
       menu.style.left = `${Math.max(8, x)}px`;
       menu.style.top = `${Math.max(8, y)}px`;
     };
@@ -2394,7 +2397,7 @@ export class ChatAppInteractionMethods {
           contactDetails.onclick = null;
         }
         this.enforcePlainChatModalHeader();
-      }
+        }
     });
   }
 

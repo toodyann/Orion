@@ -1748,20 +1748,38 @@ html:not(.dark-theme) .alert-overlay {
   padding: 8px;
   display: none;
   z-index: 1300;
-  transform-origin: center;
+  transform-origin: var(--menu-origin-x, 50%) var(--menu-origin-y, 0%);
   transition:
-    opacity 0.14s ease,
-    transform 0.14s ease;
+    opacity 0.16s ease,
+    transform 0.24s cubic-bezier(0.2, 0.78, 0.24, 1.05),
+    filter 0.2s ease;
   opacity: 0;
-  transform: scale(0.96);
+  transform: translateY(10px) scale(0.92);
+  filter: saturate(0.85);
   backdrop-filter: blur(18px);
 }
 
 .message-menu.active {
   display: block;
   opacity: 1;
-  transform: scale(1);
-  animation: none;
+  transform: translateY(0) scale(1);
+  filter: saturate(1);
+  animation: messageMenuAppear 0.24s cubic-bezier(0.2, 0.78, 0.24, 1.05);
+}
+
+@keyframes messageMenuAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+  62% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .message-menu-date {
