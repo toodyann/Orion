@@ -6,7 +6,7 @@
     );
   }
 
-  .bridge-app.chat-active {
+  .orion-app.chat-active {
     --app-header-height: 40px;
     --mobile-chat-header-offset: calc(
       var(--app-header-height) + env(safe-area-inset-top)
@@ -15,7 +15,7 @@
 
   /* Fallback for cases when JS classes desync: if chat container is active,
      force chat header layout to be visible. */
-  .bridge-app:has(#chatContainer.active) {
+  .orion-app:has(#chatContainer.active) {
     --app-header-height: 40px;
     --mobile-chat-header-offset: calc(
       var(--app-header-height) + env(safe-area-inset-top)
@@ -40,15 +40,15 @@
 
   /* Override layout.css chat-open/chat-active header controls on mobile.
      Keep the background header strictly in list mode (brand only). */
-  .bridge-app.chat-open .app-header-left .btn-back,
-  .bridge-app.chat-open .app-header #appChatInfo,
-  .bridge-app.chat-open .app-header .app-chat-info,
-  .bridge-app.chat-open .app-header-right,
-  .bridge-app.chat-active .app-header-left .btn-back,
-  .bridge-app.chat-active .app-header #appChatInfo,
-  .bridge-app.chat-active .app-header .app-chat-info,
-  .bridge-app.swipe-peek .app-header #appChatInfo,
-  .bridge-app.chat-active .app-header-right {
+  .orion-app.chat-open .app-header-left .btn-back,
+  .orion-app.chat-open .app-header #appChatInfo,
+  .orion-app.chat-open .app-header .app-chat-info,
+  .orion-app.chat-open .app-header-right,
+  .orion-app.chat-active .app-header-left .btn-back,
+  .orion-app.chat-active .app-header #appChatInfo,
+  .orion-app.chat-active .app-header .app-chat-info,
+  .orion-app.swipe-peek .app-header #appChatInfo,
+  .orion-app.chat-active .app-header-right {
     display: none !important;
   }
 
@@ -172,7 +172,7 @@
     display: none;
   }
 
-  .bridge-app {
+  .orion-app {
     position: relative;
     flex-direction: column;
     margin: 0 auto;
@@ -188,7 +188,7 @@
     min-height: 100dvh;
   }
 
-  .bridge-app:not(.mobile-chat-open):not(.chat-active) .sidebar {
+  .orion-app:not(.mobile-chat-open):not(.chat-active) .sidebar {
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -210,19 +210,19 @@
     transition: none !important;
   }
 
-  .bridge-app.chat-open .profile-menu-wrapper,
-  .bridge-app.chat-active .profile-menu-wrapper,
-  .bridge-app.mobile-chat-open .profile-menu-wrapper,
-  .bridge-app:has(#chatContainer.active) .profile-menu-wrapper {
+  .orion-app.chat-open .profile-menu-wrapper,
+  .orion-app.chat-active .profile-menu-wrapper,
+  .orion-app.mobile-chat-open .profile-menu-wrapper,
+  .orion-app:has(#chatContainer.active) .profile-menu-wrapper {
     transform: translateY(120%);
     opacity: 0;
     pointer-events: none;
   }
 
-  .bridge-app.swipe-peek .profile-menu-wrapper,
-  .bridge-app.swipe-peek:has(#chatContainer.active) .profile-menu-wrapper,
-  .bridge-app.swipe-peek.keyboard-open .profile-menu-wrapper,
-  .bridge-app.swipe-peek.keyboard-open:has(#chatContainer.active)
+  .orion-app.swipe-peek .profile-menu-wrapper,
+  .orion-app.swipe-peek:has(#chatContainer.active) .profile-menu-wrapper,
+  .orion-app.swipe-peek.keyboard-open .profile-menu-wrapper,
+  .orion-app.swipe-peek.keyboard-open:has(#chatContainer.active)
     .profile-menu-wrapper {
     bottom: 0 !important;
     transform: none !important;
@@ -234,15 +234,15 @@
     z-index: 10 !important;
   }
 
-  .bridge-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper {
+  .orion-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper {
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
     transform: none !important;
   }
 
-  .bridge-app.swipe-peek .app-header .chat-brand .app-title,
-  .bridge-app.swipe-peek:has(#chatContainer.active) .app-header .chat-brand .app-title {
+  .orion-app.swipe-peek .app-header .chat-brand .app-title,
+  .orion-app.swipe-peek:has(#chatContainer.active) .app-header .chat-brand .app-title {
     display: block !important;
     opacity: 1 !important;
     transform: none !important;
@@ -251,8 +251,8 @@
     pointer-events: auto !important;
   }
 
-  .bridge-app.swipe-peek .app-header-left,
-  .bridge-app.swipe-peek:has(#chatContainer.active) .app-header-left {
+  .orion-app.swipe-peek .app-header-left,
+  .orion-app.swipe-peek:has(#chatContainer.active) .app-header-left {
     left: var(--swipe-peek-header-center, 50%) !important;
   }
 
@@ -349,7 +349,7 @@
     display: none;
   }
 
-  .bridge-app.mobile-chat-open .sidebar.hidden {
+  .orion-app.mobile-chat-open .sidebar.hidden {
     display: flex;
     position: fixed;
     top: 0;
@@ -363,7 +363,7 @@
     z-index: 1;
   }
 
-  .bridge-app.mobile-chat-open .sidebar.hidden.revealed {
+  .orion-app.mobile-chat-open .sidebar.hidden.revealed {
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
   }
 
@@ -506,18 +506,18 @@
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
-    min-height: 46px !important;
+    gap: 0 !important;
+    min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 0 16px !important;
-    width: 208px !important;
-    max-width: calc(100% - 20px) !important;
+    padding: 0 !important;
+    width: auto !important;
+    max-width: calc(100% - 72px) !important;
     box-sizing: border-box !important;
-    border-radius: 14px !important;
+    border-radius: 0 !important;
     position: static !important;
     transform: none !important;
     pointer-events: none !important;
-    font-size: 18px !important;
+    font-size: 16px !important;
   }
 
   #settingsContainerMobile .settings-subsection .settings-header .settings-subsection-back {
@@ -1099,15 +1099,21 @@
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    min-height: 46px !important;
-    border-radius: 14px !important;
-    font-size: 18px !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    font-size: 16px !important;
     font-weight: 600 !important;
     pointer-events: auto !important;
   }
 
   #settingsContainerMobile #calls {
     position: relative !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile #profile-settings {
+    position: relative !important;
+    align-items: center !important;
     background: transparent !important;
   }
 
@@ -1125,25 +1131,88 @@
     pointer-events: none !important;
   }
 
+  #settingsContainerMobile #profile-settings .settings-header {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    z-index: 3 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 10px 0 6px !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    background: transparent !important;
+    pointer-events: none !important;
+  }
+
   #settingsContainerMobile #calls .calls-header h2 {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    min-height: 46px !important;
+    min-height: 0 !important;
     margin: 0 auto !important;
-    border-radius: 14px !important;
-    font-size: 18px !important;
+    border-radius: 0 !important;
+    font-size: 16px !important;
     font-weight: 600 !important;
     color: var(--text-primary) !important;
     pointer-events: auto !important;
   }
 
+  #settingsContainerMobile #profile-settings .settings-header h2 {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    display: block !important;
+    text-align: center !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    pointer-events: auto !important;
+  }
+
+  #settingsContainerMobile #profile-settings .settings-header .profile-settings-title {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+  }
+
   #settingsContainerMobile #messenger-settings .shop-header h2,
-  #settingsContainerMobile #calls .calls-header h2 {
-    width: 208px !important;
-    max-width: calc(100% - 20px) !important;
+  #settingsContainerMobile #calls .calls-header h2,
+  #settingsContainerMobile #profile-settings .settings-header h2 {
+    width: auto !important;
+    max-width: calc(100% - 72px) !important;
     box-sizing: border-box !important;
-    padding: 0 16px !important;
+    padding: 0 !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-header h2,
+  #settingsContainerMobile #calls .calls-header h2,
+  #settingsContainerMobile #profile-items .profile-items-header h2,
+  #settingsContainerMobile .settings-subsection .settings-header .settings-subsection-title,
+  #settingsContainerMobile #profile-settings .settings-header h2 {
+    font-size: 16px !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-header h2 svg,
+  #settingsContainerMobile #calls .calls-header h2 svg,
+  #settingsContainerMobile #profile-items .profile-items-header h2 svg,
+  #settingsContainerMobile .settings-subsection .settings-header .settings-subsection-title svg,
+  #settingsContainerMobile #profile-settings .settings-header h2 svg {
+    display: none !important;
   }
 
   #settingsContainerMobile #calls .calls-content {
@@ -1335,8 +1404,8 @@
     min-height: calc(52px + env(safe-area-inset-top));
   }
 
-  .bridge-app.chat-active .chat-modal-header,
-  .bridge-app:has(#chatContainer.active) .chat-modal-header {
+  .orion-app.chat-active .chat-modal-header,
+  .orion-app:has(#chatContainer.active) .chat-modal-header {
     display: flex;
   }
 
@@ -1468,21 +1537,21 @@
     box-shadow: none;
   }
 
-  .bridge-app.chat-active .chat-modal-header,
-  .bridge-app:has(#chatContainer.active) .chat-modal-header {
+  .orion-app.chat-active .chat-modal-header,
+  .orion-app:has(#chatContainer.active) .chat-modal-header {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
   }
 
-  .bridge-app.chat-active .chat-modal-header .btn-back,
-  .bridge-app.chat-active .chat-modal-header .app-chat-info,
-  .bridge-app.chat-active .chat-modal-header-right .btn-icon,
-  .bridge-app.chat-active .chat-modal-header-right #chatModalMenuBtn,
-  .bridge-app:has(#chatContainer.active) .chat-modal-header .btn-back,
-  .bridge-app:has(#chatContainer.active) .chat-modal-header .app-chat-info,
-  .bridge-app:has(#chatContainer.active) .chat-modal-header-right .btn-icon,
-  .bridge-app:has(#chatContainer.active) .chat-modal-header-right #chatModalMenuBtn {
+  .orion-app.chat-active .chat-modal-header .btn-back,
+  .orion-app.chat-active .chat-modal-header .app-chat-info,
+  .orion-app.chat-active .chat-modal-header-right .btn-icon,
+  .orion-app.chat-active .chat-modal-header-right #chatModalMenuBtn,
+  .orion-app:has(#chatContainer.active) .chat-modal-header .btn-back,
+  .orion-app:has(#chatContainer.active) .chat-modal-header .app-chat-info,
+  .orion-app:has(#chatContainer.active) .chat-modal-header-right .btn-icon,
+  .orion-app:has(#chatContainer.active) .chat-modal-header-right #chatModalMenuBtn {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
@@ -1547,8 +1616,8 @@
     align-items: center;
   }
 
-  .bridge-app.chat-active .input-wrapper,
-  .bridge-app:has(#chatContainer.active) .input-wrapper {
+  .orion-app.chat-active .input-wrapper,
+  .orion-app:has(#chatContainer.active) .input-wrapper {
     margin-bottom: 12px;
   }
 
@@ -1563,19 +1632,19 @@
     backdrop-filter: blur(12px);
   }
 
-  .bridge-app.composer-focus .message-input-area {
+  .orion-app.composer-focus .message-input-area {
     box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.12);
   }
 
-  .bridge-app.keyboard-open .message-input-area {
+  .orion-app.keyboard-open .message-input-area {
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 
-  .bridge-app.keyboard-open .messages-container {
+  .orion-app.keyboard-open .messages-container {
     padding-bottom: 4px;
   }
 
-  .bridge-app.keyboard-open .profile-menu-wrapper {
+  .orion-app.keyboard-open .profile-menu-wrapper {
     display: none !important;
   }
 
@@ -1590,7 +1659,7 @@
     will-change: auto;
   }
 
-  .bridge-app.composer-locked .message-input {
+  .orion-app.composer-locked .message-input {
     pointer-events: none;
     opacity: 0.85;
   }
@@ -1755,24 +1824,24 @@
     display: none;
   }
 
-  .bridge-app.mobile-chat-open .chat-area {
+  .orion-app.mobile-chat-open .chat-area {
     display: flex;
   }
 
-  .bridge-app.chat-active .chat-area,
-  .bridge-app:has(#chatContainer.active) .chat-area {
+  .orion-app.chat-active .chat-area,
+  .orion-app:has(#chatContainer.active) .chat-area {
     display: flex !important;
   }
 
-  .bridge-app.chat-active .profile-menu-wrapper,
-  .bridge-app:has(#chatContainer.active) .profile-menu-wrapper {
+  .orion-app.chat-active .profile-menu-wrapper,
+  .orion-app:has(#chatContainer.active) .profile-menu-wrapper {
     display: none !important;
   }
 
-  .bridge-app.swipe-peek .profile-menu-wrapper,
-  .bridge-app.swipe-peek:has(#chatContainer.active) .profile-menu-wrapper,
-  .bridge-app.swipe-peek.keyboard-open .profile-menu-wrapper,
-  .bridge-app.swipe-peek.keyboard-open:has(#chatContainer.active)
+  .orion-app.swipe-peek .profile-menu-wrapper,
+  .orion-app.swipe-peek:has(#chatContainer.active) .profile-menu-wrapper,
+  .orion-app.swipe-peek.keyboard-open .profile-menu-wrapper,
+  .orion-app.swipe-peek.keyboard-open:has(#chatContainer.active)
     .profile-menu-wrapper {
     display: block !important;
     bottom: 0 !important;
@@ -1890,8 +1959,8 @@
 
   /* Stable mobile chat layout:
      keep header fixed, raise chat content by keyboard inset. */
-  .bridge-app.chat-active .chat-area,
-  .bridge-app:has(#chatContainer.active) .chat-area {
+  .orion-app.chat-active .chat-area,
+  .orion-app:has(#chatContainer.active) .chat-area {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -1906,8 +1975,8 @@
     background: transparent !important;
   }
 
-  .bridge-app.chat-active .chat-container.active,
-  .bridge-app:has(#chatContainer.active) .chat-container.active {
+  .orion-app.chat-active .chat-container.active,
+  .orion-app:has(#chatContainer.active) .chat-container.active {
     position: relative !important;
     top: auto !important;
     left: auto !important;
@@ -1925,8 +1994,8 @@
     touch-action: auto !important;
   }
 
-  .bridge-app.chat-active .chat-container.active.chat-entering,
-  .bridge-app:has(#chatContainer.active) .chat-container.active.chat-entering {
+  .orion-app.chat-active .chat-container.active.chat-entering,
+  .orion-app:has(#chatContainer.active) .chat-container.active.chat-entering {
     animation: chatEnterFromRightMobile 0.72s cubic-bezier(0.2, 0.82, 0.25, 1) !important;
     will-change: transform, opacity;
   }
@@ -1942,8 +2011,8 @@
     }
   }
 
-  .bridge-app.chat-active .message-input-area,
-  .bridge-app:has(#chatContainer.active) .message-input-area {
+  .orion-app.chat-active .message-input-area,
+  .orion-app:has(#chatContainer.active) .message-input-area {
     position: sticky;
     bottom: 0;
     z-index: 6;
@@ -1965,8 +2034,8 @@
     display: flex !important;
   }
 
-  .bridge-app.chat-active .messages-container,
-  .bridge-app:has(#chatContainer.active) .messages-container {
+  .orion-app.chat-active .messages-container,
+  .orion-app:has(#chatContainer.active) .messages-container {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     overscroll-behavior: contain !important;
@@ -1980,7 +2049,7 @@
   }
 
   /* Final shop filter fallback: clean full-screen mobile modal */
-  .bridge-app:has(#settingsContainerMobile #messenger-settings #shopFilterPanel.is-open) .profile-menu-wrapper {
+  .orion-app:has(#settingsContainerMobile #messenger-settings #shopFilterPanel.is-open) .profile-menu-wrapper {
     display: none !important;
   }
 

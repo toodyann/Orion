@@ -6,7 +6,7 @@
  */
 export function setupMobileSwipeBack(app) {
   const chatContainer = document.getElementById('chatContainer');
-  const appRoot = document.querySelector('.bridge-app');
+  const appRoot = document.querySelector('.orion-app');
   if (!chatContainer) return;
 
   let startX = 0;

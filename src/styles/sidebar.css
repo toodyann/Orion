@@ -227,43 +227,6 @@ html.dark-theme .search-box .btn-new-chat {
   display: none;
 }
 
-.chats-list > .profile-menu-wrapper {
-  position: sticky !important;
-  left: auto !important;
-  bottom: 0 !important;
-  transform: none !important;
-  width: auto !important;
-  max-width: none !important;
-  align-self: stretch;
-  box-sizing: border-box;
-  margin: 10px 8px 0 !important;
-  padding-bottom: 8px;
-  margin-top: auto !important;
-  z-index: 4;
-}
-
-.bridge-app:not(.chat-open):not(.chat-active)
-  .chats-list
-  > .profile-menu-wrapper {
-  position: sticky !important;
-  left: auto !important;
-  bottom: 0 !important;
-  transform: none !important;
-  margin-top: auto !important;
-}
-
-.chats-list > .profile-menu-wrapper .bottom-nav {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 14px !important;
-  background: var(--surface-soft) !important;
-  box-shadow:
-    0 12px 24px rgba(15, 19, 32, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.48) !important;
-  backdrop-filter: blur(18px) saturate(1.08) !important;
-}
-
 .chats-list::-webkit-scrollbar {
   width: 6px;
 }
@@ -351,7 +314,7 @@ html.dark-theme .search-box .btn-new-chat {
   display: flex;
 }
 
-.bridge-app.chat-open .chat-item:hover .chat-item-actions {
+.orion-app.chat-open .chat-item:hover .chat-item-actions {
   display: none;
 }
 
@@ -576,19 +539,19 @@ html.dark-theme .search-box .btn-new-chat {
     gap: 10px;
   }
 
-  .bridge-app.chat-active .desktop-sidebar-top {
+  .orion-app.chat-active .desktop-sidebar-top {
     display: flex;
   }
 
-  .bridge-app.chat-active .desktop-sidebar-top .sidebar-avatars-strip {
+  .orion-app.chat-active .desktop-sidebar-top .sidebar-avatars-strip {
     display: none !important;
   }
 
-  .bridge-app.chat-active .sidebar.compact .chats-list {
+  .orion-app.chat-active .sidebar.compact .chats-list {
     order: 2;
   }
 
-  .bridge-app.chat-active .sidebar.compact .desktop-sidebar-top {
+  .orion-app.chat-active .sidebar.compact .desktop-sidebar-top {
     order: 3;
     border-top: 1px solid var(--border-color);
     border-bottom: none;

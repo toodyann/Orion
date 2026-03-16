@@ -16,7 +16,7 @@ export class ChatAppCoreMethods {
   }
 
   loadUserProfile() {
-    const data = this.readJsonStorage('bridge_user', null);
+    const data = this.readJsonStorage('orion_user', null);
     if (data && typeof data === 'object') {
       return {
         name: data.name || 'Користувач Orion',
@@ -49,7 +49,7 @@ export class ChatAppCoreMethods {
 
   saveUserProfile(userData) {
     this.user = userData;
-    localStorage.setItem('bridge_user', JSON.stringify(userData));
+    localStorage.setItem('orion_user', JSON.stringify(userData));
     this.updateProfileMenuButton();
     this.updateProfileDisplay();
   }
@@ -526,7 +526,7 @@ export class ChatAppCoreMethods {
   }
 
   loadSettings() {
-    const saved = this.readJsonStorage('bridge_settings', null);
+    const saved = this.readJsonStorage('orion_settings', null);
     if (saved && typeof saved === 'object') {
       return saved;
     }
@@ -555,7 +555,7 @@ export class ChatAppCoreMethods {
 
   saveSettings(settingsData) {
     this.settings = settingsData;
-    localStorage.setItem('bridge_settings', JSON.stringify(settingsData));
+    localStorage.setItem('orion_settings', JSON.stringify(settingsData));
   }
 
   applySettingsToUI() {
@@ -618,15 +618,15 @@ export class ChatAppCoreMethods {
     const themeMode = this.settings?.theme || 'system';
     if (themeMode === 'dark') {
       document.documentElement.classList.add('dark-theme');
-      localStorage.setItem('bridge_theme', 'dark');
+      localStorage.setItem('orion_theme', 'dark');
       this.syncThemeToggleCheckboxes();
     } else if (themeMode === 'light') {
       document.documentElement.classList.remove('dark-theme');
-      localStorage.setItem('bridge_theme', 'light');
+      localStorage.setItem('orion_theme', 'light');
       this.syncThemeToggleCheckboxes();
     } else {
       this.settings = { ...(this.settings || {}), theme: 'system' };
-      localStorage.setItem('bridge_settings', JSON.stringify(this.settings));
+      localStorage.setItem('orion_settings', JSON.stringify(this.settings));
       this.applySystemTheme();
     }
     this.bindSystemThemeListener();
@@ -634,9 +634,9 @@ export class ChatAppCoreMethods {
 
   toggleTheme() {
     const isDark = document.documentElement.classList.toggle('dark-theme');
-    localStorage.setItem('bridge_theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('orion_theme', isDark ? 'dark' : 'light');
     this.settings = { ...(this.settings || {}), theme: isDark ? 'dark' : 'light' };
-    localStorage.setItem('bridge_settings', JSON.stringify(this.settings));
+    localStorage.setItem('orion_settings', JSON.stringify(this.settings));
     this.syncThemeToggleCheckboxes();
     if (!this.currentChat && window.innerWidth > 768) {
       this.restoreBottomNavToHome({ animate: false });
@@ -644,7 +644,7 @@ export class ChatAppCoreMethods {
   }
 
   loadChats() {
-    const stored = this.readJsonStorage('bridge_chats', null);
+    const stored = this.readJsonStorage('orion_chats', null);
     if (Array.isArray(stored)) {
       return stored;
     }
@@ -652,7 +652,7 @@ export class ChatAppCoreMethods {
   }
 
   saveChats() {
-    localStorage.setItem('bridge_chats', JSON.stringify(this.chats));
+    localStorage.setItem('orion_chats', JSON.stringify(this.chats));
   }
 
   setupModalEnterHandlers() {
@@ -716,7 +716,7 @@ export class ChatAppCoreMethods {
 
     this.mobileTouchMoveLockHandler = (event) => {
       if (window.innerWidth > 900) return;
-      const appEl = document.querySelector('.bridge-app');
+      const appEl = document.querySelector('.orion-app');
       if (!appEl || !appEl.classList.contains('chat-active')) return;
       const messages = document.getElementById('messagesContainer');
       const chatsList = document.getElementById('chatsList');

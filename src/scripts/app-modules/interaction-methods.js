@@ -106,7 +106,7 @@ export class ChatAppInteractionMethods {
         const chatsListHeader = document.querySelector('.chats-list-header');
         const sidebar = document.querySelector('.sidebar');
         const profileMenu = document.querySelector('.profile-menu-wrapper');
-        const appEl = document.querySelector('.bridge-app');
+        const appEl = document.querySelector('.orion-app');
         
         if (settingsContainer) {
           settingsContainer.classList.remove('active');
@@ -795,7 +795,7 @@ export class ChatAppInteractionMethods {
   }
 
   syncMobileKeyboardState(inputEl = null) {
-    const appEl = document.querySelector('.bridge-app');
+    const appEl = document.querySelector('.orion-app');
     const input = inputEl || document.getElementById('messageInput');
     if (!appEl || !input) return;
 
@@ -884,7 +884,7 @@ export class ChatAppInteractionMethods {
   }
 
   applyMobileChatViewportLayout() {
-    const appEl = document.querySelector('.bridge-app');
+    const appEl = document.querySelector('.orion-app');
     const header = document.querySelector('.app-header');
     const chatArea = document.querySelector('.chat-area');
     const chatContainer = document.getElementById('chatContainer');
@@ -955,7 +955,7 @@ export class ChatAppInteractionMethods {
     if (!inputEl || inputEl.dataset.composerReady === 'true') return;
     inputEl.dataset.composerReady = 'true';
 
-    const appEl = document.querySelector('.bridge-app');
+    const appEl = document.querySelector('.orion-app');
 
     const updateHeight = () => {
       this.resizeMessageInput(inputEl);
@@ -1080,21 +1080,17 @@ export class ChatAppInteractionMethods {
 
   renderChatsList() {
     const chatsList = document.getElementById('chatsList');
-    const preservedNavWrapper = chatsList?.querySelector?.(':scope > .profile-menu-wrapper') || null;
-    const preservedNavAnchor = (
-      this.bottomNavHomeAnchor && this.bottomNavHomeAnchor.parentNode === chatsList
-    )
-      ? this.bottomNavHomeAnchor
-      : (chatsList?.querySelector?.(':scope > .bottom-nav-home-anchor') || null);
-    const restoreChatsListNav = () => {
-      if (!chatsList) return;
-      if (preservedNavAnchor) {
-        chatsList.appendChild(preservedNavAnchor);
-      }
-      if (preservedNavWrapper) {
-        chatsList.appendChild(preservedNavWrapper);
-      }
-    };
+    if (!chatsList) return;
+
+    const appRoot = document.querySelector('.orion-app') || document.getElementById('app');
+    const navWrapperInList = chatsList.querySelector(':scope > .profile-menu-wrapper');
+    const navAnchorInList = chatsList.querySelector(':scope > .bottom-nav-home-anchor');
+    if (appRoot && navAnchorInList) {
+      appRoot.appendChild(navAnchorInList);
+    }
+    if (appRoot && navWrapperInList) {
+      appRoot.appendChild(navWrapperInList);
+    }
     
     // On mobile, show chats list when rendering
     chatsList.classList.remove('hidden-on-settings');
@@ -1120,7 +1116,6 @@ export class ChatAppInteractionMethods {
         </div>
       `;
       chatsList.appendChild(emptyState);
-      restoreChatsListNav();
       this.renderSidebarAvatarsStrip();
       return;
     }
@@ -1167,7 +1162,6 @@ export class ChatAppInteractionMethods {
       chatsList.appendChild(chatItem);
     });
 
-    restoreChatsListNav();
     this.renderSidebarAvatarsStrip();
   }
 
@@ -1349,7 +1343,7 @@ export class ChatAppInteractionMethods {
     this.enforcePlainChatModalHeader();
     this.hideWelcomeScreen();
     this.hideBottomNavForChat();
-    const appEl = document.querySelector('.bridge-app');
+    const appEl = document.querySelector('.orion-app');
     if (appEl) {
       appEl.classList.add('chat-open');
       appEl.classList.add('chat-active');
@@ -1473,7 +1467,7 @@ export class ChatAppInteractionMethods {
     this.showWelcomeScreen();
     this.clearMessages();
     this.showBottomNav();
-    const appEl = document.querySelector('.bridge-app');
+    const appEl = document.querySelector('.orion-app');
     if (appEl) {
       appEl.classList.remove('chat-open');
       appEl.classList.remove('chat-active');
@@ -1485,7 +1479,7 @@ export class ChatAppInteractionMethods {
     }
     this.restoreBottomNavToHome({ animate: false });
     try {
-      const appEl = document.querySelector('.bridge-app');
+      const appEl = document.querySelector('.orion-app');
       const sidebar = document.querySelector('.sidebar');
       const profileMenu = document.querySelector('.profile-menu-wrapper');
       
@@ -1679,6 +1673,7 @@ export class ChatAppInteractionMethods {
     let focusedMessageClone = null;
     let focusedMessageSource = null;
     let activeMenuMessageId = null;
+    let menuCloseTimer = null;
 
     const clearFocusedMessage = () => {
       if (focusedMessageSource) {
@@ -1713,13 +1708,47 @@ export class ChatAppInteractionMethods {
       });
     };
 
-    const closeMenu = () => {
-      backdrop.classList.remove('active');
+    const finishCloseMenu = () => {
+      backdrop.classList.remove('active', 'is-closing');
       backdrop.setAttribute('aria-hidden', 'true');
-      menu.classList.remove('active');
+      menu.classList.remove('active', 'is-closing');
       menu.setAttribute('aria-hidden', 'true');
       this.messageMenuState = { id: null, from: null, text: '' };
       clearFocusedMessage();
+    };
+
+    const closeMenu = (immediate = false) => {
+      if (menuCloseTimer) {
+        clearTimeout(menuCloseTimer);
+        menuCloseTimer = null;
+      }
+
+      const isMenuVisible = menu.classList.contains('active') || menu.classList.contains('is-closing');
+      if (!isMenuVisible) {
+        finishCloseMenu();
+        return;
+      }
+
+      if (immediate) {
+        finishCloseMenu();
+        return;
+      }
+
+      if (focusedMessageClone) {
+        focusedMessageClone.classList.remove('show');
+      }
+
+      backdrop.classList.remove('active');
+      backdrop.classList.add('is-closing');
+      backdrop.setAttribute('aria-hidden', 'true');
+      menu.classList.remove('active');
+      menu.classList.add('is-closing');
+      menu.setAttribute('aria-hidden', 'true');
+
+      menuCloseTimer = window.setTimeout(() => {
+        menuCloseTimer = null;
+        finishCloseMenu();
+      }, 180);
     };
 
     const runLongPressPulse = (messageEl) => {
@@ -1734,9 +1763,11 @@ export class ChatAppInteractionMethods {
 
     const openMenu = (messageEl) => {
       const id = Number(messageEl.dataset.id);
-      if (menu.classList.contains('active') && activeMenuMessageId === id) {
+      if (menu.classList.contains('active') && !menu.classList.contains('is-closing') && activeMenuMessageId === id) {
         return;
       }
+
+      closeMenu(true);
       const from = messageEl.dataset.from;
       const text = messageEl.dataset.text || '';
       const isEditable = messageEl.dataset.editable === 'true';
@@ -1758,8 +1789,10 @@ export class ChatAppInteractionMethods {
       menu.style.left = '0px';
       menu.style.top = '0px';
       focusMessageAboveOverlay(messageEl);
+      backdrop.classList.remove('is-closing');
       backdrop.classList.add('active');
       backdrop.setAttribute('aria-hidden', 'false');
+      menu.classList.remove('is-closing');
       menu.classList.add('active');
       menu.setAttribute('aria-hidden', 'false');
 
@@ -1782,6 +1815,13 @@ export class ChatAppInteractionMethods {
     };
 
     messagesContainer.addEventListener('contextmenu', (e) => {
+      // Toggle behavior: repeated right click closes an already opened menu.
+      if (menu.classList.contains('active') && !menu.classList.contains('is-closing')) {
+        e.preventDefault();
+        closeMenu();
+        return;
+      }
+
       const messageEl = e.target.closest('.message');
       if (!messageEl) return;
       e.preventDefault();
@@ -2182,7 +2222,7 @@ export class ChatAppInteractionMethods {
     this.contactProfileMediaFilter = '';
     this.renderContactProfileMedia();
     requestAnimationFrame(() => this.syncContactProfileMediaFiltersOffset());
-    this.closeContactProfileActionsMenu();
+    this.closeContactProfileActionsMenu(true);
   }
 
   closeContactProfileSection() {
@@ -2193,21 +2233,47 @@ export class ChatAppInteractionMethods {
       chatContainer.classList.remove('profile-view-active');
       chatContainer.classList.remove('profile-view-peek');
     }
-    this.closeContactProfileActionsMenu();
+    this.closeContactProfileActionsMenu(true);
   }
 
-  toggleContactProfileActionsMenu(forceOpen = null) {
+  toggleContactProfileActionsMenu(forceOpen = null, immediate = false) {
     const menu = document.getElementById('contactProfileMenu');
     const button = document.getElementById('contactProfileMoreBtn');
     if (!menu || !button) return;
+    const isVisible = menu.classList.contains('active') || menu.classList.contains('is-closing');
     const shouldOpen = forceOpen == null ? !menu.classList.contains('active') : Boolean(forceOpen);
-    menu.classList.toggle('active', shouldOpen);
-    menu.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
-    button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+
+    if (this.contactProfileMenuCloseTimer) {
+      clearTimeout(this.contactProfileMenuCloseTimer);
+      this.contactProfileMenuCloseTimer = null;
+    }
+
+    if (shouldOpen) {
+      menu.classList.remove('is-closing');
+      menu.classList.add('active');
+      menu.setAttribute('aria-hidden', 'false');
+      button.setAttribute('aria-expanded', 'true');
+      return;
+    }
+
+    button.setAttribute('aria-expanded', 'false');
+    menu.setAttribute('aria-hidden', 'true');
+
+    if (immediate || !isVisible) {
+      menu.classList.remove('active', 'is-closing');
+      return;
+    }
+
+    menu.classList.remove('active');
+    menu.classList.add('is-closing');
+    this.contactProfileMenuCloseTimer = window.setTimeout(() => {
+      this.contactProfileMenuCloseTimer = null;
+      menu.classList.remove('is-closing');
+    }, 180);
   }
 
-  closeContactProfileActionsMenu() {
-    this.toggleContactProfileActionsMenu(false);
+  closeContactProfileActionsMenu(immediate = false) {
+    this.toggleContactProfileActionsMenu(false, immediate);
   }
 
   async handleContactProfileMenuAction(action) {

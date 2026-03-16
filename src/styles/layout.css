@@ -40,12 +40,13 @@ html.dark-theme body {
   height: 100%;
 }
 
-.bridge-app {
+.orion-app {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
   --keyboard-inset: 0px;
+  --sidebar-panel-width: 370px;
 }
 
 .app-header {
@@ -79,8 +80,8 @@ html:not(.dark-theme) .app-header {
 }
 
 @media (min-width: 769px) {
-  .bridge-app.chat-open .app-header,
-  .bridge-app.chat-active .app-header {
+  .orion-app.chat-open .app-header,
+  .orion-app.chat-active .app-header {
     position: absolute;
     top: 12px;
     left: 370px;
@@ -90,22 +91,22 @@ html:not(.dark-theme) .app-header {
     pointer-events: none;
   }
 
-  .bridge-app.chat-open:has(.sidebar.compact) .app-header,
-  .bridge-app.chat-active:has(.sidebar.compact) .app-header {
+  .orion-app.chat-open:has(.sidebar.compact) .app-header,
+  .orion-app.chat-active:has(.sidebar.compact) .app-header {
     left: 88px;
     width: calc(100% - 88px);
   }
 
-  .bridge-app.chat-open .app-header .app-header-left,
-  .bridge-app.chat-open .app-header .app-header-right,
-  .bridge-app.chat-open .app-header .app-chat-info,
-  .bridge-app.chat-active .app-header .app-header-left,
-  .bridge-app.chat-active .app-header .app-header-right,
-  .bridge-app.chat-active .app-header .app-chat-info {
+  .orion-app.chat-open .app-header .app-header-left,
+  .orion-app.chat-open .app-header .app-header-right,
+  .orion-app.chat-open .app-header .app-chat-info,
+  .orion-app.chat-active .app-header .app-header-left,
+  .orion-app.chat-active .app-header .app-header-right,
+  .orion-app.chat-active .app-header .app-chat-info {
     pointer-events: auto;
   }
 
-  .bridge-app:not(.chat-open):not(.chat-active) .app-header {
+  .orion-app:not(.chat-open):not(.chat-active) .app-header {
     height: 0 !important;
     min-height: 0 !important;
     padding: 0 !important;
@@ -114,7 +115,7 @@ html:not(.dark-theme) .app-header {
     pointer-events: none;
   }
 
-  .bridge-app:not(.chat-open):not(.chat-active) .app-header-left {
+  .orion-app:not(.chat-open):not(.chat-active) .app-header-left {
     position: absolute;
     top: 12px;
     left: 26px;
@@ -124,12 +125,12 @@ html:not(.dark-theme) .app-header {
     z-index: 12;
   }
 
-  .bridge-app:not(.chat-open):not(.chat-active) .app-header-right,
-  .bridge-app:not(.chat-open):not(.chat-active) .app-chat-info {
+  .orion-app:not(.chat-open):not(.chat-active) .app-header-right,
+  .orion-app:not(.chat-open):not(.chat-active) .app-chat-info {
     display: none !important;
   }
 
-  .bridge-app:not(.chat-open):not(.chat-active) .sidebar {
+  .orion-app:not(.chat-open):not(.chat-active) .sidebar {
     padding-top: 44px;
   }
 }
@@ -147,15 +148,15 @@ html:not(.dark-theme) .app-header {
   display: none !important;
 }
 
-.bridge-app.chat-open .app-header-left .btn-back,
-.bridge-app.chat-open #appChatInfo,
-.bridge-app.chat-open .app-header-right {
+.orion-app.chat-open .app-header-left .btn-back,
+.orion-app.chat-open #appChatInfo,
+.orion-app.chat-open .app-header-right {
   display: flex !important;
 }
 
-.bridge-app.chat-active .app-header-left .btn-back,
-.bridge-app.chat-active #appChatInfo,
-.bridge-app.chat-active .app-header-right {
+.orion-app.chat-active .app-header-left .btn-back,
+.orion-app.chat-active #appChatInfo,
+.orion-app.chat-active .app-header-right {
   display: flex !important;
 }
 
@@ -171,8 +172,8 @@ html:not(.dark-theme) .app-header {
   min-width: 0;
 }
 
-.bridge-app.chat-open #appChatInfo,
-.bridge-app.chat-active #appChatInfo {
+.orion-app.chat-open #appChatInfo,
+.orion-app.chat-active #appChatInfo {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -189,8 +190,8 @@ html:not(.dark-theme) .app-header {
   -webkit-backdrop-filter: blur(14px);
 }
 
-html:not(.dark-theme) .bridge-app.chat-open #appChatInfo,
-html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
+html:not(.dark-theme) .orion-app.chat-open #appChatInfo,
+html:not(.dark-theme) .orion-app.chat-active #appChatInfo {
   background: var(--surface-soft);
   border-color: var(--border-color);
   box-shadow:
@@ -234,21 +235,21 @@ html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
   text-overflow: ellipsis;
 }
 
-.bridge-app.chat-open #appChatInfo .app-chat-name,
-.bridge-app.chat-active #appChatInfo .app-chat-name {
+.orion-app.chat-open #appChatInfo .app-chat-name,
+.orion-app.chat-active #appChatInfo .app-chat-name {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 
-.bridge-app.chat-open #appChatInfo .app-chat-status,
-.bridge-app.chat-active #appChatInfo .app-chat-status {
+.orion-app.chat-open #appChatInfo .app-chat-status,
+.orion-app.chat-active #appChatInfo .app-chat-status {
   width: 7px;
   height: 7px;
 }
 
-.bridge-app.chat-open .app-header-right,
-.bridge-app.chat-active .app-header-right {
+.orion-app.chat-open .app-header-right,
+.orion-app.chat-active .app-header-right {
   position: absolute;
   right: 32px;
   top: 50%;
@@ -257,16 +258,16 @@ html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
   margin: 0;
 }
 
-.bridge-app.chat-open .app-header-left,
-.bridge-app.chat-active .app-header-left {
+.orion-app.chat-open .app-header-left,
+.orion-app.chat-active .app-header-left {
   position: static;
   min-width: 0;
   flex: 1 1 auto;
   margin: 0;
 }
 
-.bridge-app.chat-open .app-header-right .btn-icon,
-.bridge-app.chat-active .app-header-right .btn-icon {
+.orion-app.chat-open .app-header-right .btn-icon,
+.orion-app.chat-active .app-header-right .btn-icon {
   width: 36px;
   height: 36px;
   border-radius: 10px;
@@ -276,13 +277,13 @@ html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
   color: var(--text-primary);
 }
 
-.bridge-app.chat-open .app-header-right .btn-icon:hover,
-.bridge-app.chat-active .app-header-right .btn-icon:hover {
+.orion-app.chat-open .app-header-right .btn-icon:hover,
+.orion-app.chat-active .app-header-right .btn-icon:hover {
   background: transparent;
 }
 
-.bridge-app.chat-open .app-header-left .btn-back,
-.bridge-app.chat-active .app-header-left .btn-back {
+.orion-app.chat-open .app-header-left .btn-back,
+.orion-app.chat-active .app-header-left .btn-back {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -298,8 +299,8 @@ html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
   border-radius: 10px;
 }
 
-.bridge-app.chat-open .app-header-left .btn-back:hover,
-.bridge-app.chat-active .app-header-left .btn-back:hover {
+.orion-app.chat-open .app-header-left .btn-back:hover,
+.orion-app.chat-active .app-header-left .btn-back:hover {
   background: transparent;
 }
 
@@ -459,13 +460,17 @@ html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
 }
 
 @media (min-width: 769px) {
+  .orion-app:has(.sidebar.compact) {
+    --sidebar-panel-width: 88px;
+  }
+
   :root {
     --bottom-nav-height: 72px;
   }
 
   .profile-menu-wrapper {
     position: fixed;
-    left: 50%;
+    left: calc((100% + var(--sidebar-panel-width, 370px)) / 2);
     bottom: 20px;
     transform: translateX(-50%);
     z-index: 5;
@@ -516,9 +521,9 @@ html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
   will-change: transform;
 }
 
-.bridge-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper {
+.orion-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper {
   position: fixed !important;
-  left: 50% !important;
+  left: calc((100% + var(--sidebar-panel-width, 370px)) / 2) !important;
   bottom: 20px !important;
   transform: translateX(-50%) !important;
 }
@@ -742,8 +747,8 @@ html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
     margin 0.2s ease;
 }
 
-.bridge-app.chat-open .chat-brand .app-title,
-.bridge-app.chat-active .chat-brand .app-title {
+.orion-app.chat-open .chat-brand .app-title,
+.orion-app.chat-active .chat-brand .app-title {
   opacity: 0;
   transform: translateX(-6px);
   max-width: 0;
@@ -1083,7 +1088,7 @@ html:not(.dark-theme) .bridge-app.chat-active #appChatInfo {
 @media (max-width: 900px) {
   .profile-menu-wrapper {
     width: min(420px, calc(100vw - 16px)) !important;
-    left: 50% !important;
+    left: calc((100% + var(--sidebar-panel-width, 370px)) / 2) !important;
     bottom: calc(10px + env(safe-area-inset-bottom)) !important;
     transform: translateX(-50%) !important;
     z-index: 120 !important;

@@ -162,12 +162,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 40px;
+  gap: 0;
+  min-height: 0;
   margin: 0 auto;
   padding: 0 50px;
-  border-radius: 14px;
-  font-size: 22px;
+  border-radius: 0;
+  font-size: 18px;
   font-weight: 600;
   pointer-events: auto;
 }
@@ -175,14 +175,14 @@
 #messenger-settings .shop-header h2,
 #calls .calls-header h2,
 #profile-items .profile-items-header h2 {
-  width: 240px;
-  max-width: calc(100% - 24px);
+  width: auto;
+  max-width: calc(100% - 72px);
   box-sizing: border-box;
-  padding: 0 20px;
+  padding: 0;
 }
 
 #messenger-settings .shop-header h2 svg {
-  display: block;
+  display: none;
   flex-shrink: 0;
 }
 
@@ -192,13 +192,11 @@
 
 html:not(.dark-theme) #messenger-settings .shop-header h2 {
   color: #0f1320;
-  border: 1px solid rgba(20, 24, 36, 0.1);
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow:
-    0 10px 22px rgba(15, 19, 32, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html:not(.dark-theme) #messenger-settings .shop-balance-island {
@@ -213,11 +211,11 @@ html:not(.dark-theme) #messenger-settings .shop-balance-island {
 
 html.dark-theme #messenger-settings .shop-header h2 {
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html:not(.dark-theme) #messenger-settings .shop-header h2 svg,
@@ -270,10 +268,10 @@ html.dark-theme #messenger-settings .shop-balance-island {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 0;
   margin: 0 auto;
-  border-radius: 14px;
-  font-size: 22px;
+  border-radius: 0;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.3px;
@@ -282,7 +280,7 @@ html.dark-theme #messenger-settings .shop-balance-island {
 
 #calls .calls-header h2 svg,
 #profile-items .profile-items-header h2 svg {
-  display: block;
+  display: none;
   flex-shrink: 0;
 }
 
@@ -314,13 +312,11 @@ html.dark-theme #messenger-settings .shop-balance-island {
 
 html:not(.dark-theme) #calls .calls-header h2,
 html:not(.dark-theme) #profile-items .profile-items-header h2 {
-  border: 1px solid rgba(20, 24, 36, 0.1);
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow:
-    0 10px 22px rgba(15, 19, 32, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html:not(.dark-theme) #profile-items .profile-items-back-island {
@@ -335,11 +331,11 @@ html:not(.dark-theme) #profile-items .profile-items-back-island {
 
 html.dark-theme #calls .calls-header h2,
 html.dark-theme #profile-items .profile-items-header h2 {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html.dark-theme #profile-items .profile-items-back-island {
@@ -403,15 +399,15 @@ html.dark-theme #profile-items .profile-items-back-island {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 40px;
+  gap: 0;
+  min-height: 0;
   margin: 0 auto;
-  padding: 0 20px;
-  width: 240px;
-  max-width: calc(100% - 24px);
+  padding: 0;
+  width: auto;
+  max-width: calc(100% - 72px);
   box-sizing: border-box;
-  border-radius: 14px;
-  font-size: 18px;
+  border-radius: 0;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.3px;
@@ -421,7 +417,7 @@ html.dark-theme #profile-items .profile-items-back-island {
 }
 
 .settings-subsection .settings-header .settings-subsection-title svg {
-  display: block;
+  display: none;
   flex-shrink: 0;
 }
 
@@ -460,12 +456,10 @@ html.dark-theme #profile-items .profile-items-back-island {
 }
 
 html:not(.dark-theme) .settings-subsection .settings-subsection-title {
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow:
-    0 10px 22px rgba(15, 19, 32, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html:not(.dark-theme) .settings-subsection .settings-subsection-back {
@@ -478,10 +472,10 @@ html:not(.dark-theme) .settings-subsection .settings-subsection-back {
 }
 
 html.dark-theme .settings-subsection .settings-subsection-title {
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 html.dark-theme .settings-subsection .settings-subsection-back {
@@ -492,19 +486,32 @@ html.dark-theme .settings-subsection .settings-subsection-back {
 }
 
 /* Use the same island surface as .shop-filter-summary for all header islands */
-#messenger-settings .shop-header h2,
 #messenger-settings .shop-balance-island,
-#calls .calls-header h2,
-#profile-items .profile-items-header h2,
-.settings-subsection .settings-header .settings-subsection-title,
 #profile-items .profile-items-back-island,
 .settings-subsection .settings-subsection-back {
   background: var(--surface-soft) !important;
   border: 1px solid var(--border-color) !important;
 }
 
-.settings-subsection .settings-header .settings-subsection-title {
+#messenger-settings .shop-header h2,
+#calls .calls-header h2,
+#profile-items .profile-items-header h2,
+.settings-subsection .settings-header .settings-subsection-title,
+#profile-settings .settings-header h2 {
   border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+#profile-items .profile-items-back-island,
+.settings-subsection .settings-subsection-back {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .settings-subsection .settings-content {
@@ -702,6 +709,30 @@ html.dark-theme .settings-subsection .settings-subsection-back {
   background-color: var(--bg-color);
 }
 
+.settings-buttons .btn {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.settings-buttons .btn-primary,
+.settings-buttons .btn-secondary {
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--text-primary);
+}
+
+.settings-buttons .btn-primary:hover,
+.settings-buttons .btn-secondary:hover {
+  border-color: color-mix(in srgb, var(--border-color) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 96%, transparent);
+  color: var(--text-primary);
+}
+
 .about-buttons,
 .help-buttons {
   display: flex;
@@ -718,14 +749,13 @@ html.dark-theme .settings-subsection .settings-subsection-back {
 }
 
 .settings-subsection .settings-buttons .btn {
-  min-height: 46px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 68%, transparent);
-  background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
   color: var(--text-primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  font-weight: 700;
+  box-shadow: none;
+  font-weight: 600;
 }
 
 .about-header {
@@ -1479,7 +1509,7 @@ to {
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 /* Мітка між малим і середнім (позиція 14.5 з 12-20 = 31.25%) */
@@ -1547,13 +1577,7 @@ to {
   padding: 24px;
   padding-bottom: calc(var(--bottom-nav-height, 72px) + 136px);
   box-sizing: border-box;
-  background:
-    radial-gradient(
-      circle at top right,
-      color-mix(in srgb, var(--primary-color) 10%, transparent),
-      transparent 34%
-    ),
-    linear-gradient(
+  background: linear-gradient(
       180deg,
       color-mix(in srgb, var(--bg-secondary) 76%, transparent),
       transparent 42%
@@ -1640,7 +1664,8 @@ html.dark-theme .profile-settings-card {
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.profile-hero-card[data-profile-aura="aurora"] {
+.profile-hero-card[data-profile-aura="aurora"],
+html.dark-theme .profile-hero-card[data-profile-aura="aurora"] {
   background:
     radial-gradient(
       circle at 20% 18%,
@@ -1659,7 +1684,8 @@ html.dark-theme .profile-settings-card {
     );
 }
 
-.profile-hero-card[data-profile-aura="cosmic"] {
+.profile-hero-card[data-profile-aura="cosmic"],
+html.dark-theme .profile-hero-card[data-profile-aura="cosmic"] {
   background:
     radial-gradient(
       circle at 15% 20%,
@@ -1678,7 +1704,8 @@ html.dark-theme .profile-settings-card {
     );
 }
 
-.profile-hero-card[data-profile-aura="sunset"] {
+.profile-hero-card[data-profile-aura="sunset"],
+html.dark-theme .profile-hero-card[data-profile-aura="sunset"] {
   background:
     radial-gradient(
       circle at 18% 18%,
@@ -1697,7 +1724,8 @@ html.dark-theme .profile-settings-card {
     );
 }
 
-.profile-hero-card[data-profile-aura="frost"] {
+.profile-hero-card[data-profile-aura="frost"],
+html.dark-theme .profile-hero-card[data-profile-aura="frost"] {
   background:
     radial-gradient(
       circle at 18% 20%,
@@ -1716,7 +1744,8 @@ html.dark-theme .profile-settings-card {
     );
 }
 
-.profile-hero-card[data-profile-aura="sunbeam"] {
+.profile-hero-card[data-profile-aura="sunbeam"],
+html.dark-theme .profile-hero-card[data-profile-aura="sunbeam"] {
   background:
     radial-gradient(
       circle at 18% 18%,
@@ -1735,7 +1764,8 @@ html.dark-theme .profile-settings-card {
     );
 }
 
-.profile-hero-card[data-profile-aura="midnight"] {
+.profile-hero-card[data-profile-aura="midnight"],
+html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   background:
     radial-gradient(circle at 18% 20%, rgba(30, 41, 59, 0.28), transparent 34%),
     radial-gradient(
@@ -1889,13 +1919,9 @@ html.dark-theme .profile-settings-card {
   position: absolute;
   inset: -10px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--primary-color) 28%, transparent),
-    transparent 65%
-  );
-  filter: blur(8px);
-  opacity: 0.95;
+  background: transparent;
+  filter: none;
+  opacity: 0;
 }
 
 .profile-avatar-large {
@@ -1912,9 +1938,7 @@ html.dark-theme .profile-settings-card {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow:
-    0 18px 32px color-mix(in srgb, var(--primary-color) 22%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .profile-avatar-large,
@@ -1994,6 +2018,16 @@ html.dark-theme .profile-settings-card {
     0 0 18px rgba(51, 65, 85, 0.22);
 }
 
+/* Keep avatar frames, but remove glow around the user profile avatar itself */
+.profile-avatar-large[data-avatar-frame="solar"]::after,
+.profile-avatar-large[data-avatar-frame="neon"]::after,
+.profile-avatar-large[data-avatar-frame="crystal"]::after,
+.profile-avatar-large[data-avatar-frame="ember"]::after,
+.profile-avatar-large[data-avatar-frame="mint"]::after,
+.profile-avatar-large[data-avatar-frame="shadow"]::after {
+  box-shadow: none;
+}
+
 .profile-avatar-image {
   width: 100%;
   height: 100%;
@@ -2022,21 +2056,6 @@ html.dark-theme .profile-settings-card {
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-primary);
-}
-
-.profile-verified-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary-color);
-  line-height: 0;
-  flex-shrink: 0;
-}
-
-.profile-verified-badge svg {
-  display: block;
-  width: 20px;
-  height: 20px;
 }
 
 .profile-name-badges {
@@ -2129,8 +2148,8 @@ html.dark-theme .profile-settings-card {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-color) 84%, transparent);
+  border: none;
+  background: transparent;
   color: var(--text-primary);
   cursor: pointer;
   display: inline-flex;
@@ -2292,13 +2311,7 @@ html.dark-theme .profile-settings-card {
   padding: 24px !important;
   width: 100%;
   box-sizing: border-box;
-  background:
-    radial-gradient(
-      circle at top right,
-      color-mix(in srgb, var(--primary-color) 10%, transparent),
-      transparent 30%
-    ),
-    linear-gradient(
+  background: linear-gradient(
       180deg,
       color-mix(in srgb, var(--bg-secondary) 76%, transparent),
       transparent 40%
@@ -2934,13 +2947,7 @@ html.dark-theme .profile-settings-card {
   padding: 18px;
   border-radius: var(--radius-card);
   border: 1px solid var(--border-color);
-  background:
-    radial-gradient(
-      circle at top right,
-      color-mix(in srgb, var(--primary-color) 6%, transparent),
-      transparent 42%
-    ),
-    color-mix(in srgb, var(--bg-color) 88%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 88%, transparent);
   box-shadow:
     0 10px 24px rgba(15, 19, 32, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
@@ -3270,26 +3277,54 @@ html.dark-theme .profile-settings-card {
 }
 
 .profile-settings-menu-card .settings-menu-item-logout {
-  border-color: color-mix(in srgb, #ef4444 36%, var(--border-color));
-  background: color-mix(in srgb, #ef4444 12%, var(--bg-color));
+  padding: 6px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 8px;
+  justify-content: flex-start;
+  color: #dc2626;
 }
 
 .profile-settings-menu-card
   .settings-menu-item-logout
   .settings-menu-label
   span {
-  color: #dc2626;
+  color: inherit;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .profile-settings-menu-card .settings-menu-item-logout .settings-item-desc {
-  color: color-mix(in srgb, #ef4444 58%, var(--text-secondary));
+  color: inherit;
 }
 
 .profile-settings-menu-card .settings-menu-item-logout:hover {
-  background: color-mix(in srgb, #ef4444 18%, var(--bg-color));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 10px 20px color-mix(in srgb, #ef4444 16%, transparent);
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.9;
+}
+
+.profile-settings-menu-card .settings-menu-item-logout:active {
+  transform: none;
+}
+
+.profile-settings-menu-card .settings-menu-item-logout .settings-menu-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.profile-settings-menu-card .settings-menu-item-logout .settings-icon-logout {
+  background: transparent;
+}
+
+.profile-settings-menu-card .settings-menu-item-logout .settings-menu-label {
+  flex: 0 1 auto;
 }
 
 .profile-settings-note {
@@ -4115,5 +4150,281 @@ html.dark-theme .profile-settings-card {
   .mini-game-canvas {
     width: min(92vw, 360px);
     height: min(92vw, 360px);
+  }
+}
+
+/* Profile settings minimalist */
+#profile-settings {
+  align-items: center;
+}
+
+#profile-settings .settings-header {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  width: min(100%, 860px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 0 6px;
+  min-height: 0;
+  margin: 0 auto;
+  transform: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+#profile-settings .settings-header .profile-settings-title {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  text-align: center !important;
+}
+
+#profile-settings .settings-header h2 {
+  position: static;
+  left: auto;
+  right: auto;
+  transform: none;
+  display: block;
+  text-align: center;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: none;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  pointer-events: none;
+}
+
+#profile-settings .profile-settings-content {
+  display: flex !important;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding-top: 12px !important;
+  background: transparent !important;
+}
+
+#profile-settings .profile-settings-card {
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  border-radius: 14px;
+  background: var(--bg-color);
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html.dark-theme #profile-settings .profile-settings-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--bg-secondary);
+}
+
+#profile-settings .profile-settings-hero-card,
+#profile-settings .profile-settings-form-card {
+  padding: 16px;
+}
+
+#profile-settings .profile-settings-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+#profile-settings .profile-settings-card-head h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+#profile-settings .profile-settings-kicker {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+#profile-settings .profile-settings-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+#profile-settings .profile-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+#profile-settings .profile-avatar-large {
+  width: 92px;
+  height: 92px;
+  flex: 0 0 92px;
+  margin: 0;
+}
+
+#profile-settings .profile-avatar-actions {
+  gap: 8px;
+}
+
+#profile-settings .profile-upload-btn,
+#profile-settings .btn-change-avatar {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+#profile-settings .profile-upload-btn {
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--text-primary);
+}
+
+#profile-settings .btn-change-avatar {
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--text-primary);
+}
+
+#profile-settings .profile-settings-form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#profile-settings .profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#profile-settings .profile-form-grid .form-group {
+  min-width: 0;
+}
+
+#profile-settings .profile-form-full {
+  grid-column: 1 / -1;
+}
+
+#profile-settings .form-group label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+#profile-settings .form-input,
+#profile-settings .form-textarea {
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 94%, transparent);
+  padding: 9px 12px;
+  box-shadow: none;
+}
+
+#profile-settings .form-textarea {
+  min-height: 96px;
+}
+
+#profile-settings #profileBio {
+  resize: none;
+}
+
+#profile-settings .form-input:focus,
+#profile-settings .form-textarea:focus {
+  border-color: color-mix(in srgb, var(--primary-color) 52%, var(--border-color));
+  box-shadow: none;
+}
+
+#profile-settings .profile-settings-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
+}
+
+#profile-settings .profile-settings-buttons .btn {
+  min-height: 40px;
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+#profile-settings .btn-save-profile,
+#profile-settings .btn-cancel-profile {
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  #profile-settings .profile-settings-content {
+    width: 100%;
+    gap: 10px;
+  }
+
+  #profile-settings .profile-settings-hero-card,
+  #profile-settings .profile-settings-form-card {
+    padding: 14px;
+  }
+
+  #profile-settings .profile-avatar-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  #profile-settings .profile-avatar-large {
+    width: 88px;
+    height: 88px;
+    flex-basis: 88px;
+    margin: 0 auto;
+  }
+
+  #profile-settings .profile-avatar-actions {
+    width: 100%;
+    align-items: center;
+  }
+
+  #profile-settings .profile-upload-btn,
+  #profile-settings .btn-change-avatar,
+  #profile-settings .profile-settings-buttons .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  #profile-settings .profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #profile-settings .profile-settings-buttons {
+    flex-direction: column;
   }
 }

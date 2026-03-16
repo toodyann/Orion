@@ -714,7 +714,7 @@ export class ChatAppFeaturesMethods {
   }
 
   getBlockedChatIds() {
-    const stored = this.readJsonStorage('bridge_blocked_chat_ids', []);
+    const stored = this.readJsonStorage('orion_blocked_chat_ids', []);
     if (!Array.isArray(stored)) return [];
     const normalized = stored
       .map(value => Number.parseInt(String(value), 10))
@@ -730,7 +730,7 @@ export class ChatAppFeaturesMethods {
     )];
 
     try {
-      window.localStorage.setItem('bridge_blocked_chat_ids', JSON.stringify(normalized));
+      window.localStorage.setItem('orion_blocked_chat_ids', JSON.stringify(normalized));
     } catch {
       // Ignore storage failures.
     }
@@ -881,7 +881,7 @@ export class ChatAppFeaturesMethods {
     // Hide chat and welcome screen
     if (chatContainer) chatContainer.classList.remove('active');
     if (welcomeScreen) welcomeScreen.classList.add('hidden');
-    const appEl = document.querySelector('.bridge-app');
+    const appEl = document.querySelector('.orion-app');
     if (isMobile && document.activeElement && typeof document.activeElement.blur === 'function') {
       document.activeElement.blur();
     }

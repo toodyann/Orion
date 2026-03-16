@@ -58,6 +58,7 @@ class ChatApp {
     this.bottomNavInSidebarTop = false;
     this.settingsParentSection = 'messenger-settings';
     this.imageViewerState = null;
+    this.contactProfileMenuCloseTimer = null;
     this.loadTheme();
     this.profileMenuPlaceholder = null;
     this.init();

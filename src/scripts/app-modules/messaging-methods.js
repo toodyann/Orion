@@ -459,7 +459,7 @@ export class ChatAppMessagingMethods {
 
   setComposerInputInteractionLocked(locked) {
     const input = document.getElementById('messageInput');
-    const appEl = document.querySelector('.bridge-app');
+    const appEl = document.querySelector('.orion-app');
     if (!input) return;
     input.readOnly = !!locked;
     if (locked) {
@@ -1944,11 +1944,7 @@ export class ChatAppMessagingMethods {
 
   ensureBottomNavHomeAnchor() {
     const profileMenu = document.querySelector('.profile-menu-wrapper');
-    const chatsList = document.getElementById('chatsList');
-    const isMobile = window.innerWidth <= 768;
-    const appRoot = isMobile
-      ? (document.querySelector('.bridge-app') || document.getElementById('app'))
-      : (chatsList || document.querySelector('.bridge-app') || document.getElementById('app'));
+    const appRoot = document.querySelector('.orion-app') || document.getElementById('app');
     if (!profileMenu || !appRoot) return;
 
     if (!this.bottomNavHomeAnchor) {

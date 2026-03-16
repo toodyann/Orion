@@ -139,14 +139,14 @@ html.dark-theme .message.own .message-content {
 }
 
 .message-content {
-  padding: 8px 50px 20px 12px;
-  border-radius: var(--radius-inner);
+  padding: 8px 46px 18px 12px;
+  border-radius: 14px;
   word-wrap: break-word;
   word-break: break-word;
   line-height: 1.4;
   position: relative;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .message-content.has-image {
@@ -346,11 +346,11 @@ html.dark-theme .message.own .message-content {
 }
 
 .message.other .message-content {
-  border-radius: 16px 16px 16px 4px;
+  border-radius: 14px;
 }
 
 .message.own .message-content {
-  border-radius: 16px 16px 4px 16px;
+  border-radius: 14px;
 }
 
 .message-meta {
@@ -361,8 +361,8 @@ html.dark-theme .message.own .message-content {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: var(--text-secondary);
-  opacity: 0.9;
+  color: color-mix(in srgb, var(--text-secondary) 92%, transparent);
+  opacity: 0.78;
 }
 
 .message.own .message-content .message-meta {
@@ -486,17 +486,16 @@ html.dark-theme .message.own .message-content {
   pointer-events: none;
   animation: none !important;
   opacity: 0;
-  transform: scale(0.97);
+  transform: translateY(8px) scale(0.95);
+  filter: saturate(0.86);
   transition:
-    opacity 0.18s ease,
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.2s ease,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.2s ease;
 }
 
 .message-menu-focus-clone.show {
   opacity: 1;
-  transform: scale(1);
-}
-w {
-  opacity: 1;
-  transform: scale(1);
+  transform: translateY(0) scale(1.01);
+  filter: saturate(1);
 }

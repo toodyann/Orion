@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  const htmlContent = `<div class="bridge-app">
+  const htmlContent = `<div class="orion-app">
   <header class="app-header">
     <div class="app-header-left">
       <button class="btn-back" id="backBtn" aria-label="Назад">
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <section class="contact-profile-view settings-subsection" id="contactProfileView" aria-hidden="true">
         <div class="settings-header settings-subsection-header">
           <button type="button" class="btn-back-subsection settings-subsection-back" id="contactProfileBackBtn" aria-label="Назад до чату">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
               <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
             </svg>
           </button>
@@ -252,10 +252,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 </svg>
                 <span>Ще</span>
               </button>
-              <div class="contact-profile-menu" id="contactProfileMenu" aria-hidden="true">
-                <button class="contact-profile-menu-item" data-action="mute">Вимкнути звук</button>
-                <button class="contact-profile-menu-item" data-action="hide">Приховати чат</button>
-                <button class="contact-profile-menu-item is-danger" data-action="block">Заблокувати</button>
+              <div class="message-menu contact-profile-menu" id="contactProfileMenu" aria-hidden="true">
+                <button class="message-menu-item contact-profile-menu-item" data-action="mute">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                    <path d="M17 9l6 6M23 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                  </svg>
+                  <span>Вимкнути звук</span>
+                </button>
+                <button class="message-menu-item contact-profile-menu-item" data-action="hide">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="2"></path>
+                    <path d="M1 1l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                  </svg>
+                  <span>Приховати чат</span>
+                </button>
+                <button class="message-menu-item contact-profile-menu-item is-danger" data-action="block">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"></circle>
+                    <path d="M5 5l14 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                  </svg>
+                  <span>Заблокувати</span>
+                </button>
               </div>
             </div>
           </div>
