@@ -1,6 +1,7 @@
 @media (max-width: 768px) {
   :root {
     --app-header-height: 40px;
+    --mobile-nav-lift: 10px;
     --mobile-chat-header-offset: calc(
       var(--app-header-height) + env(safe-area-inset-top)
     );
@@ -63,6 +64,8 @@
     min-height: var(--app-header-height) !important;
     padding: 0 !important;
     justify-content: center;
+    background: var(--bg-color) !important;
+    background-color: var(--bg-color) !important;
     border: none;
   }
 
@@ -259,7 +262,8 @@
   .bottom-nav {
     width: 100% !important;
     gap: 0 !important;
-    padding: 8px 6px calc(8px + env(safe-area-inset-bottom)) !important;
+    padding: 8px 6px
+      calc(8px + env(safe-area-inset-bottom) + var(--mobile-nav-lift, 10px)) !important;
     border-radius: 0 !important;
     box-sizing: border-box !important;
     background: color-mix(in srgb, var(--bg-color) 92%, #0c111a 8%) !important;
@@ -2203,7 +2207,8 @@
 
   .bottom-nav {
     gap: 0 !important;
-    padding: 7px 4px calc(7px + env(safe-area-inset-bottom)) !important;
+    padding: 7px 4px
+      calc(7px + env(safe-area-inset-bottom) + var(--mobile-nav-lift, 10px)) !important;
     border-radius: 0 !important;
   }
 

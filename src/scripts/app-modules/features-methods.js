@@ -1001,6 +1001,8 @@ export class ChatAppFeaturesMethods {
       }
       
       if (sectionName === 'profile-settings') {
+        this.captureProfileSettingsSnapshot();
+
         const profileNameInput = settingsContainer.querySelector('#profileName');
         const profileEmailInput = settingsContainer.querySelector('#profileEmail');
         const profileBioInput = settingsContainer.querySelector('#profileBio');
@@ -1037,6 +1039,14 @@ export class ChatAppFeaturesMethods {
         const changeAvatarBtn = settingsContainer.querySelector('.btn-change-avatar');
         if (changeAvatarBtn) {
           changeAvatarBtn.addEventListener('click', () => this.handleAvatarChange(settingsContainer));
+        }
+
+        const cancelProfileBtn = settingsContainer.querySelector('.btn-cancel-profile');
+        if (cancelProfileBtn) {
+          cancelProfileBtn.addEventListener('click', () => {
+            this.restoreProfileSettingsSnapshot();
+            this.showSettings(this.settingsParentSection || 'profile');
+          });
         }
       }
 
@@ -1268,7 +1278,7 @@ export class ChatAppFeaturesMethods {
         this.setupSettingsSwipeBack(settingsContainer);
       }
       
-      const closeButtons = settingsContainer.querySelectorAll('.btn-secondary:not(.btn-change-avatar)');
+      const closeButtons = settingsContainer.querySelectorAll('.btn-secondary:not(.btn-change-avatar):not(.btn-cancel-profile)');
       closeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           if ((sectionName === 'profile-settings' || sectionName.endsWith('-settings')) && btn.closest('.settings-buttons')) {
@@ -1331,10 +1341,13 @@ export class ChatAppFeaturesMethods {
     
     this.saveUserProfile(profileData);
     await this.showNotice('Налаштування профілю збережено!');
+    this.profileSettingsSnapshot = null;
     
     if (this.currentChat) {
       this.renderChat();
     }
+
+    this.showSettings(this.settingsParentSection || 'profile');
   }
 
   async saveMessengerSettings(options = {}) {
@@ -1406,6 +1419,16 @@ export class ChatAppFeaturesMethods {
       default:
         root.style.fontSize = '16px';
     }
+  }
+
+  captureProfileSettingsSnapshot() {
+    this.profileSettingsSnapshot = { ...this.user };
+  }
+
+  restoreProfileSettingsSnapshot() {
+    if (!this.profileSettingsSnapshot) return;
+    this.saveUserProfile({ ...this.profileSettingsSnapshot });
+    this.profileSettingsSnapshot = null;
   }
 
   handleAvatarChange(settingsContainer) {
