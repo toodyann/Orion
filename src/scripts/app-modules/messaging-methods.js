@@ -1896,6 +1896,25 @@ export class ChatAppMessagingMethods {
       btn.classList.add('active');
     }
     this.updateBottomNavIndicator(btn);
+    this.syncDesktopNavRailActive(btn?.id || null);
+  }
+
+  syncDesktopNavRailActive(activeNavId = null) {
+    const railItems = document.querySelectorAll('.desktop-nav-rail-item[data-nav-target]');
+    if (!railItems.length) return;
+    const resolvedNavId = activeNavId
+      || document.querySelector('.bottom-nav-item.active')?.id
+      || 'navChats';
+
+    railItems.forEach((item) => {
+      const isActive = item.dataset.navTarget === resolvedNavId;
+      item.classList.toggle('active', isActive);
+      if (isActive) {
+        item.setAttribute('aria-current', 'page');
+      } else {
+        item.removeAttribute('aria-current');
+      }
+    });
   }
 
   setupBottomNavReveal() {

@@ -104,7 +104,7 @@ html.dark-theme .message.own .message-content {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff9500, #ff6b6b);
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
   flex-shrink: 0;
   display: flex;
   align-items: center;

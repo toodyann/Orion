@@ -30,6 +30,458 @@ export class ChatAppInteractionMethods {
     });
   }
 
+  getDesktopSecondaryMenuConfig(targetNavId) {
+    const menuMap = {
+      navChats: {
+        title: 'Чати',
+        groups: [
+          {
+            title: 'РОЗМОВИ',
+            items: [
+              { label: 'Центр повідомлень', action: 'open-chats-home', icon: 'bell' },
+              { label: 'Конфіденційність', section: 'privacy-settings', parentSection: 'messenger-settings', icon: 'shield' },
+              { label: 'Повідомлення', section: 'messages-settings', parentSection: 'messenger-settings', icon: 'chat' }
+            ]
+          },
+          {
+            title: 'ПЕРСОНАЛІЗАЦІЯ',
+            items: [
+              { label: 'Інтерфейс', section: 'appearance-settings', parentSection: 'messenger-settings', icon: 'paint' },
+              { label: 'Мова', section: 'language-settings', parentSection: 'messenger-settings', icon: 'globe' }
+            ]
+          }
+        ]
+      },
+      navCalls: {
+        title: 'Дзвінки',
+        groups: [
+          {
+            title: 'ТЕЛЕФОНІЯ',
+            items: [
+              { label: 'Історія дзвінків', section: 'calls', icon: 'phone' },
+              { label: 'Сповіщення', section: 'notifications-center', icon: 'bell' }
+            ]
+          }
+        ]
+      },
+      navShop: {
+        title: 'Магазин',
+        groups: [
+          {
+            title: 'КАТАЛОГ',
+            items: [
+              { label: 'Усі товари', section: 'messenger-settings', parentSection: 'messenger-settings', icon: 'store', shopCategory: 'all' },
+              { label: 'Аватар', section: 'messenger-settings', parentSection: 'messenger-settings', icon: 'user', shopCategory: 'frame' },
+              { label: 'Фон', section: 'messenger-settings', parentSection: 'messenger-settings', icon: 'image', shopCategory: 'aura' },
+              { label: 'Анімація', section: 'messenger-settings', parentSection: 'messenger-settings', icon: 'sparkles', shopCategory: 'motion' },
+              { label: 'Значки', section: 'messenger-settings', parentSection: 'messenger-settings', icon: 'badge', shopCategory: 'badge' }
+            ]
+          }
+        ]
+      },
+      navSettings: {
+        title: 'Налаштування',
+        groups: [
+          {
+            title: 'СПІЛКУВАННЯ',
+            items: [
+              { label: 'Сповіщення', section: 'notifications-settings', parentSection: 'messenger-settings', icon: 'bell' },
+              { label: 'Конфіденційність', section: 'privacy-settings', parentSection: 'messenger-settings', icon: 'shield' },
+              { label: 'Повідомлення', section: 'messages-settings', parentSection: 'messenger-settings', icon: 'chat' }
+            ]
+          },
+          {
+            title: 'ІНТЕРФЕЙС',
+            items: [
+              { label: 'Інтерфейс', section: 'appearance-settings', parentSection: 'messenger-settings', icon: 'paint' },
+              { label: 'Мова', section: 'language-settings', parentSection: 'messenger-settings', icon: 'globe' }
+            ]
+          },
+          {
+            title: 'ПРОФІЛЬ',
+            items: [
+              { label: 'Мої предмети', section: 'profile-items', parentSection: 'messenger-settings', icon: 'cube' }
+            ]
+          }
+        ]
+      },
+      navGames: {
+        title: 'Ігри',
+        groups: [
+          {
+            title: 'ІГРОВИЙ ЦЕНТР',
+            items: [
+              { label: 'Мініігри', section: 'mini-games', icon: 'gamepad' },
+              { label: 'Мої предмети', section: 'profile-items', parentSection: 'profile', icon: 'cube' }
+            ]
+          },
+          {
+            title: 'АКАУНТ',
+            items: [
+              { label: 'Профіль', section: 'profile', parentSection: 'profile', icon: 'user' }
+            ]
+          }
+        ]
+      },
+      navProfile: {
+        title: 'Профіль',
+        groups: [
+          {
+            title: 'ОСНОВНЕ',
+            items: [
+              { label: 'Мій профіль', section: 'profile', parentSection: 'profile', icon: 'user' },
+              { label: 'Налаштування профілю', section: 'profile-settings', parentSection: 'profile', icon: 'gear' },
+              { label: 'Мої предмети', section: 'profile-items', parentSection: 'profile', icon: 'cube' }
+            ]
+          },
+          {
+            title: 'ПРИВАТНІСТЬ',
+            items: [
+              { label: 'Конфіденційність', section: 'privacy-settings', parentSection: 'profile', icon: 'shield' },
+              { label: 'Сповіщення', section: 'notifications-settings', parentSection: 'profile', icon: 'bell' }
+            ]
+          }
+        ]
+      }
+    };
+
+    return menuMap[targetNavId] || menuMap.navSettings;
+  }
+
+  getDesktopSecondaryMenuItemIcon(iconName = 'gear') {
+    const icons = {
+      gear: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1 1 0 0 1 0 1.4l-1.4 1.4a1 1 0 0 1-1.4 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1 1 0 0 1-1.4 0L4.3 17.8a1 1 0 0 1 0-1.4l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3.5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1 1 0 0 1 0-1.4l1.4-1.4a1 1 0 0 1 1.4 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1 1 0 0 1 1.4 0l1.4 1.4a1 1 0 0 1 0 1.4l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.2a1 1 0 0 0-.9.6Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+      users: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/><path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2"/><path d="M16 3.13a3 3 0 0 1 0 5.75" stroke="currentColor" stroke-width="2"/></svg>',
+      team: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="8" cy="7" r="3" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="7" r="3" stroke="currentColor" stroke-width="2"/><path d="M2 21a6 6 0 0 1 12 0" stroke="currentColor" stroke-width="2"/><path d="M10 21a6 6 0 0 1 12 0" stroke="currentColor" stroke-width="2"/></svg>',
+      sliders: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="6" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/><circle cx="11" cy="18" r="2" fill="currentColor"/></svg>',
+      credit: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/></svg>',
+      shield: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3Z" stroke="currentColor" stroke-width="2"/></svg>',
+      cube: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 2 3 7l9 5 9-5-9-5Z" stroke="currentColor" stroke-width="2"/><path d="M3 17l9 5 9-5" stroke="currentColor" stroke-width="2"/><path d="M3 12l9 5 9-5" stroke="currentColor" stroke-width="2"/></svg>',
+      user: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"></path></svg>',
+      key: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="3.5" stroke="currentColor" stroke-width="2"/><path d="M11 13l9-9M16 4l4 4M14 6l4 4" stroke="currentColor" stroke-width="2"/></svg>',
+      warning: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 3 2 21h20L12 3Z" stroke="currentColor" stroke-width="2"/><path d="M12 9v5" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>',
+      bell: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9Z" stroke="currentColor" stroke-width="2"/><path d="M13.7 21a2 2 0 0 1-3.4 0" stroke="currentColor" stroke-width="2"/></svg>',
+      chat: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" stroke="currentColor" stroke-width="2"/></svg>',
+      paint: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V96H40V56ZM40,112H96v88H40Zm176,88H112V112H216v88Z"></path></svg>',
+      globe: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" stroke="currentColor" stroke-width="2"/></svg>',
+      phone: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 11.2 19a19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7 12.8 12.8 0 0 0 .7 2.8 2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 12.8 12.8 0 0 0 2.8.7A2 2 0 0 1 22 16.9Z" stroke="currentColor" stroke-width="2"/></svg>',
+      gamepad: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="10" rx="4" stroke="currentColor" stroke-width="2"/><path d="M8 13h4M10 11v4M15.5 12.5h.01M18 14.5h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+      store: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M232,96a7.89,7.89,0,0,0-.3-2.2L217.35,43.6A16.07,16.07,0,0,0,202,32H54A16.07,16.07,0,0,0,38.65,43.6L24.31,93.8A7.89,7.89,0,0,0,24,96h0v16a40,40,0,0,0,16,32v72a8,8,0,0,0,8,8H208a8,8,0,0,0,8-8V144a40,40,0,0,0,16-32V96ZM54,48H202l11.42,40H42.61Zm50,56h48v8a24,24,0,0,1-48,0Zm-16,0v8a24,24,0,0,1-35.12,21.26,7.88,7.88,0,0,0-1.82-1.06A24,24,0,0,1,40,112v-8ZM200,208H56V151.2a40.57,40.57,0,0,0,8,.8,40,40,0,0,0,32-16,40,40,0,0,0,64,0,40,40,0,0,0,32,16,40.57,40.57,0,0,0,8-.8Zm4.93-75.8a8.08,8.08,0,0,0-1.8,1.05A24,24,0,0,1,168,112v-8h48v8A24,24,0,0,1,204.93,132.2Z"></path></svg>',
+      image: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"></path></svg>',
+      sparkles: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M240,96a8,8,0,0,1-8,8H216v16a8,8,0,0,1-16,0V104H184a8,8,0,0,1,0-16h16V72a8,8,0,0,1,16,0V88h16A8,8,0,0,1,240,96ZM144,56h8v8a8,8,0,0,0,16,0V56h8a8,8,0,0,0,0-16h-8V32a8,8,0,0,0-16,0v8h-8a8,8,0,0,0,0,16Zm72.77,97a8,8,0,0,1,1.43,8A96,96,0,1,1,95.07,37.8a8,8,0,0,1,10.6,9.06A88.07,88.07,0,0,0,209.14,150.33,8,8,0,0,1,216.77,153Zm-19.39,14.88c-1.79.09-3.59.14-5.38.14A104.11,104.11,0,0,1,88,64c0-1.79,0-3.59.14-5.38A80,80,0,1,0,197.38,167.86Z"></path></svg>',
+      badge: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M208,40H48A16,16,0,0,0,32,56v56c0,52.72,25.52,84.67,46.93,102.19,23.06,18.86,46,25.27,47,25.53a8,8,0,0,0,4.2,0c1-.26,23.91-6.67,47-25.53C198.48,196.67,224,164.72,224,112V56A16,16,0,0,0,208,40Zm0,72c0,37.07-13.66,67.16-40.6,89.42A129.3,129.3,0,0,1,128,223.62a128.25,128.25,0,0,1-38.92-21.81C61.82,179.51,48,149.3,48,112l0-56,160,0Z"></path></svg>',
+      code: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="m8 16-4-4 4-4M16 8l4 4-4 4M14 4l-4 16" stroke="currentColor" stroke-width="2"/></svg>'
+    };
+    return icons[iconName] || icons.gear;
+  }
+
+  hideDesktopChatsPane() {
+    if (window.innerWidth <= 768) return;
+    const chatsList = document.getElementById('chatsList');
+    if (chatsList) chatsList.classList.add('desktop-hidden');
+    const searchBox = document.querySelector('.search-box');
+    if (searchBox) searchBox.style.display = 'none';
+    const chatsListHeader = document.querySelector('.chats-list-header');
+    if (chatsListHeader) chatsListHeader.style.display = 'none';
+  }
+
+  renderDesktopSecondaryChatsList(listEl, targetNavId = 'navChats') {
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    listEl.classList.add('desktop-secondary-menu-list--chats');
+    listEl.dataset.menuMode = 'chats';
+
+    const sortedChats = this.getSortedChats();
+    if (!sortedChats.length) {
+      const emptyState = document.createElement('div');
+      emptyState.className = 'desktop-secondary-chat-empty';
+      emptyState.textContent = 'Чатів ще немає';
+      listEl.appendChild(emptyState);
+      return;
+    }
+
+    const listWrap = document.createElement('div');
+    listWrap.className = 'desktop-secondary-chat-list';
+
+    sortedChats.forEach((chat) => {
+      const lastMessage = chat.messages[chat.messages.length - 1];
+      const previewText = this.getMessagePreviewText(lastMessage);
+      const safePreviewText = this.escapeHtml(previewText || 'Немає повідомлень');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `desktop-secondary-chat-item ${this.currentChat?.id === chat.id ? 'active' : ''}`;
+      button.dataset.chatId = String(chat.id);
+
+      const initials = chat.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
+      const color = this.getContactColor(chat.name);
+
+      button.innerHTML = `
+        <div class="desktop-secondary-chat-avatar" style="background: ${color}">${initials}</div>
+        <div class="desktop-secondary-chat-info">
+          <span class="desktop-secondary-chat-name">${this.escapeHtml(chat.name)}</span>
+          <span class="desktop-secondary-chat-preview">${safePreviewText}</span>
+        </div>
+        <span class="desktop-secondary-chat-time">${lastMessage?.time || ''}</span>
+      `;
+
+      button.addEventListener('click', () => {
+        const targetButton = document.getElementById(targetNavId);
+        if (targetButton) this.setActiveNavButton(targetButton);
+        this.selectChat(chat.id);
+        this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      });
+
+      listWrap.appendChild(button);
+    });
+
+    listEl.appendChild(listWrap);
+  }
+
+  refreshDesktopSecondaryChatsListIfVisible() {
+    if (window.innerWidth <= 768) return;
+    const menuRoot = document.getElementById('desktopSecondaryMenu');
+    const listEl = document.getElementById('desktopSecondaryMenuList');
+    if (!menuRoot || !listEl || !menuRoot.classList.contains('active')) return;
+    if (listEl.dataset.menuMode !== 'chats') return;
+    this.renderDesktopSecondaryChatsList(listEl, 'navChats');
+  }
+
+  openChatsHomeView({ syncNav = true } = {}) {
+    const navChats = document.getElementById('navChats');
+    if (syncNav && navChats) this.setActiveNavButton(navChats);
+    this.showBottomNav();
+
+    const settingsContainer = document.getElementById('settingsContainer');
+    const settingsContainerMobile = document.getElementById('settingsContainerMobile');
+    const chatsList = document.getElementById('chatsList');
+    const chatContainer = document.getElementById('chatContainer');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const chatsListHeader = document.querySelector('.chats-list-header');
+    const sidebar = document.querySelector('.sidebar');
+    const profileMenu = document.querySelector('.profile-menu-wrapper');
+    const appEl = document.querySelector('.orion-app');
+
+    if (settingsContainer) {
+      settingsContainer.classList.remove('active');
+      settingsContainer.style.display = 'none';
+    }
+    if (settingsContainerMobile) {
+      settingsContainerMobile.classList.remove('active');
+      settingsContainerMobile.style.display = 'none';
+    }
+    if (chatsList) chatsList.classList.remove('hidden');
+    if (chatsListHeader) chatsListHeader.style.display = '';
+
+    const searchBox = document.querySelector('.search-box');
+    if (searchBox) searchBox.style.display = '';
+
+    if (sidebar) {
+      sidebar.style.display = '';
+      sidebar.classList.remove('compact');
+    }
+    if (profileMenu) profileMenu.classList.remove('floating-nav');
+
+    if (typeof this.stopVoiceRecording === 'function') {
+      this.stopVoiceRecording({ discard: true, silent: true });
+    }
+    if (typeof this.stopActiveVoicePlayback === 'function') {
+      this.stopActiveVoicePlayback();
+    }
+    this.currentChat = null;
+    this.updateChatHeader();
+    if (appEl) {
+      appEl.classList.remove('chat-open');
+      appEl.classList.remove('chat-active');
+      appEl.classList.remove('mobile-chat-open');
+    }
+    if (chatContainer) {
+      chatContainer.style.display = '';
+      chatContainer.classList.remove('active');
+    }
+    this.setMobilePageScrollLock(false);
+    if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+    this.restoreBottomNavToHome({ animate: false });
+    this.renderChatsList();
+  }
+
+  handleDesktopSecondaryMenuSelect(button, item, targetNavId) {
+    const list = document.getElementById('desktopSecondaryMenuList');
+    if (list) {
+      list.querySelectorAll('.desktop-secondary-menu-item').forEach((menuItem) => {
+        menuItem.classList.remove('active');
+      });
+    }
+    button.classList.add('active');
+
+    const targetButton = document.getElementById(targetNavId);
+    if (targetButton) {
+      this.setActiveNavButton(targetButton);
+    } else if (typeof this.syncDesktopNavRailActive === 'function') {
+      this.syncDesktopNavRailActive(targetNavId);
+    }
+    if (item.action === 'open-chats-home') {
+      this.openChatsHomeView({ syncNav: false });
+      return;
+    }
+    if (item.parentSection) this.settingsParentSection = item.parentSection;
+    if (item.section === 'messenger-settings') {
+      this.pendingShopCategory = item.shopCategory || 'all';
+    }
+    if (item.section) this.showSettings(item.section);
+  }
+
+  openDesktopSecondaryMenu(targetNavId, { activateFirst = true } = {}) {
+    if (window.innerWidth <= 768) return;
+    const menuRoot = document.getElementById('desktopSecondaryMenu');
+    const titleEl = document.getElementById('desktopSecondaryMenuTitle');
+    const listEl = document.getElementById('desktopSecondaryMenuList');
+    if (!menuRoot || !titleEl || !listEl) return;
+
+    const config = this.getDesktopSecondaryMenuConfig(targetNavId);
+    titleEl.textContent = config.title;
+    listEl.innerHTML = '';
+    listEl.classList.remove('desktop-secondary-menu-list--chats');
+    listEl.dataset.menuMode = 'default';
+
+    if (targetNavId === 'navChats') {
+      const targetButton = document.getElementById(targetNavId);
+      if (targetButton) this.setActiveNavButton(targetButton);
+      this.openChatsHomeView({ syncNav: false });
+      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      menuRoot.classList.add('active');
+      this.hideDesktopChatsPane();
+      return;
+    }
+
+    let firstButton = null;
+    let firstItem = null;
+    const groups = Array.isArray(config.groups) && config.groups.length
+      ? config.groups
+      : [{ title: '', items: config.items || [] }];
+
+    groups.forEach((group) => {
+      const groupEl = document.createElement('section');
+      groupEl.className = 'desktop-secondary-menu-group';
+
+      if (group.title) {
+        const groupTitle = document.createElement('h4');
+        groupTitle.className = 'desktop-secondary-menu-group-title';
+        groupTitle.textContent = group.title;
+        groupEl.appendChild(groupTitle);
+      }
+
+      const groupItemsEl = document.createElement('div');
+      groupItemsEl.className = 'desktop-secondary-menu-group-items';
+
+      (group.items || []).forEach((item) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'desktop-secondary-menu-item';
+        const iconWrap = document.createElement('span');
+        iconWrap.className = 'desktop-secondary-menu-item-icon';
+        iconWrap.innerHTML = this.getDesktopSecondaryMenuItemIcon(item.icon);
+
+        const labelWrap = document.createElement('span');
+        labelWrap.className = 'desktop-secondary-menu-item-label';
+        labelWrap.textContent = item.label;
+
+        button.append(iconWrap, labelWrap);
+
+        if (item.badge) {
+          const badge = document.createElement('span');
+          badge.className = 'desktop-secondary-menu-item-badge';
+          badge.textContent = String(item.badge);
+          button.appendChild(badge);
+        }
+        button.addEventListener('click', () => this.handleDesktopSecondaryMenuSelect(button, item, targetNavId));
+        groupItemsEl.appendChild(button);
+
+        if (!firstButton) {
+          firstButton = button;
+          firstItem = item;
+        }
+      });
+
+      groupEl.appendChild(groupItemsEl);
+      listEl.appendChild(groupEl);
+    });
+
+    menuRoot.classList.add('active');
+    this.hideDesktopChatsPane();
+
+    if (activateFirst && firstButton && firstItem) {
+      this.handleDesktopSecondaryMenuSelect(firstButton, firstItem, targetNavId);
+    }
+  }
+
+  closeDesktopRailAccountMenu() {
+    const menu = document.getElementById('desktopRailAccountMenu');
+    const button = document.getElementById('desktopRailAccountBtn');
+    if (!menu || !button) return;
+    menu.classList.remove('active');
+    button.setAttribute('aria-expanded', 'false');
+  }
+
+  toggleDesktopRailAccountMenu(forceOpen = null) {
+    const menu = document.getElementById('desktopRailAccountMenu');
+    const button = document.getElementById('desktopRailAccountBtn');
+    if (!menu || !button) return;
+    const shouldOpen = typeof forceOpen === 'boolean'
+      ? forceOpen
+      : !menu.classList.contains('active');
+    menu.classList.toggle('active', shouldOpen);
+    button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  }
+
+  async handleDesktopRailAccountMenuAction(action = '') {
+    if (!action) return;
+
+    if (action === 'profile') {
+      const navProfile = document.getElementById('navProfile');
+      if (navProfile) this.setActiveNavButton(navProfile);
+      if (window.innerWidth > 768) {
+        this.openDesktopSecondaryMenu('navProfile', { activateFirst: true });
+      } else {
+        this.showSettings('profile');
+      }
+      return;
+    }
+
+    if (action === 'switch-account') {
+      const navProfile = document.getElementById('navProfile');
+      if (navProfile) this.setActiveNavButton(navProfile);
+      this.settingsParentSection = 'profile';
+      this.showSettings('profile-settings');
+      if (window.innerWidth > 768) {
+        this.openDesktopSecondaryMenu('navProfile', { activateFirst: false });
+      }
+      return;
+    }
+
+    if (action === 'logout') {
+      const confirmed = await this.showConfirm('Ви дійсно хочете вийти з акаунту?', 'Вихід з акаунту');
+      if (!confirmed) return;
+
+      try {
+        localStorage.removeItem('orion_user');
+      } catch {
+        // Ignore storage failures and continue with in-memory reset.
+      }
+
+      this.user = this.loadUserProfile();
+      this.saveUserProfile({ ...this.user });
+
+      const navChats = document.getElementById('navChats');
+      if (navChats) this.setActiveNavButton(navChats);
+      this.openChatsHomeView({ syncNav: false });
+      if (window.innerWidth > 768) {
+        this.openDesktopSecondaryMenu('navChats', { activateFirst: true });
+      }
+
+      await this.showNotice('Виконано вихід з акаунту');
+    }
+  }
+
   setupEventListeners() {
     document.getElementById('newChatBtn').addEventListener('click', () => this.openNewChatModal());
     document.getElementById('closeModalBtn').addEventListener('click', () => this.closeNewChatModal());
@@ -52,6 +504,13 @@ export class ChatAppInteractionMethods {
     const navCalls = document.getElementById('navCalls');
     const navChats = document.getElementById('navChats');
     const navGames = document.getElementById('navGames');
+    const desktopRailItems = document.querySelectorAll('.desktop-nav-rail-item[data-nav-target]');
+    const desktopRailReload = document.getElementById('desktopRailReload');
+    const desktopRailAccountBtn = document.getElementById('desktopRailAccountBtn');
+    const desktopRailAccountMenu = document.getElementById('desktopRailAccountMenu');
+    const desktopRailAccountActions = desktopRailAccountMenu
+      ? desktopRailAccountMenu.querySelectorAll('[data-account-action]')
+      : [];
     const isSettingsScreenActive = () => {
       const desktopSettings = document.getElementById('settingsContainer');
       const mobileSettings = document.getElementById('settingsContainerMobile');
@@ -59,6 +518,56 @@ export class ChatAppInteractionMethods {
       const mobileActive = mobileSettings?.classList.contains('active') && mobileSettings?.style.display !== 'none';
       return Boolean(desktopActive || mobileActive);
     };
+
+    if (desktopRailItems.length) {
+      desktopRailItems.forEach((item) => {
+        item.addEventListener('click', () => {
+          this.closeDesktopRailAccountMenu();
+          const targetId = item.dataset.navTarget;
+          if (!targetId) return;
+          if (window.innerWidth > 768) {
+            this.openDesktopSecondaryMenu(targetId, { activateFirst: true });
+            return;
+          }
+          const targetButton = document.getElementById(targetId);
+          if (targetButton) targetButton.click();
+        });
+      });
+    }
+
+    if (desktopRailReload) {
+      desktopRailReload.addEventListener('click', () => {
+        this.closeDesktopRailAccountMenu();
+        window.location.reload();
+      });
+    }
+
+    if (desktopRailAccountBtn && desktopRailAccountMenu) {
+      desktopRailAccountBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.toggleDesktopRailAccountMenu();
+      });
+
+      desktopRailAccountMenu.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+
+      desktopRailAccountActions.forEach((item) => {
+        item.addEventListener('click', async () => {
+          const action = item.getAttribute('data-account-action') || '';
+          this.closeDesktopRailAccountMenu();
+          await this.handleDesktopRailAccountMenuAction(action);
+        });
+      });
+
+      document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (!desktopRailAccountMenu.classList.contains('active')) return;
+        if (desktopRailAccountBtn.contains(target) || desktopRailAccountMenu.contains(target)) return;
+        this.closeDesktopRailAccountMenu();
+      });
+    }
     
     if (navProfile) {
       navProfile.addEventListener('click', () => {
@@ -96,64 +605,12 @@ export class ChatAppInteractionMethods {
       navChats.addEventListener('click', () => {
         if (navChats.classList.contains('active') && this.currentChat === null && !isSettingsScreenActive()) return;
         this.setActiveNavButton(navChats);
-        this.showBottomNav();
-        // Show chats list and hide settings
-        const settingsContainer = document.getElementById('settingsContainer');
-        const settingsContainerMobile = document.getElementById('settingsContainerMobile');
-        const chatsList = document.getElementById('chatsList');
-        const chatContainer = document.getElementById('chatContainer');
-        const welcomeScreen = document.getElementById('welcomeScreen');
-        const chatsListHeader = document.querySelector('.chats-list-header');
-        const sidebar = document.querySelector('.sidebar');
-        const profileMenu = document.querySelector('.profile-menu-wrapper');
-        const appEl = document.querySelector('.orion-app');
-        
-        if (settingsContainer) {
-          settingsContainer.classList.remove('active');
-          settingsContainer.style.display = 'none';
-        }
-        if (settingsContainerMobile) {
-          settingsContainerMobile.classList.remove('active');
-          settingsContainerMobile.style.display = 'none';
-        }
-        if (chatsList) chatsList.classList.remove('hidden');
-        
-        // Show chats list header
-        if (chatsListHeader) chatsListHeader.style.display = '';
-        
-        // Show search box back
-        const searchBox = document.querySelector('.search-box');
-        if (searchBox) searchBox.style.display = '';
-
-        if (sidebar) {
-          sidebar.style.display = '';
-          sidebar.classList.remove('compact');
-        }
-        if (profileMenu) profileMenu.classList.remove('floating-nav');
-        
-        // Clear current chat and show welcome screen
-        if (typeof this.stopVoiceRecording === 'function') {
-          this.stopVoiceRecording({ discard: true, silent: true });
-        }
-        if (typeof this.stopActiveVoicePlayback === 'function') {
-          this.stopActiveVoicePlayback();
-        }
-        this.currentChat = null;
-        this.updateChatHeader();
-        if (appEl) {
-          appEl.classList.remove('chat-open');
-          appEl.classList.remove('chat-active');
-          appEl.classList.remove('mobile-chat-open');
-        }
-        if (chatContainer) {
-          chatContainer.style.display = '';
-          chatContainer.classList.remove('active');
-        }
-        this.setMobilePageScrollLock(false);
-        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
-        this.restoreBottomNavToHome({ animate: false });
-        this.renderChatsList();
+        this.openChatsHomeView({ syncNav: false });
       });
+    }
+
+    if (typeof this.syncDesktopNavRailActive === 'function') {
+      this.syncDesktopNavRailActive();
     }
     
     const sendBtn = document.getElementById('sendBtn');
@@ -236,6 +693,7 @@ export class ChatAppInteractionMethods {
     }
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        this.closeDesktopRailAccountMenu();
         this.closeAttachSheet();
         this.closeCameraCapture();
         this.closeContactProfileActionsMenu();
@@ -1163,6 +1621,7 @@ export class ChatAppInteractionMethods {
     });
 
     this.renderSidebarAvatarsStrip();
+    this.refreshDesktopSecondaryChatsListIfVisible();
   }
 
   getSortedChats() {

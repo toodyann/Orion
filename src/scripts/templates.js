@@ -64,105 +64,6 @@ export const settingsTemplates = {
 
       </div>
     </section>
-
-    <div class="profile-settings-card profile-settings-menu-card">
-      <div class="profile-section-heading">
-        <span class="profile-settings-kicker">Параметри</span>
-      </div>
-      <div class="settings-menu-list">
-        <div class="settings-menu-item" data-section="notifications">
-          <div class="settings-menu-icon settings-icon-notifications">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="settings-menu-label">
-            <span>Сповіщення</span>
-            <p class="settings-item-desc">Звуки, вібрація, попередній перегляд</p>
-          </div>
-          <span class="settings-menu-arrow">›</span>
-        </div>
-
-        <div class="settings-menu-item" data-section="privacy">
-          <div class="settings-menu-icon settings-icon-privacy">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="5" y="11" width="14" height="10" rx="2" stroke="white" stroke-width="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div class="settings-menu-label">
-            <span>Конфіденційність</span>
-            <p class="settings-item-desc">Статус онлайн, індикатор набору</p>
-          </div>
-          <span class="settings-menu-arrow">›</span>
-        </div>
-
-        <div class="settings-menu-item" data-section="messages">
-          <div class="settings-menu-icon settings-icon-messages">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="settings-menu-label">
-            <span>Повідомлення</span>
-            <p class="settings-item-desc">Відправка, автовідтворення медіа</p>
-          </div>
-          <span class="settings-menu-arrow">›</span>
-        </div>
-
-        <div class="settings-menu-item" data-section="appearance">
-          <div class="settings-menu-icon settings-icon-appearance">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/>
-              <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div class="settings-menu-label">
-            <span>Інтерфейс</span>
-            <p class="settings-item-desc">Розмір шрифту, тема, анімації</p>
-          </div>
-          <span class="settings-menu-arrow">›</span>
-        </div>
-
-        <div class="settings-menu-item" data-section="language">
-          <div class="settings-menu-icon settings-icon-language">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/>
-              <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div class="settings-menu-label">
-            <span>Мова</span>
-            <p class="settings-item-desc">Українська</p>
-          </div>
-          <span class="settings-menu-arrow">›</span>
-        </div>
-
-        <div class="settings-menu-item" data-section="profile-items">
-          <div class="settings-menu-icon settings-icon-appearance settings-icon-profile-items">
-            <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-              <path d="M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32l80.34,44-29.77,16.3-80.35-44ZM128,120,47.66,76l33.9-18.56,80.34,44ZM40,90l80,43.78v85.79L40,175.82Zm176,85.78h0l-80,43.79V133.82l32-17.51V152a8,8,0,0,0,16,0V107.55L216,90v85.77Z"></path>
-            </svg>
-          </div>
-          <div class="settings-menu-label">
-            <span>Мої предмети</span>
-            <p class="settings-item-desc">Керування інвентарем та продаж</p>
-          </div>
-          <span class="settings-menu-arrow">›</span>
-        </div>
-
-        <button type="button" class="settings-menu-item settings-menu-item-logout" id="profileLogoutStubBtn">
-          <div class="settings-menu-icon settings-icon-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
-              <path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L204.69,120H112a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,229.66,122.34Z"></path>
-            </svg>
-          </div>
-          <div class="settings-menu-label">
-            <span>Вийти з профілю</span>
-          </div>
-        </button>
-      </div>
-    </div>
   </div>
 </div>
   `.trim(),
@@ -816,6 +717,29 @@ export const settingsTemplates = {
     <div class="settings-buttons">
       <button class="btn btn-primary btn-save-messenger">Зберегти налаштування</button>
       <button class="btn btn-secondary">Скасувати</button>
+    </div>
+  </div>
+</div>
+  `.trim(),
+
+  'notifications-center': `
+<div class="settings-section" id="notifications-center">
+  <div class="calls-header">
+    <h2>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Сповіщення</span>
+    </h2>
+  </div>
+
+  <div class="calls-content">
+    <div class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h3>Непрочитаних повідомлень немає</h3>
+      <p>Коли з'являться нові повідомлення, вони будуть тут.</p>
     </div>
   </div>
 </div>

@@ -173,6 +173,7 @@
 }
 
 #messenger-settings .shop-header h2,
+#notifications-center .calls-header h2,
 #calls .calls-header h2,
 #profile-items .profile-items-header h2 {
   width: auto;
@@ -242,11 +243,17 @@ html.dark-theme #messenger-settings .shop-balance-island {
   background: transparent;
 }
 
+#notifications-center {
+  position: relative;
+  background: transparent;
+}
+
 #profile-items {
   position: relative;
   background: transparent;
 }
 
+#notifications-center .calls-header,
 #calls .calls-header,
 #profile-items .profile-items-header {
   position: absolute;
@@ -262,6 +269,7 @@ html.dark-theme #messenger-settings .shop-balance-island {
   pointer-events: none;
 }
 
+#notifications-center .calls-header h2,
 #calls .calls-header h2,
 #profile-items .profile-items-header h2 {
   display: inline-flex;
@@ -278,6 +286,7 @@ html.dark-theme #messenger-settings .shop-balance-island {
   pointer-events: auto;
 }
 
+#notifications-center .calls-header h2 svg,
 #calls .calls-header h2 svg,
 #profile-items .profile-items-header h2 svg {
   display: none;
@@ -310,6 +319,7 @@ html.dark-theme #messenger-settings .shop-balance-island {
   flex-shrink: 0;
 }
 
+html:not(.dark-theme) #notifications-center .calls-header h2,
 html:not(.dark-theme) #calls .calls-header h2,
 html:not(.dark-theme) #profile-items .profile-items-header h2 {
   border: none;
@@ -329,6 +339,7 @@ html:not(.dark-theme) #profile-items .profile-items-back-island {
   -webkit-backdrop-filter: blur(12px);
 }
 
+html.dark-theme #notifications-center .calls-header h2,
 html.dark-theme #calls .calls-header h2,
 html.dark-theme #profile-items .profile-items-header h2 {
   border: none;
@@ -351,6 +362,7 @@ html.dark-theme #profile-items .profile-items-back-island {
   background: transparent;
 }
 
+#notifications-center .calls-content,
 #calls .calls-content,
 #profile-items .profile-items-content {
   flex: 1;
@@ -494,6 +506,7 @@ html.dark-theme .settings-subsection .settings-subsection-back {
 }
 
 #messenger-settings .shop-header h2,
+#notifications-center .calls-header h2,
 #calls .calls-header h2,
 #profile-items .profile-items-header h2,
 .settings-subsection .settings-header .settings-subsection-title,
@@ -629,11 +642,11 @@ html.dark-theme .settings-subsection .settings-subsection-back {
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background-color: #34c759;
+  background-color: #111111;
 }
 
 .toggle-switch input:focus + .toggle-slider {
-  box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.2);
+  box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.2);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
@@ -646,7 +659,15 @@ html.dark-theme .settings-subsection .settings-subsection-back {
 }
 
 .dark-theme .toggle-switch input:checked + .toggle-slider {
-  background-color: #32d74b;
+  background-color: #ffffff;
+}
+
+.dark-theme .toggle-switch input:focus + .toggle-slider {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.22);
+}
+
+.dark-theme .toggle-switch input:checked + .toggle-slider:before {
+  background-color: #111111;
 }
 
 .form-select {
@@ -1283,7 +1304,7 @@ to {
 }
 
 .settings-icon-notifications {
-  background: linear-gradient(135deg, #ff9500, #ff6b00);
+  background: linear-gradient(135deg, #6b7280, #4b5563);
 }
 
 .settings-icon-privacy {
@@ -1714,7 +1735,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="sunset"] {
     ),
     radial-gradient(
       circle at 82% 12%,
-      rgba(245, 158, 11, 0.18),
+      rgba(107, 114, 128, 0.18),
       transparent 36%
     ),
     linear-gradient(
@@ -1754,7 +1775,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="sunbeam"] {
     ),
     radial-gradient(
       circle at 82% 12%,
-      rgba(251, 191, 36, 0.14),
+      rgba(148, 163, 184, 0.14),
       transparent 34%
     ),
     linear-gradient(
@@ -1809,7 +1830,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
     transparent 12%,
     rgba(255, 255, 255, 0.02) 28%,
     rgba(255, 255, 255, 0.3) 44%,
-    rgba(245, 158, 11, 0.18) 52%,
+    rgba(107, 114, 128, 0.18) 52%,
     rgba(255, 255, 255, 0.02) 64%,
     transparent 82%
   );
@@ -1822,7 +1843,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   background:
     radial-gradient(
       circle at 24% 44%,
-      rgba(245, 158, 11, 0.22),
+      rgba(107, 114, 128, 0.22),
       transparent 20%
     ),
     radial-gradient(
@@ -1845,7 +1866,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
     ),
     radial-gradient(
       circle at 80% 18%,
-      rgba(245, 158, 11, 0.24),
+      rgba(107, 114, 128, 0.24),
       transparent 28%
     ),
     radial-gradient(
@@ -1932,7 +1953,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   background: linear-gradient(
     135deg,
     var(--primary-color),
-    color-mix(in srgb, var(--primary-strong) 72%, #ffb547)
+    color-mix(in srgb, var(--primary-strong) 72%, #a3a3a3)
   );
   display: flex;
   align-items: center;
@@ -1972,10 +1993,10 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 
 .profile-avatar-large[data-avatar-frame="solar"]::after,
 .shop-item-preview-avatar[data-avatar-frame="solar"]::after {
-  border: 3px solid rgba(245, 158, 11, 0.85);
+  border: 3px solid rgba(107, 114, 128, 0.85);
   box-shadow:
-    0 0 0 3px rgba(245, 158, 11, 0.18),
-    0 0 18px rgba(245, 158, 11, 0.28);
+    0 0 0 3px rgba(107, 114, 128, 0.18),
+    0 0 18px rgba(107, 114, 128, 0.28);
 }
 
 .profile-avatar-large[data-avatar-frame="neon"]::after,
@@ -1998,7 +2019,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 .shop-item-preview-avatar[data-avatar-frame="ember"]::after {
   border: 3px solid rgba(251, 146, 60, 0.9);
   box-shadow:
-    0 0 0 3px rgba(249, 115, 22, 0.16),
+    0 0 0 3px rgba(75, 85, 99, 0.16),
     0 0 18px rgba(251, 146, 60, 0.28);
 }
 
@@ -2026,6 +2047,20 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 .profile-avatar-large[data-avatar-frame="mint"]::after,
 .profile-avatar-large[data-avatar-frame="shadow"]::after {
   box-shadow: none;
+}
+
+.shop-item-preview-avatar[data-avatar-frame="solar"]::after {
+  border: 3px solid rgba(245, 158, 11, 0.85);
+  box-shadow:
+    0 0 0 3px rgba(245, 158, 11, 0.18),
+    0 0 18px rgba(245, 158, 11, 0.28);
+}
+
+.shop-item-preview-avatar[data-avatar-frame="ember"]::after {
+  border: 3px solid rgba(251, 146, 60, 0.9);
+  box-shadow:
+    0 0 0 3px rgba(249, 115, 22, 0.16),
+    0 0 18px rgba(251, 146, 60, 0.28);
 }
 
 .profile-avatar-image {
@@ -2092,11 +2127,11 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 }
 
 .profile-badge-chip[data-profile-badge="spark"] {
-  color: #f59e0b;
+  color: #6b7280;
   background: linear-gradient(
     135deg,
-    rgba(245, 158, 11, 0.18),
-    rgba(251, 191, 36, 0.1)
+    rgba(107, 114, 128, 0.18),
+    rgba(148, 163, 184, 0.1)
   );
 }
 
@@ -2110,11 +2145,11 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 }
 
 .profile-badge-chip[data-profile-badge="crown"] {
-  color: #f97316;
+  color: #4b5563;
   background: linear-gradient(
     135deg,
-    rgba(249, 115, 22, 0.16),
-    rgba(245, 158, 11, 0.1)
+    rgba(75, 85, 99, 0.16),
+    rgba(107, 114, 128, 0.1)
   );
 }
 
@@ -2673,7 +2708,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   background: linear-gradient(
     135deg,
     var(--primary-color),
-    color-mix(in srgb, var(--primary-strong) 76%, #ffb547)
+    color-mix(in srgb, var(--primary-strong) 76%, #a3a3a3)
   );
   box-shadow:
     0 12px 24px color-mix(in srgb, var(--primary-color) 18%, transparent),
@@ -2847,7 +2882,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   background: linear-gradient(
     135deg,
     var(--primary-color),
-    color-mix(in srgb, var(--primary-strong) 76%, #ffb547)
+    color-mix(in srgb, var(--primary-strong) 76%, #a3a3a3)
   );
   color: #fff;
   box-shadow:
@@ -2909,7 +2944,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   background: linear-gradient(
     135deg,
     var(--primary-color),
-    color-mix(in srgb, var(--primary-strong) 76%, #ffb547)
+    color-mix(in srgb, var(--primary-strong) 76%, #a3a3a3)
   );
   box-shadow:
     0 12px 24px color-mix(in srgb, var(--primary-color) 18%, transparent),
@@ -3008,6 +3043,32 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   font-weight: 800;
 }
 
+/* Keep shop product previews colorful even in monochrome UI mode */
+.shop-item-preview-avatar[data-avatar-frame="solar"] {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+}
+
+.shop-item-preview-avatar[data-avatar-frame="neon"] {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+
+.shop-item-preview-avatar[data-avatar-frame="crystal"] {
+  background: linear-gradient(135deg, #d7e3f4, #ffffff);
+  color: #1f2937;
+}
+
+.shop-item-preview-avatar[data-avatar-frame="ember"] {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+}
+
+.shop-item-preview-avatar[data-avatar-frame="mint"] {
+  background: linear-gradient(135deg, #34d399, #22c55e);
+}
+
+.shop-item-preview-avatar[data-avatar-frame="shadow"] {
+  background: linear-gradient(135deg, #334155, #0f172a);
+}
+
 .shop-item-preview-card {
   width: min(100%, 148px);
   min-height: 86px;
@@ -3060,7 +3121,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
     ),
     radial-gradient(
       circle at 82% 12%,
-      rgba(245, 158, 11, 0.18),
+      rgba(251, 191, 36, 0.18),
       transparent 36%
     ),
     color-mix(in srgb, var(--bg-color) 86%, transparent);
@@ -3090,7 +3151,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
     ),
     radial-gradient(
       circle at 82% 12%,
-      rgba(251, 191, 36, 0.16),
+      rgba(249, 115, 22, 0.16),
       transparent 36%
     ),
     color-mix(in srgb, var(--bg-color) 86%, transparent);
@@ -3161,6 +3222,24 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 .shop-item-preview-badge-chip svg {
   width: 17px;
   height: 17px;
+}
+
+.shop-item-preview-badge-chip[data-profile-badge="spark"] {
+  color: #f59e0b;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.18),
+    rgba(251, 191, 36, 0.1)
+  );
+}
+
+.shop-item-preview-badge-chip[data-profile-badge="crown"] {
+  color: #f97316;
+  background: linear-gradient(
+    135deg,
+    rgba(249, 115, 22, 0.16),
+    rgba(245, 158, 11, 0.1)
+  );
 }
 
 .shop-item-title {
@@ -3414,7 +3493,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 .form-input:focus,
 .form-textarea:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.16);
 }
 
 .form-textarea {

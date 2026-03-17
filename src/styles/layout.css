@@ -46,7 +46,7 @@ html.dark-theme body {
   width: 100%;
   height: 100%;
   --keyboard-inset: 0px;
-  --sidebar-panel-width: 370px;
+  --sidebar-panel-width: 440px;
 }
 
 .app-header {
@@ -84,17 +84,11 @@ html:not(.dark-theme) .app-header {
   .orion-app.chat-active .app-header {
     position: absolute;
     top: 12px;
-    left: 370px;
+    left: var(--sidebar-panel-width, 370px);
     right: auto;
-    width: calc(100% - 370px);
+    width: calc(100% - var(--sidebar-panel-width, 370px));
     z-index: 30;
     pointer-events: none;
-  }
-
-  .orion-app.chat-open:has(.sidebar.compact) .app-header,
-  .orion-app.chat-active:has(.sidebar.compact) .app-header {
-    left: 88px;
-    width: calc(100% - 88px);
   }
 
   .orion-app.chat-open .app-header .app-header-left,
@@ -355,8 +349,8 @@ html:not(.dark-theme) .orion-app.chat-active #appChatInfo {
 }
 
 .sidebar {
-  width: 370px;
-  min-width: 260px;
+  width: var(--sidebar-panel-width, 440px);
+  min-width: 320px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -461,7 +455,7 @@ html:not(.dark-theme) .orion-app.chat-active #appChatInfo {
 
 @media (min-width: 769px) {
   .orion-app:has(.sidebar.compact) {
-    --sidebar-panel-width: 88px;
+    --sidebar-panel-width: 160px;
   }
 
   :root {
@@ -622,7 +616,7 @@ html:not(.dark-theme) .orion-app.chat-active #appChatInfo {
   font-size: 10px;
   font-weight: 600;
   color: #fff;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, #6b7280, #4b5563);
   flex-shrink: 0;
   background-size: cover;
   background-position: center;
@@ -1136,7 +1130,7 @@ html:not(.dark-theme) .orion-app.chat-active #appChatInfo {
     background: var(--primary-color) !important;
     border: 1px solid var(--secondary-color) !important;
     transform: none !important;
-    box-shadow: 0 8px 18px rgba(245, 158, 11, 0.22) !important;
+    box-shadow: 0 8px 18px rgba(107, 114, 128, 0.22) !important;
   }
 
   .bottom-nav-indicator {

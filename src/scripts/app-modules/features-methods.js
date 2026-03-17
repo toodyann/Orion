@@ -35,6 +35,13 @@ export class ChatAppFeaturesMethods {
       minPrice: minCatalogPrice,
       maxPrice: maxCatalogPrice
     };
+    const presetCategory = ['all', 'frame', 'aura', 'motion', 'badge'].includes(this.pendingShopCategory)
+      ? this.pendingShopCategory
+      : null;
+    if (presetCategory) {
+      filterState.category = presetCategory;
+      this.pendingShopCategory = null;
+    }
     const shouldOpenByDefault = false;
     balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
     if (islandBalanceEl) {
@@ -1433,12 +1440,12 @@ export class ChatAppFeaturesMethods {
 
   handleAvatarChange(settingsContainer) {
     const colors = [
-      'linear-gradient(135deg, #ff9500, #ff6b6b)',
+      'linear-gradient(135deg, #6b7280, #9ca3af)',
       'linear-gradient(135deg, #667eea, #764ba2)',
       'linear-gradient(135deg, #f093fb, #f5576c)',
       'linear-gradient(135deg, #4facfe, #00f2fe)',
       'linear-gradient(135deg, #43e97b, #38f9d7)',
-      'linear-gradient(135deg, #fa709a, #fee140)',
+      'linear-gradient(135deg, #fa709a, #a3a3a3)',
       'linear-gradient(135deg, #30cfd0, #330867)',
       'linear-gradient(135deg, #a8edea, #fed6e3)'
     ];

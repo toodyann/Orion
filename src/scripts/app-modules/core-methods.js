@@ -38,7 +38,7 @@ export class ChatAppCoreMethods {
       status: 'online',
       bio: 'Вітаю!',
       birthDate: '',
-      avatarColor: 'linear-gradient(135deg, #ff9500, #ff6b6b)',
+      avatarColor: 'linear-gradient(135deg, #6b7280, #9ca3af)',
       avatarImage: '',
       equippedAvatarFrame: '',
       equippedProfileAura: '',
@@ -396,13 +396,13 @@ export class ChatAppCoreMethods {
 
   updateProfileMenuButton() {
     const navProfile = document.getElementById('navProfile');
-    if (!navProfile) return;
-
-    const avatarEl = navProfile.querySelector('.nav-avatar');
+    const avatarEl = navProfile?.querySelector('.nav-avatar');
+    const railAvatarEl = document.getElementById('desktopRailAccountAvatar');
 
     const name = this.user?.name || 'Користувач Orion';
 
     this.applyUserAvatarToElement(avatarEl, name);
+    this.applyUserAvatarToElement(railAvatarEl, name);
   }
 
   getInitials(name) {
@@ -417,12 +417,12 @@ export class ChatAppCoreMethods {
 
   getRandomAvatarGradient() {
     const colors = [
-      'linear-gradient(135deg, #ff9500, #ff6b6b)',
+      'linear-gradient(135deg, #6b7280, #9ca3af)',
       'linear-gradient(135deg, #667eea, #764ba2)',
       'linear-gradient(135deg, #f093fb, #f5576c)',
       'linear-gradient(135deg, #4facfe, #00f2fe)',
       'linear-gradient(135deg, #43e97b, #38f9d7)',
-      'linear-gradient(135deg, #fa709a, #fee140)',
+      'linear-gradient(135deg, #fa709a, #a3a3a3)',
       'linear-gradient(135deg, #30cfd0, #330867)',
       'linear-gradient(135deg, #a8edea, #fed6e3)'
     ];
@@ -704,6 +704,9 @@ export class ChatAppCoreMethods {
     this.setupMobileSwipeBack();
     this.setupBottomNavReveal();
     this.setMobilePageScrollLock(false);
+    if (window.innerWidth > 768 && typeof this.openDesktopSecondaryMenu === 'function') {
+      this.openDesktopSecondaryMenu('navChats', { activateFirst: true });
+    }
     if (window.innerWidth <= 768) {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
