@@ -1803,7 +1803,7 @@ html:not(.dark-theme) .alert-overlay {
   position: fixed;
   min-width: 168px;
   max-width: 192px;
-  background: color-mix(in srgb, var(--bg-color) 86%, rgba(8, 12, 22, 0.92));
+  background: color-mix(in srgb, var(--bg-color) 96%, rgba(8, 12, 22, 0.98));
   border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
   border-radius: 14px;
   box-shadow:
@@ -1937,7 +1937,9 @@ html:not(.dark-theme) .alert-overlay {
 
 .chat-list-menu {
   position: fixed;
-  min-width: 160px;
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
   background: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -1961,6 +1963,9 @@ html:not(.dark-theme) .alert-overlay {
 .chat-list-menu.active {
   visibility: visible;
   pointer-events: auto;
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: saturate(1);
@@ -1976,15 +1981,30 @@ html:not(.dark-theme) .alert-overlay {
 
 .chat-list-menu-item {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-align: left;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-primary);
   border-radius: 4px;
   transition: all 0.2s ease;
+}
+
+.chat-list-menu-item svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  opacity: 0.9;
+}
+
+.chat-list-menu-item-label {
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .chat-list-menu-item:hover {

@@ -1576,6 +1576,7 @@ html.dark-theme .bottom-nav-indicator {
   .desktop-nav-rail {
     padding: 0 !important;
     gap: 0 !important;
+    overflow: visible !important;
   }
 
   .sidebar:has(.desktop-secondary-menu.active) .desktop-nav-rail {
@@ -1666,6 +1667,7 @@ html.dark-theme .bottom-nav-indicator {
     display: flex;
     justify-content: center;
     position: relative;
+    overflow: visible;
   }
 
   .desktop-nav-rail-account-btn {
@@ -1724,7 +1726,11 @@ html.dark-theme .bottom-nav-indicator {
     background: rgba(8, 8, 8, 0.96);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
     backdrop-filter: blur(8px);
-    z-index: 20;
+    z-index: 120;
+  }
+
+  .sidebar:has(#desktopRailAccountMenu.active) {
+    overflow: visible !important;
   }
 
   .desktop-nav-rail-account-menu.active {

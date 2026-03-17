@@ -1660,7 +1660,12 @@ export class ChatAppInteractionMethods {
     const chat = this.chats.find(c => c.id === chatId);
     if (!chat) return;
 
-    pinBtn.textContent = chat.isPinned ? 'Відкріпити' : 'Закріпити';
+    const pinLabel = pinBtn.querySelector('.chat-list-menu-item-label');
+    if (pinLabel) {
+      pinLabel.textContent = chat.isPinned ? 'Відкріпити' : 'Закріпити';
+    } else {
+      pinBtn.textContent = chat.isPinned ? 'Відкріпити' : 'Закріпити';
+    }
 
     if (this.chatListMenuCloseTimer) {
       clearTimeout(this.chatListMenuCloseTimer);
