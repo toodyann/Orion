@@ -1943,19 +1943,35 @@ html:not(.dark-theme) .alert-overlay {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 4px;
-  display: none;
+  display: block;
   z-index: 1001;
-  transform-origin: center;
-  transition: all 0.2s ease;
+  transform-origin: var(--chat-list-menu-origin-x, 50%)
+    var(--chat-list-menu-origin-y, 0%);
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.18s ease;
+  visibility: hidden;
+  pointer-events: none;
   opacity: 0;
-  transform: scale(0.85) translateY(-10px);
+  transform: translateY(8px) scale(0.94);
+  filter: saturate(0.9);
 }
 
 .chat-list-menu.active {
-  display: block;
+  visibility: visible;
+  pointer-events: auto;
   opacity: 1;
-  transform: scale(1) translateY(0);
-  animation: popupAppear 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(0) scale(1);
+  filter: saturate(1);
+}
+
+.chat-list-menu.is-closing {
+  visibility: visible;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+  filter: saturate(0.92);
 }
 
 .chat-list-menu-item {
@@ -1973,17 +1989,6 @@ html:not(.dark-theme) .alert-overlay {
 
 .chat-list-menu-item:hover {
   background-color: var(--bg-secondary);
-}
-
-@keyframes popupAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.85) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 
 .attach-sheet-overlay {

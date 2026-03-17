@@ -231,6 +231,11 @@ export class ChatAppInteractionMethods {
         this.renderDesktopSecondaryChatsList(listEl, targetNavId);
       });
 
+      button.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        this.openChatListMenu(button, e.clientX, e.clientY);
+      });
+
       listWrap.appendChild(button);
     });
 
@@ -336,6 +341,7 @@ export class ChatAppInteractionMethods {
     const titleEl = document.getElementById('desktopSecondaryMenuTitle');
     const listEl = document.getElementById('desktopSecondaryMenuList');
     if (!menuRoot || !titleEl || !listEl) return;
+    menuRoot.dataset.menuRoot = targetNavId || '';
 
     const config = this.getDesktopSecondaryMenuConfig(targetNavId);
     titleEl.textContent = config.title;
@@ -484,6 +490,10 @@ export class ChatAppInteractionMethods {
 
   setupEventListeners() {
     document.getElementById('newChatBtn').addEventListener('click', () => this.openNewChatModal());
+    const desktopSecondaryMenuNewChat = document.getElementById('desktopSecondaryMenuNewChat');
+    if (desktopSecondaryMenuNewChat) {
+      desktopSecondaryMenuNewChat.addEventListener('click', () => this.openNewChatModal());
+    }
     document.getElementById('closeModalBtn').addEventListener('click', () => this.closeNewChatModal());
     document.getElementById('cancelBtn').addEventListener('click', () => this.closeNewChatModal());
     document.getElementById('confirmBtn').addEventListener('click', () => this.createNewChat());
@@ -1649,23 +1659,82 @@ export class ChatAppInteractionMethods {
     const chatId = Number(item.dataset.chatId);
     const chat = this.chats.find(c => c.id === chatId);
     if (!chat) return;
-    this.chatListMenuState = { id: chatId, name: chat.name };
 
     pinBtn.textContent = chat.isPinned ? 'Відкріпити' : 'Закріпити';
 
-    const closeMenu = () => {
-      menu.classList.remove('active');
-      menu.setAttribute('aria-hidden', 'true');
-      this.chatListMenuState = { id: null, name: '' };
+    if (this.chatListMenuCloseTimer) {
+      clearTimeout(this.chatListMenuCloseTimer);
+      this.chatListMenuCloseTimer = null;
+    }
+
+    const detachMenuListeners = () => {
+      if (this.chatListMenuDocClickHandler) {
+        document.removeEventListener('click', this.chatListMenuDocClickHandler);
+        this.chatListMenuDocClickHandler = null;
+      }
+      if (this.chatListMenuEscHandler) {
+        document.removeEventListener('keydown', this.chatListMenuEscHandler);
+        this.chatListMenuEscHandler = null;
+      }
+      if (this.chatListMenuScrollHandler) {
+        window.removeEventListener('scroll', this.chatListMenuScrollHandler);
+        this.chatListMenuScrollHandler = null;
+      }
+      if (this.chatListMenuResizeHandler) {
+        window.removeEventListener('resize', this.chatListMenuResizeHandler);
+        this.chatListMenuResizeHandler = null;
+      }
     };
 
+    const finishCloseMenu = () => {
+      menu.classList.remove('active', 'is-closing');
+      menu.setAttribute('aria-hidden', 'true');
+      this.chatListMenuState = { id: null, name: '' };
+      detachMenuListeners();
+    };
+
+    const closeMenu = () => {
+      if (this.chatListMenuCloseTimer) {
+        clearTimeout(this.chatListMenuCloseTimer);
+        this.chatListMenuCloseTimer = null;
+      }
+
+      const isVisible = menu.classList.contains('active') || menu.classList.contains('is-closing');
+      if (!isVisible) {
+        finishCloseMenu();
+        return;
+      }
+
+      menu.classList.remove('active');
+      menu.classList.add('is-closing');
+      menu.setAttribute('aria-hidden', 'true');
+
+      this.chatListMenuCloseTimer = window.setTimeout(() => {
+        this.chatListMenuCloseTimer = null;
+        finishCloseMenu();
+      }, 170);
+    };
+
+    finishCloseMenu();
+    this.chatListMenuState = { id: chatId, name: chat.name };
+    this.chatListMenuOpenedAt = performance.now();
+
+    menu.style.left = '0px';
+    menu.style.top = '0px';
     menu.classList.add('active');
     menu.setAttribute('aria-hidden', 'false');
+
     const rect = menu.getBoundingClientRect();
     const x = Math.min(clientX, window.innerWidth - rect.width - 8);
     const y = Math.min(clientY, window.innerHeight - rect.height - 8);
-    menu.style.left = `${Math.max(8, x)}px`;
-    menu.style.top = `${Math.max(8, y)}px`;
+    const left = Math.max(8, x);
+    const top = Math.max(8, y);
+    const originX = Math.max(0, Math.min(100, ((clientX - left) / Math.max(1, rect.width)) * 100));
+    const originY = Math.max(0, Math.min(100, ((clientY - top) / Math.max(1, rect.height)) * 100));
+    menu.style.setProperty('--chat-list-menu-origin-x', `${originX}%`);
+    menu.style.setProperty('--chat-list-menu-origin-y', `${originY}%`);
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
 
     pinBtn.onclick = () => {
       chat.isPinned = !chat.isPinned;
@@ -1685,19 +1754,22 @@ export class ChatAppInteractionMethods {
       closeMenu();
     };
 
-    document.addEventListener('click', function onDocClick(e) {
-      if (!menu.contains(e.target)) {
-        closeMenu();
-        document.removeEventListener('click', onDocClick);
-      }
-    });
+    this.chatListMenuDocClickHandler = (e) => {
+      const openedAgo = performance.now() - (this.chatListMenuOpenedAt || 0);
+      if (openedAgo < 140) return;
+      if (e instanceof MouseEvent && e.button !== 0) return;
+      if (!menu.contains(e.target)) closeMenu();
+    };
+    this.chatListMenuEscHandler = (e) => {
+      if (e.key === 'Escape') closeMenu();
+    };
+    this.chatListMenuScrollHandler = () => closeMenu();
+    this.chatListMenuResizeHandler = () => closeMenu();
 
-    document.addEventListener('keydown', function onEsc(e) {
-      if (e.key === 'Escape') {
-        closeMenu();
-        document.removeEventListener('keydown', onEsc);
-      }
-    });
+    document.addEventListener('click', this.chatListMenuDocClickHandler);
+    document.addEventListener('keydown', this.chatListMenuEscHandler);
+    window.addEventListener('scroll', this.chatListMenuScrollHandler, { passive: true });
+    window.addEventListener('resize', this.chatListMenuResizeHandler);
   }
 
   openAddToGroupModal(memberName) {
@@ -2274,13 +2346,6 @@ export class ChatAppInteractionMethods {
     };
 
     messagesContainer.addEventListener('contextmenu', (e) => {
-      // Toggle behavior: repeated right click closes an already opened menu.
-      if (menu.classList.contains('active') && !menu.classList.contains('is-closing')) {
-        e.preventDefault();
-        closeMenu();
-        return;
-      }
-
       const messageEl = e.target.closest('.message');
       if (!messageEl) return;
       e.preventDefault();

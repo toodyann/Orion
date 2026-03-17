@@ -2758,3 +2758,192 @@
     width: 100% !important;
   }
 }
+
+@media (max-width: 768px) {
+  /* Authoritative mobile section layout: consistent headers and content spacing */
+  #settingsContainerMobile {
+    background: var(--bg-color) !important;
+    padding-bottom: calc(
+      var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom)
+    ) !important;
+  }
+
+  #settingsContainerMobile .settings-section,
+  #settingsContainerMobile #messenger-settings,
+  #settingsContainerMobile #calls,
+  #settingsContainerMobile #notifications-center,
+  #settingsContainerMobile #profile-items,
+  #settingsContainerMobile #profile-settings,
+  #settingsContainerMobile #mini-games {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100% !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile .settings-header,
+  #settingsContainerMobile .shop-header,
+  #settingsContainerMobile .calls-header,
+  #settingsContainerMobile .profile-items-header {
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 24 !important;
+    min-height: 52px !important;
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: color-mix(in srgb, var(--bg-color) 92%, transparent) !important;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--border-color) 72%, transparent) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    pointer-events: auto !important;
+  }
+
+  #settingsContainerMobile .settings-header button,
+  #settingsContainerMobile .settings-subsection .settings-header .settings-subsection-back,
+  #settingsContainerMobile #profile-items .profile-items-back-island {
+    position: absolute !important;
+    left: 8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile .settings-subsection .settings-header .settings-subsection-title,
+  #settingsContainerMobile #messenger-settings .shop-header h2,
+  #settingsContainerMobile #calls .calls-header h2,
+  #settingsContainerMobile #notifications-center .calls-header h2,
+  #settingsContainerMobile #profile-items .profile-items-header h2,
+  #settingsContainerMobile #profile-settings .settings-header h2 {
+    position: static !important;
+    width: auto !important;
+    max-width: calc(100% - 88px) !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    transform: none !important;
+    font-size: 17px !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+    pointer-events: none !important;
+  }
+
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile #messenger-settings .shop-content,
+  #settingsContainerMobile #calls .calls-content,
+  #settingsContainerMobile #notifications-center .calls-content,
+  #settingsContainerMobile #profile-items .profile-items-content {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px !important;
+    padding-bottom: calc(
+      var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom) + 22px
+    ) !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-balance-island {
+    position: static !important;
+    width: fit-content !important;
+    margin: 8px 12px 0 auto !important;
+    top: auto !important;
+    right: auto !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-item-card {
+    padding: 10px !important;
+    border-radius: 12px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-item-preview {
+    min-height: 74px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-item-preview-avatar {
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 18px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-item-title {
+    font-size: 17px !important;
+    line-height: 1.2 !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-item-description {
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+  }
+
+  #settingsContainerMobile #calls .empty-state,
+  #settingsContainerMobile #notifications-center .empty-state {
+    min-height: calc(100dvh - 210px) !important;
+    justify-content: center !important;
+    padding: 20px 12px !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (max-width: 430px) {
+  #settingsContainerMobile #messenger-settings .shop-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile: remove global app header and reclaim top space */
+  :root {
+    --app-header-height: 0px !important;
+    --mobile-chat-header-offset: env(safe-area-inset-top) !important;
+  }
+
+  .orion-app.chat-active,
+  .orion-app:has(#chatContainer.active) {
+    --app-header-height: 0px !important;
+    --mobile-chat-header-offset: env(safe-area-inset-top) !important;
+  }
+
+  .app-header {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Mobile nav buttons: no borders in any state */
+  .bottom-nav-item,
+  .bottom-nav-item:hover,
+  .bottom-nav-item:active,
+  .bottom-nav-item.active,
+  html.dark-theme .bottom-nav-item,
+  html.dark-theme .bottom-nav-item:hover,
+  html.dark-theme .bottom-nav-item.active,
+  html:not(.dark-theme) .bottom-nav-item,
+  html:not(.dark-theme) .bottom-nav-item:hover,
+  html:not(.dark-theme) .bottom-nav-item.active {
+    border: none !important;
+    border-color: transparent !important;
+    border-left-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
