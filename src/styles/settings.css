@@ -175,7 +175,8 @@
 #messenger-settings .shop-header h2,
 #notifications-center .calls-header h2,
 #calls .calls-header h2,
-#profile-items .profile-items-header h2 {
+#profile-items .profile-items-header h2,
+#wallet .calls-header h2 {
   width: auto;
   max-width: calc(100% - 72px);
   box-sizing: border-box;
@@ -188,6 +189,10 @@
 }
 
 #messenger-settings .shop-content {
+  padding-top: 78px !important;
+}
+
+#wallet .wallet-content {
   padding-top: 78px !important;
 }
 
@@ -253,9 +258,15 @@ html.dark-theme #messenger-settings .shop-balance-island {
   background: transparent;
 }
 
+#wallet {
+  position: relative;
+  background: transparent;
+}
+
 #notifications-center .calls-header,
 #calls .calls-header,
-#profile-items .profile-items-header {
+#profile-items .profile-items-header,
+#wallet .calls-header {
   position: absolute;
   top: 0;
   left: 0;
@@ -271,7 +282,8 @@ html.dark-theme #messenger-settings .shop-balance-island {
 
 #notifications-center .calls-header h2,
 #calls .calls-header h2,
-#profile-items .profile-items-header h2 {
+#profile-items .profile-items-header h2,
+#wallet .calls-header h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -288,7 +300,8 @@ html.dark-theme #messenger-settings .shop-balance-island {
 
 #notifications-center .calls-header h2 svg,
 #calls .calls-header h2 svg,
-#profile-items .profile-items-header h2 svg {
+#profile-items .profile-items-header h2 svg,
+#wallet .calls-header h2 svg {
   display: none;
   flex-shrink: 0;
 }
@@ -321,7 +334,8 @@ html.dark-theme #messenger-settings .shop-balance-island {
 
 html:not(.dark-theme) #notifications-center .calls-header h2,
 html:not(.dark-theme) #calls .calls-header h2,
-html:not(.dark-theme) #profile-items .profile-items-header h2 {
+html:not(.dark-theme) #profile-items .profile-items-header h2,
+html:not(.dark-theme) #wallet .calls-header h2 {
   border: none;
   background: transparent;
   box-shadow: none;
@@ -341,7 +355,8 @@ html:not(.dark-theme) #profile-items .profile-items-back-island {
 
 html.dark-theme #notifications-center .calls-header h2,
 html.dark-theme #calls .calls-header h2,
-html.dark-theme #profile-items .profile-items-header h2 {
+html.dark-theme #profile-items .profile-items-header h2,
+html.dark-theme #wallet .calls-header h2 {
   border: none;
   background: transparent;
   box-shadow: none;
@@ -364,7 +379,8 @@ html.dark-theme #profile-items .profile-items-back-island {
 
 #notifications-center .calls-content,
 #calls .calls-content,
-#profile-items .profile-items-content {
+#profile-items .profile-items-content,
+#wallet .wallet-content {
   flex: 1;
   width: 100%;
   overflow-y: auto;
@@ -509,6 +525,7 @@ html.dark-theme .settings-subsection .settings-subsection-back {
 #notifications-center .calls-header h2,
 #calls .calls-header h2,
 #profile-items .profile-items-header h2,
+#wallet .calls-header h2,
 .settings-subsection .settings-header .settings-subsection-title,
 #profile-settings .settings-header h2 {
   border: none !important;
@@ -1250,6 +1267,122 @@ to {
   font-size: 14px;
   color: var(--text-secondary);
   max-width: 280px;
+}
+
+.wallet-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 24px calc(var(--bottom-nav-height, 72px) + 44px);
+  box-sizing: border-box;
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--primary-color) 10%, transparent),
+      transparent 30%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-secondary) 76%, transparent),
+      transparent 42%
+    );
+}
+
+.wallet-history-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--surface-soft) 90%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.wallet-history-card {
+  padding: 10px;
+}
+
+.wallet-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 6px 10px;
+}
+
+.wallet-history-head h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.wallet-history-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.wallet-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wallet-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-inner);
+  border: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 84%, transparent);
+}
+
+.wallet-history-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wallet-history-item-main strong {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.wallet-history-item-main span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.wallet-history-item-amount {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.wallet-history-item.is-income .wallet-history-item-amount {
+  color: #7ae6a4;
+}
+
+.wallet-history-item.is-expense .wallet-history-item-amount {
+  color: #ff7f7f;
+}
+
+.wallet-history-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.wallet-history-empty strong {
+  color: var(--text-primary);
+  font-size: 15px;
 }
 
 .settings-menu-list {
@@ -2637,7 +2770,8 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
     );
 }
 
-.shop-balance-card {
+.shop-balance-card,
+.wallet-balance-card {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2654,7 +2788,8 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
     inset 0 1px 0 rgba(255, 255, 255, 0.34);
 }
 
-.shop-kicker {
+.shop-kicker,
+.wallet-balance-kicker {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -2664,17 +2799,27 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 
 .shop-balance-meta {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
-.shop-balance-label {
+.shop-balance-meta > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.shop-balance-label,
+.wallet-balance-label {
   font-size: 13px;
   color: var(--text-secondary);
 }
 
-.shop-balance-value {
+.shop-balance-value,
+.wallet-balance-value {
+  display: block;
   margin-top: 4px;
   font-size: clamp(26px, 4vw, 40px);
   font-weight: 800;
@@ -2685,6 +2830,7 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 }
 
 .shop-balance-badge {
+  margin-left: auto;
   padding: 8px 12px;
   border-radius: var(--radius-control);
   border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent);
@@ -2695,7 +2841,8 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   white-space: nowrap;
 }
 
-.shop-balance-note {
+.shop-balance-note,
+.wallet-balance-note {
   margin: 0;
   font-size: 13px;
   line-height: 1.55;
@@ -4148,6 +4295,11 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  line-height: 1.45;
+  padding: 24px;
+  white-space: pre-line;
+  z-index: 3;
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
@@ -4264,21 +4416,25 @@ html:not(.dark-theme) .mini-game-canvas {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
+  width: 100%;
+  height: 100%;
   gap: 10px;
-  padding: 12px;
+  padding: 14px;
   box-sizing: border-box;
 }
 
 .grid-2048 .tile {
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
   color: var(--text-primary);
   font-weight: 700;
-  font-size: 18px;
+  font-size: clamp(16px, 2vw, 24px);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border-color) 72%, transparent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .grid-2048 .value-2 {
@@ -4305,6 +4461,16 @@ html:not(.dark-theme) .mini-game-canvas {
 .grid-2048 .value-1024,
 .grid-2048 .value-2048 {
   color: #fff;
+}
+
+.grid-2048 .tile.value-high {
+  font-size: clamp(14px, 1.7vw, 20px);
+}
+
+.grid-2048 .tile.value-super {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 8px 18px rgba(0, 0, 0, 0.22);
 }
 
 .grid-memory {

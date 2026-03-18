@@ -783,7 +783,7 @@ export const settingsTemplates = {
 
       <div class="mini-game-stage">
         <div class="mini-game-score-current">
-          Очки: <strong id="signalHuntScore">0</strong> · Час: <strong id="signalHuntTime">30</strong>с
+          Очки: <strong id="signalHuntScore">0</strong> · Час: <strong id="signalHuntTime">30</strong>с · Зароблено: <strong id="signalHuntEarned">0,00</strong>
         </div>
 
         <div class="mini-game-canvas signal-hunt-canvas" id="signalHuntCanvas" aria-live="polite">
@@ -798,6 +798,28 @@ export const settingsTemplates = {
         <div class="mini-game-controls">
           <button class="btn btn-primary mini-game-btn" id="signalHuntStart" type="button">Старт</button>
           <span class="mini-game-hint">Клікай по іконці сигналу, поки вона не зникла.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="mini-game-panel mini-game-view" data-mini-game-panel="grid2048">
+      <div class="mini-game-view-header">
+        <span class="mini-game-view-title">Orion 2048</span>
+        <span class="mini-game-view-score">Рекорд: <strong id="grid2048Best">0</strong></span>
+      </div>
+
+      <div class="mini-game-stage">
+        <div class="mini-game-score-current">
+          Рахунок: <strong id="grid2048Score">0</strong> · Зароблено: <strong id="grid2048Earned">0,00</strong>
+        </div>
+
+        <div class="mini-game-canvas" id="grid2048Canvas" aria-live="polite">
+          <div class="grid-2048" id="grid2048Board"></div>
+        </div>
+
+        <div class="mini-game-controls">
+          <button class="btn btn-primary mini-game-btn" id="grid2048Restart" type="button">Нова гра</button>
+          <span class="mini-game-hint">Керування: ← ↑ → ↓ або свайпи по полю.</span>
         </div>
       </div>
     </section>
@@ -840,6 +862,41 @@ export const settingsTemplates = {
       <button class="btn btn-primary btn-save-messenger">Зберегти налаштування</button>
       <button class="btn btn-secondary">Скасувати</button>
     </div>
+  </div>
+</div>
+  `.trim(),
+
+  'wallet': `
+<div class="settings-section" id="wallet">
+  <div class="calls-header">
+    <h2>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+        <path d="M216,64H56a8,8,0,0,1,0-16H192a8,8,0,0,0,0-16H56A24,24,0,0,0,32,56V184a24,24,0,0,0,24,24H216a16,16,0,0,0,16-16V80A16,16,0,0,0,216,64Zm0,128H56a8,8,0,0,1-8-8V78.63A23.84,23.84,0,0,0,56,80H216Zm-48-60a12,12,0,1,1,12,12A12,12,0,0,1,168,132Z"></path>
+      </svg>
+      <span>Баланс</span>
+    </h2>
+  </div>
+
+  <div class="settings-content wallet-content">
+    <section class="shop-balance-card wallet-balance-card">
+      <span class="shop-kicker">ORION VALUE</span>
+      <div class="shop-balance-meta">
+        <div>
+          <div class="shop-balance-label">Поточний баланс</div>
+          <div class="shop-balance-value" id="walletBalanceValue">0,00</div>
+        </div>
+        <span class="shop-balance-badge" id="walletBalanceBadge">Транзакцій: 0</span>
+      </div>
+      <p class="shop-balance-note">Тут відображається історія витрат і поповнень монет.</p>
+    </section>
+
+    <section class="wallet-history-card">
+      <div class="wallet-history-head">
+        <h3>Історія транзакцій</h3>
+        <span class="wallet-history-count" id="walletTransactionsCount">0</span>
+      </div>
+      <div class="wallet-history-list" id="walletTransactionsList"></div>
+    </section>
   </div>
 </div>
   `.trim(),

@@ -332,7 +332,12 @@ export class ChatAppFeaturesMethods {
       if (!inventory.has(item.id)) {
         const balance = this.getTapBalanceCents();
         if (balance < item.price) return;
-        this.setTapBalanceCents(balance - item.price);
+        const spent = this.applyCoinTransaction(
+          -item.price,
+          `Купівля: ${item.title}`,
+          { category: 'shop' }
+        );
+        if (!spent) return;
         inventory.add(item.id);
         this.saveShopInventory([...inventory]);
       }
@@ -373,7 +378,11 @@ export class ChatAppFeaturesMethods {
     const gameSelectButtons = settingsContainer.querySelectorAll('[data-mini-game-select]');
     const gamePanels = settingsContainer.querySelectorAll('[data-mini-game-panel]');
     const MINI_GAME_VIEW_KEY = 'orionMiniGameView';
-    const normalizeMiniGameView = (value) => (value === 'signal' ? 'signal' : 'tapper');
+    const normalizeMiniGameView = (value) => {
+      if (value === 'signal') return 'signal';
+      if (value === 'grid2048') return 'grid2048';
+      return 'tapper';
+    };
     const pendingMiniGameView = normalizeMiniGameView(this.pendingMiniGameView || 'tapper');
     let currentMiniGameView = pendingMiniGameView;
     if (!this.pendingMiniGameView) {
@@ -391,7 +400,15 @@ export class ChatAppFeaturesMethods {
     const signalScoreEl = settingsContainer.querySelector('#signalHuntScore');
     const signalTimeEl = settingsContainer.querySelector('#signalHuntTime');
     const signalBestEl = settingsContainer.querySelector('#signalHuntBest');
+    const signalEarnedEl = settingsContainer.querySelector('#signalHuntEarned');
     const signalStartBtn = settingsContainer.querySelector('#signalHuntStart');
+    const gridPanelEl = settingsContainer.querySelector('[data-mini-game-panel="grid2048"]');
+    const gridBoardEl = settingsContainer.querySelector('#grid2048Board');
+    const gridCanvasEl = settingsContainer.querySelector('#grid2048Canvas');
+    const gridScoreEl = settingsContainer.querySelector('#grid2048Score');
+    const gridBestEl = settingsContainer.querySelector('#grid2048Best');
+    const gridEarnedEl = settingsContainer.querySelector('#grid2048Earned');
+    const gridRestartBtn = settingsContainer.querySelector('#grid2048Restart');
     const SIGNAL_HUNT_BEST_KEY = 'orionSignalHuntBest';
     const SIGNAL_HUNT_DURATION = 30;
     const SIGNAL_MOVE_INTERVAL_MS = 760;
@@ -399,7 +416,19 @@ export class ChatAppFeaturesMethods {
       isRunning: false,
       score: 0,
       timeLeft: SIGNAL_HUNT_DURATION,
-      best: 0
+      best: 0,
+      earnedCents: 0,
+      rewardLogged: false
+    };
+    const GRID_2048_SIZE = 4;
+    const GRID_2048_BEST_KEY = 'orionGrid2048Best';
+    const grid2048State = {
+      board: new Array(GRID_2048_SIZE * GRID_2048_SIZE).fill(0),
+      score: 0,
+      best: 0,
+      isGameOver: false,
+      earnedCents: 0,
+      rewardLogged: false
     };
 
     if (this.signalHuntTickTimer) {
@@ -418,10 +447,38 @@ export class ChatAppFeaturesMethods {
       signalState.best = 0;
     }
 
+    try {
+      const savedBest = Number.parseInt(window.localStorage.getItem(GRID_2048_BEST_KEY) || '0', 10);
+      grid2048State.best = Number.isFinite(savedBest) && savedBest > 0 ? savedBest : 0;
+    } catch {
+      grid2048State.best = 0;
+    }
+
     const updateSignalHud = () => {
       if (signalScoreEl) signalScoreEl.textContent = String(signalState.score);
       if (signalTimeEl) signalTimeEl.textContent = String(signalState.timeLeft);
       if (signalBestEl) signalBestEl.textContent = String(signalState.best);
+      if (signalEarnedEl) signalEarnedEl.textContent = this.formatCoinBalance(signalState.earnedCents);
+    };
+
+    const commitSignalReward = () => {
+      if (signalState.rewardLogged || signalState.earnedCents <= 0) return;
+      this.addCoinTransaction({
+        amountCents: signalState.earnedCents,
+        title: 'Гра: Полювання на сигнал',
+        category: 'games'
+      });
+      signalState.rewardLogged = true;
+    };
+
+    const commitGridReward = () => {
+      if (grid2048State.rewardLogged || grid2048State.earnedCents <= 0) return;
+      this.addCoinTransaction({
+        amountCents: grid2048State.earnedCents,
+        title: 'Гра: Orion 2048',
+        category: 'games'
+      });
+      grid2048State.rewardLogged = true;
     };
 
     const clearSignalHuntTimers = () => {
@@ -458,11 +515,20 @@ export class ChatAppFeaturesMethods {
       }
     };
 
+    const saveGridBest = () => {
+      try {
+        window.localStorage.setItem(GRID_2048_BEST_KEY, String(grid2048State.best));
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+
     const stopSignalHunt = (reason = 'finished') => {
       if (!signalState.isRunning && reason !== 'switch') return;
       signalState.isRunning = false;
       clearSignalHuntTimers();
       if (signalTargetEl) signalTargetEl.classList.remove('active');
+      commitSignalReward();
 
       if (signalState.score > signalState.best) {
         signalState.best = signalState.score;
@@ -476,7 +542,7 @@ export class ChatAppFeaturesMethods {
         if (reason === 'switch') {
           signalStatusEl.textContent = 'Гру призупинено. Повернись, щоб зіграти знову.';
         } else if (signalState.score > 0) {
-          signalStatusEl.textContent = `Гру завершено. Твій результат: ${signalState.score}.`;
+          signalStatusEl.textContent = `Гру завершено. Твій результат: ${signalState.score}. Зароблено: ${this.formatCoinBalance(signalState.earnedCents)}.`;
         } else {
           signalStatusEl.textContent = 'Час вийшов. Спробуй ще раз і впіймай більше сигналів.';
         }
@@ -490,6 +556,8 @@ export class ChatAppFeaturesMethods {
       signalState.isRunning = true;
       signalState.score = 0;
       signalState.timeLeft = SIGNAL_HUNT_DURATION;
+      signalState.earnedCents = 0;
+      signalState.rewardLogged = false;
       if (signalStartBtn) signalStartBtn.textContent = 'Перезапуск';
       if (signalStatusEl) signalStatusEl.textContent = 'Лови сигнали, вони зʼявляються у випадкових точках!';
       signalTargetEl.classList.add('active');
@@ -511,6 +579,180 @@ export class ChatAppFeaturesMethods {
       }, 1000);
     };
 
+    const getGridRow = (row) => {
+      const start = row * GRID_2048_SIZE;
+      return grid2048State.board.slice(start, start + GRID_2048_SIZE);
+    };
+
+    const setGridRow = (row, values) => {
+      const start = row * GRID_2048_SIZE;
+      for (let i = 0; i < GRID_2048_SIZE; i += 1) {
+        grid2048State.board[start + i] = values[i];
+      }
+    };
+
+    const getGridColumn = (col) => (
+      Array.from({ length: GRID_2048_SIZE }, (_, row) => grid2048State.board[row * GRID_2048_SIZE + col])
+    );
+
+    const setGridColumn = (col, values) => {
+      for (let row = 0; row < GRID_2048_SIZE; row += 1) {
+        grid2048State.board[row * GRID_2048_SIZE + col] = values[row];
+      }
+    };
+
+    const mergeGridLine = (line) => {
+      const compact = line.filter((value) => value !== 0);
+      let gained = 0;
+
+      for (let i = 0; i < compact.length - 1; i += 1) {
+        if (compact[i] !== compact[i + 1]) continue;
+        compact[i] *= 2;
+        gained += compact[i];
+        compact.splice(i + 1, 1);
+      }
+
+      while (compact.length < GRID_2048_SIZE) compact.push(0);
+
+      const moved = compact.some((value, index) => value !== line[index]);
+      return { values: compact, gained, moved };
+    };
+
+    const getGridEmptyIndexes = () => {
+      const indexes = [];
+      grid2048State.board.forEach((value, index) => {
+        if (value === 0) indexes.push(index);
+      });
+      return indexes;
+    };
+
+    const spawnGridTile = (count = 1) => {
+      for (let i = 0; i < count; i += 1) {
+        const emptyIndexes = getGridEmptyIndexes();
+        if (!emptyIndexes.length) return;
+        const randomIndex = emptyIndexes[Math.floor(Math.random() * emptyIndexes.length)];
+        grid2048State.board[randomIndex] = Math.random() < 0.9 ? 2 : 4;
+      }
+    };
+
+    const checkGridGameOver = () => {
+      if (grid2048State.board.includes(0)) return false;
+
+      for (let row = 0; row < GRID_2048_SIZE; row += 1) {
+        for (let col = 0; col < GRID_2048_SIZE; col += 1) {
+          const index = row * GRID_2048_SIZE + col;
+          const value = grid2048State.board[index];
+          const right = col < GRID_2048_SIZE - 1 ? grid2048State.board[index + 1] : null;
+          const down = row < GRID_2048_SIZE - 1 ? grid2048State.board[index + GRID_2048_SIZE] : null;
+          if (value === right || value === down) return false;
+        }
+      }
+
+      return true;
+    };
+
+    const renderGrid2048 = () => {
+      if (!gridBoardEl) return;
+      if (gridBoardEl.childElementCount !== GRID_2048_SIZE * GRID_2048_SIZE) {
+        gridBoardEl.innerHTML = '';
+        for (let i = 0; i < GRID_2048_SIZE * GRID_2048_SIZE; i += 1) {
+          const cell = document.createElement('div');
+          cell.className = 'tile';
+          gridBoardEl.appendChild(cell);
+        }
+      }
+
+      const tiles = gridBoardEl.querySelectorAll('.tile');
+      tiles.forEach((tile, index) => {
+        const value = grid2048State.board[index];
+        tile.className = 'tile';
+        tile.textContent = value ? String(value) : '';
+        if (!value) return;
+
+        const cappedClass = value <= 64 ? `value-${value}` : 'value-128';
+        tile.classList.add(cappedClass);
+        if (value >= 128) tile.classList.add('value-high');
+        if (value >= 1024) tile.classList.add('value-super');
+      });
+
+      if (gridScoreEl) gridScoreEl.textContent = String(grid2048State.score);
+      if (gridBestEl) gridBestEl.textContent = String(grid2048State.best);
+      if (gridEarnedEl) gridEarnedEl.textContent = this.formatCoinBalance(grid2048State.earnedCents);
+      const endMessage = grid2048State.isGameOver
+        ? `Гру завершено\nЗароблено: ${this.formatCoinBalance(grid2048State.earnedCents)}\nНатисни «Нова гра»`
+        : '';
+      if (gridPanelEl) {
+        gridPanelEl.classList.toggle('game-over', grid2048State.isGameOver);
+      }
+      if (gridCanvasEl) {
+        gridCanvasEl.dataset.endMessage = endMessage;
+      }
+    };
+
+    const startGrid2048 = () => {
+      commitGridReward();
+      grid2048State.board = new Array(GRID_2048_SIZE * GRID_2048_SIZE).fill(0);
+      grid2048State.score = 0;
+      grid2048State.isGameOver = false;
+      grid2048State.earnedCents = 0;
+      grid2048State.rewardLogged = false;
+      spawnGridTile(2);
+      renderGrid2048();
+    };
+
+    const applyGridMove = (direction) => {
+      if (grid2048State.isGameOver) return false;
+      let moved = false;
+      let gainedTotal = 0;
+
+      const processLine = (line, reverse = false) => {
+        const source = reverse ? [...line].reverse() : [...line];
+        const merged = mergeGridLine(source);
+        const values = reverse ? merged.values.reverse() : merged.values;
+        if (merged.moved) moved = true;
+        gainedTotal += merged.gained;
+        return values;
+      };
+
+      if (direction === 'left' || direction === 'right') {
+        for (let row = 0; row < GRID_2048_SIZE; row += 1) {
+          const nextValues = processLine(getGridRow(row), direction === 'right');
+          setGridRow(row, nextValues);
+        }
+      } else {
+        for (let col = 0; col < GRID_2048_SIZE; col += 1) {
+          const nextValues = processLine(getGridColumn(col), direction === 'down');
+          setGridColumn(col, nextValues);
+        }
+      }
+
+      if (!moved) return false;
+
+      grid2048State.score += gainedTotal;
+      if (gainedTotal > 0) {
+        const rewardCents = Math.max(1, Math.floor(gainedTotal / 16));
+        grid2048State.earnedCents += rewardCents;
+        this.setTapBalanceCents(this.getTapBalanceCents() + rewardCents);
+        balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
+      }
+      if (grid2048State.score > grid2048State.best) {
+        grid2048State.best = grid2048State.score;
+        saveGridBest();
+      }
+
+      spawnGridTile(1);
+      grid2048State.isGameOver = checkGridGameOver();
+      if (grid2048State.isGameOver) commitGridReward();
+      renderGrid2048();
+      return true;
+    };
+
+    const handleGridMove = (direction) => {
+      if (currentMiniGameView !== 'grid2048') return;
+      if (!miniGamesSection.isConnected || !miniGamesSection.classList.contains('active')) return;
+      applyGridMove(direction);
+    };
+
     const setMiniGameView = (view) => {
       const safeView = normalizeMiniGameView(view);
       currentMiniGameView = safeView;
@@ -528,6 +770,9 @@ export class ChatAppFeaturesMethods {
 
       if (safeView !== 'signal' && signalState.isRunning) {
         stopSignalHunt('switch');
+      }
+      if (safeView !== 'grid2048') {
+        commitGridReward();
       }
 
       try {
@@ -549,7 +794,11 @@ export class ChatAppFeaturesMethods {
       signalTargetEl.dataset.bound = 'true';
       signalTargetEl.addEventListener('click', () => {
         if (!signalState.isRunning) return;
+        const rewardCents = Math.max(2, this.getTapLevelStats().rewardPerTapCents + 1);
         signalState.score += 1;
+        signalState.earnedCents += rewardCents;
+        this.setTapBalanceCents(this.getTapBalanceCents() + rewardCents);
+        balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
         updateSignalHud();
         signalTargetEl.classList.remove('hit');
         void signalTargetEl.offsetWidth;
@@ -566,7 +815,66 @@ export class ChatAppFeaturesMethods {
       });
     }
 
+    if (gridRestartBtn && gridRestartBtn.dataset.bound !== 'true') {
+      gridRestartBtn.dataset.bound = 'true';
+      gridRestartBtn.addEventListener('click', () => {
+        setMiniGameView('grid2048');
+        startGrid2048();
+      });
+    }
+
+    if (this.grid2048KeyHandler) {
+      document.removeEventListener('keydown', this.grid2048KeyHandler);
+      this.grid2048KeyHandler = null;
+    }
+    this.grid2048KeyHandler = (event) => {
+      if (event.defaultPrevented) return;
+      const keyMap = {
+        ArrowUp: 'up',
+        ArrowDown: 'down',
+        ArrowLeft: 'left',
+        ArrowRight: 'right',
+        w: 'up',
+        a: 'left',
+        s: 'down',
+        d: 'right'
+      };
+      const direction = keyMap[event.key];
+      if (!direction) return;
+      event.preventDefault();
+      handleGridMove(direction);
+    };
+    document.addEventListener('keydown', this.grid2048KeyHandler);
+
+    let gridTouchStartX = 0;
+    let gridTouchStartY = 0;
+
+    if (gridCanvasEl && gridCanvasEl.dataset.bound !== 'true') {
+      gridCanvasEl.dataset.bound = 'true';
+
+      gridCanvasEl.addEventListener('touchstart', (event) => {
+        const point = event.changedTouches?.[0];
+        if (!point) return;
+        gridTouchStartX = point.clientX;
+        gridTouchStartY = point.clientY;
+      }, { passive: true });
+
+      gridCanvasEl.addEventListener('touchend', (event) => {
+        const point = event.changedTouches?.[0];
+        if (!point) return;
+        const dx = point.clientX - gridTouchStartX;
+        const dy = point.clientY - gridTouchStartY;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          handleGridMove(dx > 0 ? 'right' : 'left');
+          return;
+        }
+        handleGridMove(dy > 0 ? 'down' : 'up');
+      }, { passive: true });
+    }
+
     updateSignalHud();
+    startGrid2048();
     setMiniGameView(currentMiniGameView);
 
     if (window.innerWidth <= 768 && tapperContentEl && levelIslandEl) {
@@ -859,10 +1167,74 @@ export class ChatAppFeaturesMethods {
           saveCosmetics();
         }
 
-        this.setTapBalanceCents(this.getTapBalanceCents() + sellPrice);
+        this.applyCoinTransaction(
+          sellPrice,
+          `Продаж: ${item.title}`,
+          { category: 'shop' }
+        );
         renderInventory();
       }
     });
+  }
+
+  initWalletLedger(settingsContainer) {
+    const balanceEl = settingsContainer.querySelector('#walletBalanceValue');
+    const badgeEl = settingsContainer.querySelector('#walletBalanceBadge');
+    const countEl = settingsContainer.querySelector('#walletTransactionsCount');
+    const listEl = settingsContainer.querySelector('#walletTransactionsList');
+    if (!balanceEl || !listEl) return;
+
+    const formatDate = (value) => {
+      const parsedDate = new Date(value);
+      if (Number.isNaN(parsedDate.getTime())) return '';
+      return parsedDate.toLocaleString('uk-UA', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    const render = () => {
+      const balance = this.getTapBalanceCents();
+      const history = this.getCoinTransactionHistory();
+
+      balanceEl.textContent = this.formatCoinBalance(balance);
+      if (countEl) countEl.textContent = String(history.length);
+      if (badgeEl) badgeEl.textContent = `Транзакцій: ${history.length}`;
+
+      if (!history.length) {
+        listEl.innerHTML = `
+          <div class="wallet-history-empty">
+            <strong>Транзакцій поки немає</strong>
+            <span>Купуйте предмети в магазині або заробляйте монети в іграх.</span>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = history.map((entry) => {
+        const safeAmount = Math.abs(Number(entry.amountCents) || 0);
+        const isIncome = Number(entry.amountCents) > 0;
+        const sign = isIncome ? '+' : '-';
+        const amountText = `${sign}${this.formatCoinBalance(safeAmount)}`;
+        const title = escapeHtml(entry.title || 'Транзакція');
+        const dateLabel = escapeHtml(formatDate(entry.createdAt));
+
+        return `
+          <article class="wallet-history-item ${isIncome ? 'is-income' : 'is-expense'}">
+            <div class="wallet-history-item-main">
+              <strong>${title}</strong>
+              <span>${dateLabel}</span>
+            </div>
+            <span class="wallet-history-item-amount">${amountText}</span>
+          </article>
+        `;
+      }).join('');
+    };
+
+    render();
   }
 
   showSettingsSubsection(subsectionName, settingsContainerId, sourceSection = null) {
@@ -1293,6 +1665,11 @@ export class ChatAppFeaturesMethods {
 
       if (sectionName === 'mini-games') {
         this.initMiniGames(settingsContainer);
+      }
+
+      if (sectionName === 'wallet') {
+        this.settingsParentSection = 'wallet';
+        this.initWalletLedger(settingsContainer);
       }
 
       if (sectionName === 'messenger-settings') {

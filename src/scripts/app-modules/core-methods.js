@@ -146,6 +146,86 @@ export class ChatAppCoreMethods {
     });
   }
 
+  getCoinTransactionHistory() {
+    const stored = this.readJsonStorage('orion_coin_transactions', []);
+    if (!Array.isArray(stored)) return [];
+    return stored
+      .filter((entry) => entry && typeof entry === 'object')
+      .map((entry) => {
+        const amountCents = Number.parseInt(entry.amountCents, 10);
+        if (!Number.isFinite(amountCents) || amountCents === 0) return null;
+        const createdAt = typeof entry.createdAt === 'string' && entry.createdAt
+          ? entry.createdAt
+          : new Date().toISOString();
+        const title = typeof entry.title === 'string' && entry.title.trim()
+          ? entry.title.trim()
+          : 'Транзакція';
+        const category = typeof entry.category === 'string' && entry.category.trim()
+          ? entry.category.trim()
+          : 'general';
+        const id = typeof entry.id === 'string' && entry.id
+          ? entry.id
+          : `${createdAt}-${Math.random().toString(16).slice(2, 10)}`;
+        return {
+          id,
+          amountCents,
+          createdAt,
+          title,
+          category
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 200);
+  }
+
+  saveCoinTransactionHistory(entries) {
+    const safeEntries = Array.isArray(entries) ? entries.slice(0, 200) : [];
+    try {
+      window.localStorage.setItem('orion_coin_transactions', JSON.stringify(safeEntries));
+    } catch {
+      // Ignore storage failures and keep runtime flow.
+    }
+    return safeEntries;
+  }
+
+  addCoinTransaction({ amountCents = 0, title = 'Транзакція', category = 'general' } = {}) {
+    const safeAmount = Number.isFinite(amountCents) ? Math.trunc(amountCents) : 0;
+    if (!safeAmount) return null;
+
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`,
+      amountCents: safeAmount,
+      createdAt: new Date().toISOString(),
+      title: typeof title === 'string' && title.trim() ? title.trim() : 'Транзакція',
+      category: typeof category === 'string' && category.trim() ? category.trim() : 'general'
+    };
+
+    const history = this.getCoinTransactionHistory();
+    history.unshift(entry);
+    this.saveCoinTransactionHistory(history);
+    return entry;
+  }
+
+  applyCoinTransaction(deltaCents, title, options = {}) {
+    const safeDelta = Number.isFinite(deltaCents) ? Math.trunc(deltaCents) : 0;
+    if (!safeDelta) return false;
+
+    const currentBalance = this.getTapBalanceCents();
+    const nextBalance = Math.max(0, currentBalance + safeDelta);
+    const appliedDelta = nextBalance - currentBalance;
+    if (!appliedDelta) return false;
+
+    this.setTapBalanceCents(nextBalance);
+    if (options.record !== false) {
+      this.addCoinTransaction({
+        amountCents: appliedDelta,
+        title,
+        category: options.category || 'general'
+      });
+    }
+    return true;
+  }
+
   getShopCatalog() {
     return [
       {
