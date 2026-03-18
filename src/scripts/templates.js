@@ -1,6 +1,7 @@
 // Шаблони налаштувань для Orion
 
 const orionValueAssetUrl = new URL('../Assets/Orion_value.png', import.meta.url).href;
+const flappyOrionSpriteAssetUrl = new URL('../Assets/Flappy-Orion-Sprite.png', import.meta.url).href;
 
 export const settingsTemplates = {
   'profile': `
@@ -820,6 +821,36 @@ export const settingsTemplates = {
         <div class="mini-game-controls">
           <button class="btn btn-primary mini-game-btn" id="grid2048Restart" type="button">Нова гра</button>
           <span class="mini-game-hint">Керування: ← ↑ → ↓ або свайпи по полю.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="mini-game-panel mini-game-view" data-mini-game-panel="flappy">
+      <div class="mini-game-view-header">
+        <span class="mini-game-view-title">Flappy Orion</span>
+        <span class="mini-game-view-score">Рекорд: <strong id="flappyOrionBest">0</strong></span>
+      </div>
+
+      <div class="mini-game-stage">
+        <div class="mini-game-score-current">
+          Очки: <strong id="flappyOrionScore">0</strong> · Монет: <strong id="flappyOrionCoins">0</strong> · Зароблено: <strong id="flappyOrionEarned">0,00</strong>
+        </div>
+
+        <div class="mini-game-canvas flappy-orion-canvas-wrap" id="flappyOrionCanvasWrap" aria-live="polite">
+          <canvas
+            class="flappy-orion-canvas"
+            id="flappyOrionCanvas"
+            data-sprite-src="${flappyOrionSpriteAssetUrl}"
+            data-coin-src="${orionValueAssetUrl}"
+            width="960"
+            height="540"
+          ></canvas>
+          <p class="flappy-orion-status" id="flappyOrionStatus">Натисни «Старт», щоб полетіти. Клікай або тисни Space для стрибка.</p>
+        </div>
+
+        <div class="mini-game-controls">
+          <button class="btn btn-primary mini-game-btn" id="flappyOrionStart" type="button">Старт</button>
+          <span class="mini-game-hint">Оминай труби та збирай Orion Value монети.</span>
         </div>
       </div>
     </section>

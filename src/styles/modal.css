@@ -1831,6 +1831,17 @@ html:not(.dark-theme) .alert-overlay {
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: saturate(1);
+  background: var(--bg-secondary);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.dark-theme .message-menu.active {
+  background: #080808;
+}
+
+html:not(.dark-theme) .message-menu.active {
+  background: #f8fafc;
 }
 
 .message-menu.is-closing {

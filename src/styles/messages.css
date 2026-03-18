@@ -87,10 +87,15 @@
 }
 
 html:not(.dark-theme) .message.own .message-content {
-  color: #000;
+  background: #e6ebf3;
+  border-color: rgba(15, 19, 32, 0.16);
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(15, 19, 32, 0.1);
 }
 
 html.dark-theme .message.own .message-content {
+  background: #151515;
+  border-color: rgba(255, 255, 255, 0.16);
   color: #fff;
 }
 
@@ -98,6 +103,18 @@ html.dark-theme .message.own .message-content {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
   border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+html:not(.dark-theme) .message.other .message-content {
+  background: #f4f6fb;
+  border-color: rgba(15, 19, 32, 0.12);
+  color: #111827;
+  box-shadow: 0 1px 2px rgba(15, 19, 32, 0.08);
+}
+
+html.dark-theme .message.other .message-content {
+  background: #0d0d0d;
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .message-avatar {

@@ -4418,6 +4418,50 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   text-align: center;
 }
 
+.flappy-orion-canvas-wrap {
+  position: relative;
+  padding: 0;
+  border-radius: var(--radius-inner);
+  overflow: hidden;
+}
+
+.flappy-orion-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.mini-game-panel.is-running .flappy-orion-canvas {
+  cursor: crosshair;
+}
+
+.flappy-orion-status {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 13px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 86%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+}
+
+html:not(.dark-theme) .flappy-orion-status {
+  background: color-mix(in srgb, #ffffff 88%, transparent);
+}
+
 html:not(.dark-theme) .mini-game-canvas {
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.22), transparent 58%),
@@ -4614,6 +4658,14 @@ html:not(.dark-theme) .mini-game-canvas {
   .signal-hunt-status {
     padding: 10px 12px;
     font-size: 12px;
+  }
+
+  .flappy-orion-status {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 9px 10px;
+    font-size: 11px;
   }
 }
 

@@ -381,6 +381,7 @@ export class ChatAppFeaturesMethods {
     const normalizeMiniGameView = (value) => {
       if (value === 'signal') return 'signal';
       if (value === 'grid2048') return 'grid2048';
+      if (value === 'flappy') return 'flappy';
       return 'tapper';
     };
     const pendingMiniGameView = normalizeMiniGameView(this.pendingMiniGameView || 'tapper');
@@ -409,6 +410,15 @@ export class ChatAppFeaturesMethods {
     const gridBestEl = settingsContainer.querySelector('#grid2048Best');
     const gridEarnedEl = settingsContainer.querySelector('#grid2048Earned');
     const gridRestartBtn = settingsContainer.querySelector('#grid2048Restart');
+    const flappyPanelEl = settingsContainer.querySelector('[data-mini-game-panel="flappy"]');
+    const flappyCanvasWrapEl = settingsContainer.querySelector('#flappyOrionCanvasWrap');
+    const flappyCanvasEl = settingsContainer.querySelector('#flappyOrionCanvas');
+    const flappyStatusEl = settingsContainer.querySelector('#flappyOrionStatus');
+    const flappyScoreEl = settingsContainer.querySelector('#flappyOrionScore');
+    const flappyCoinsEl = settingsContainer.querySelector('#flappyOrionCoins');
+    const flappyEarnedEl = settingsContainer.querySelector('#flappyOrionEarned');
+    const flappyBestEl = settingsContainer.querySelector('#flappyOrionBest');
+    const flappyStartBtn = settingsContainer.querySelector('#flappyOrionStart');
     const SIGNAL_HUNT_BEST_KEY = 'orionSignalHuntBest';
     const SIGNAL_HUNT_DURATION = 30;
     const SIGNAL_MOVE_INTERVAL_MS = 760;
@@ -422,6 +432,14 @@ export class ChatAppFeaturesMethods {
     };
     const GRID_2048_SIZE = 4;
     const GRID_2048_BEST_KEY = 'orionGrid2048Best';
+    const FLAPPY_BEST_KEY = 'orionFlappyBest';
+    const FLAPPY_GRAVITY = 1120;
+    const FLAPPY_FLAP_VELOCITY = -390;
+    const FLAPPY_PIPE_SPEED = 240;
+    const FLAPPY_PIPE_SPAWN_INTERVAL = 1.45;
+    const FLAPPY_PIPE_WIDTH = 92;
+    const FLAPPY_PIPE_GAP = 198;
+    const FLAPPY_MAX_DT = 1 / 30;
     const grid2048State = {
       board: new Array(GRID_2048_SIZE * GRID_2048_SIZE).fill(0),
       score: 0,
@@ -429,6 +447,34 @@ export class ChatAppFeaturesMethods {
       isGameOver: false,
       earnedCents: 0,
       rewardLogged: false
+    };
+    const flappyState = {
+      isRunning: false,
+      score: 0,
+      coins: 0,
+      best: 0,
+      earnedCents: 0,
+      rewardLogged: false,
+      gameOver: false,
+      worldWidth: 960,
+      worldHeight: 540,
+      birdY: 270,
+      birdVelocity: 0,
+      birdRotation: 0,
+      pipes: [],
+      pipeSpawnTimer: 0,
+      groundOffset: 0,
+      cloudOffset: 0,
+      lastTimestamp: 0,
+      rafId: null,
+      spriteReady: false,
+      coinReady: false,
+      assetsLoading: false,
+      spriteAtlas: null,
+      spriteImage: null,
+      coinImage: null,
+      flapFrame: 0,
+      flapFrameIndex: 0
     };
 
     if (this.signalHuntTickTimer) {
@@ -438,6 +484,10 @@ export class ChatAppFeaturesMethods {
     if (this.signalHuntMoveTimer) {
       window.clearInterval(this.signalHuntMoveTimer);
       this.signalHuntMoveTimer = null;
+    }
+    if (this.flappyOrionAnimationFrame) {
+      window.cancelAnimationFrame(this.flappyOrionAnimationFrame);
+      this.flappyOrionAnimationFrame = null;
     }
 
     try {
@@ -452,6 +502,13 @@ export class ChatAppFeaturesMethods {
       grid2048State.best = Number.isFinite(savedBest) && savedBest > 0 ? savedBest : 0;
     } catch {
       grid2048State.best = 0;
+    }
+
+    try {
+      const savedBest = Number.parseInt(window.localStorage.getItem(FLAPPY_BEST_KEY) || '0', 10);
+      flappyState.best = Number.isFinite(savedBest) && savedBest > 0 ? savedBest : 0;
+    } catch {
+      flappyState.best = 0;
     }
 
     const updateSignalHud = () => {
@@ -479,6 +536,16 @@ export class ChatAppFeaturesMethods {
         category: 'games'
       });
       grid2048State.rewardLogged = true;
+    };
+
+    const commitFlappyReward = () => {
+      if (flappyState.rewardLogged || flappyState.earnedCents <= 0) return;
+      this.addCoinTransaction({
+        amountCents: flappyState.earnedCents,
+        title: 'Гра: Flappy Orion',
+        category: 'games'
+      });
+      flappyState.rewardLogged = true;
     };
 
     const clearSignalHuntTimers = () => {
@@ -521,6 +588,484 @@ export class ChatAppFeaturesMethods {
       } catch {
         // Ignore storage failures.
       }
+    };
+
+    const saveFlappyBest = () => {
+      try {
+        window.localStorage.setItem(FLAPPY_BEST_KEY, String(flappyState.best));
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+
+    const updateFlappyHud = () => {
+      if (flappyScoreEl) flappyScoreEl.textContent = String(flappyState.score);
+      if (flappyCoinsEl) flappyCoinsEl.textContent = String(flappyState.coins);
+      if (flappyBestEl) flappyBestEl.textContent = String(flappyState.best);
+      if (flappyEarnedEl) flappyEarnedEl.textContent = this.formatCoinBalance(flappyState.earnedCents);
+    };
+
+    const setFlappyStatus = (message) => {
+      if (!flappyStatusEl) return;
+      flappyStatusEl.textContent = message;
+    };
+
+    const resolveFlappyWorldSize = () => {
+      if (!flappyCanvasEl) return;
+      const rect = flappyCanvasEl.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const devicePixelRatio = Math.min(2, window.devicePixelRatio || 1);
+      flappyState.worldWidth = Math.max(280, Math.round(rect.width));
+      flappyState.worldHeight = Math.max(240, Math.round(rect.height));
+      const targetWidth = Math.max(1, Math.round(flappyState.worldWidth * devicePixelRatio));
+      const targetHeight = Math.max(1, Math.round(flappyState.worldHeight * devicePixelRatio));
+      if (flappyCanvasEl.width !== targetWidth) flappyCanvasEl.width = targetWidth;
+      if (flappyCanvasEl.height !== targetHeight) flappyCanvasEl.height = targetHeight;
+    };
+
+    const getFlappyGroundHeight = () => Math.round(Math.max(72, flappyState.worldHeight * 0.145));
+    const getFlappyBirdX = () => Math.round(flappyState.worldWidth * 0.25);
+    const getFlappyBirdRadius = () => Math.max(16, Math.round(flappyState.worldHeight * 0.03));
+
+    const addFlappyReward = (amountCents) => {
+      const safeAmount = Number.isFinite(amountCents) ? Math.max(0, Math.floor(amountCents)) : 0;
+      if (!safeAmount) return;
+      flappyState.earnedCents += safeAmount;
+      this.setTapBalanceCents(this.getTapBalanceCents() + safeAmount);
+      balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
+    };
+
+    const prepareFlappySpriteAtlas = (sourceImage) => {
+      return sourceImage;
+    };
+
+    const renderFlappyFrame = () => {
+      if (!flappyCanvasEl) return;
+      const ctx = flappyCanvasEl.getContext('2d');
+      if (!ctx) return;
+
+      const worldWidth = flappyState.worldWidth || 960;
+      const worldHeight = flappyState.worldHeight || 540;
+      const dpr = worldWidth > 0 ? flappyCanvasEl.width / worldWidth : 1;
+      const groundHeight = getFlappyGroundHeight();
+      const birdX = getFlappyBirdX();
+      const birdRadius = getFlappyBirdRadius();
+
+      const sprite = flappyState.spriteAtlas;
+      const hasSprite = Boolean(flappyState.spriteReady && sprite);
+      const spriteMap = {
+        bird: [
+          { x: 42, y: 42, w: 92, h: 76 },
+          { x: 164, y: 37, w: 93, h: 92 },
+          { x: 282, y: 38, w: 92, h: 86 },
+          { x: 404, y: 42, w: 93, h: 82 },
+          { x: 522, y: 42, w: 92, h: 81 },
+          { x: 650, y: 62, w: 93, h: 75 },
+          { x: 404, y: 148, w: 93, h: 87 },
+          { x: 164, y: 147, w: 93, h: 88 }
+        ],
+        ground: { x: 31, y: 601, w: 445, h: 77 },
+        clouds: [
+          { x: 35, y: 473, w: 137, h: 93 },
+          { x: 207, y: 473, w: 173, h: 93 },
+          { x: 420, y: 479, w: 200, h: 82 },
+          { x: 660, y: 484, w: 152, h: 77 },
+          { x: 836, y: 489, w: 173, h: 66 },
+          { x: 1029, y: 505, w: 77, h: 50 },
+          { x: 1124, y: 484, w: 114, h: 77 }
+        ]
+      };
+
+      const drawSprite = (part, dx, dy, dw, dh) => {
+        if (!hasSprite || !part) return false;
+        ctx.drawImage(sprite, part.x, part.y, part.w, part.h, dx, dy, dw, dh);
+        return true;
+      };
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, worldWidth, worldHeight);
+
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, worldHeight - groundHeight);
+      skyGradient.addColorStop(0, 'rgba(35, 46, 72, 0.98)');
+      skyGradient.addColorStop(1, 'rgba(12, 16, 26, 0.98)');
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, worldWidth, worldHeight - groundHeight);
+
+      const cloudSpacing = Math.max(210, Math.round(worldWidth * 0.24));
+      const cloudY = Math.round(worldHeight * 0.12);
+      for (let i = -1; i < Math.ceil(worldWidth / cloudSpacing) + 2; i += 1) {
+        const cloud = spriteMap.clouds[((i % spriteMap.clouds.length) + spriteMap.clouds.length) % spriteMap.clouds.length];
+        const x = i * cloudSpacing - (flappyState.cloudOffset % cloudSpacing);
+        const y = cloudY + ((i % 2) ? 10 : -8);
+        const width = Math.round(cloud.w * 0.62);
+        const height = Math.round(cloud.h * 0.62);
+        if (!drawSprite(cloud, x, y, width, height)) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+          ctx.beginPath();
+          ctx.ellipse(x + width * 0.55, y + height * 0.62, width * 0.5, height * 0.34, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      flappyState.pipes.forEach((pipe) => {
+        const topEnd = Math.round(pipe.gapCenter - FLAPPY_PIPE_GAP / 2);
+        const bottomStart = Math.round(pipe.gapCenter + FLAPPY_PIPE_GAP / 2);
+        const pipeX = Math.round(pipe.x);
+        const capHeight = 18;
+        const topBodyHeight = Math.max(0, topEnd);
+        const bottomBodyHeight = Math.max(0, worldHeight - groundHeight - bottomStart);
+
+        if (topBodyHeight > 0) {
+          const topGrad = ctx.createLinearGradient(pipeX, 0, pipeX + FLAPPY_PIPE_WIDTH, 0);
+          topGrad.addColorStop(0, '#6ea64a');
+          topGrad.addColorStop(0.45, '#89c35c');
+          topGrad.addColorStop(1, '#4f7f35');
+          ctx.fillStyle = topGrad;
+          ctx.fillRect(pipeX, 0, FLAPPY_PIPE_WIDTH, topBodyHeight);
+          ctx.fillStyle = 'rgba(42, 64, 30, 0.55)';
+          ctx.fillRect(pipeX + 10, 0, 6, topBodyHeight);
+          ctx.fillRect(pipeX + FLAPPY_PIPE_WIDTH - 16, 0, 6, topBodyHeight);
+          ctx.fillStyle = '#3d5d2a';
+          ctx.fillRect(pipeX - 6, topEnd - capHeight, FLAPPY_PIPE_WIDTH + 12, capHeight);
+          ctx.fillStyle = '#9ad36e';
+          ctx.fillRect(pipeX - 2, topEnd - capHeight + 4, FLAPPY_PIPE_WIDTH + 4, 5);
+        }
+
+        if (bottomBodyHeight > 0) {
+          const bottomGrad = ctx.createLinearGradient(pipeX, 0, pipeX + FLAPPY_PIPE_WIDTH, 0);
+          bottomGrad.addColorStop(0, '#6ea64a');
+          bottomGrad.addColorStop(0.45, '#89c35c');
+          bottomGrad.addColorStop(1, '#4f7f35');
+          ctx.fillStyle = bottomGrad;
+          ctx.fillRect(pipeX, bottomStart, FLAPPY_PIPE_WIDTH, bottomBodyHeight);
+          ctx.fillStyle = 'rgba(42, 64, 30, 0.55)';
+          ctx.fillRect(pipeX + 10, bottomStart, 6, bottomBodyHeight);
+          ctx.fillRect(pipeX + FLAPPY_PIPE_WIDTH - 16, bottomStart, 6, bottomBodyHeight);
+          ctx.fillStyle = '#3d5d2a';
+          ctx.fillRect(pipeX - 6, bottomStart, FLAPPY_PIPE_WIDTH + 12, capHeight);
+          ctx.fillStyle = '#9ad36e';
+          ctx.fillRect(pipeX - 2, bottomStart + 4, FLAPPY_PIPE_WIDTH + 4, 5);
+        }
+
+        if (pipe.coin && !pipe.coin.collected) {
+          const coinSize = Math.max(30, Math.round(worldHeight * 0.078));
+          const coinX = pipe.coin.x - coinSize / 2;
+          const coinY = pipe.coin.y - coinSize / 2;
+          if (flappyState.coinReady && flappyState.coinImage) {
+            ctx.drawImage(flappyState.coinImage, coinX, coinY, coinSize, coinSize);
+          } else {
+            ctx.fillStyle = '#f3c94c';
+            ctx.beginPath();
+            ctx.arc(pipe.coin.x, pipe.coin.y, coinSize * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      });
+
+      const groundTileWidth = spriteMap.ground.w;
+      for (let x = -groundTileWidth; x < worldWidth + groundTileWidth; x += groundTileWidth) {
+        const drawX = Math.round(x - (flappyState.groundOffset % groundTileWidth));
+        if (!drawSprite(spriteMap.ground, drawX, worldHeight - groundHeight, groundTileWidth, groundHeight)) {
+          ctx.fillStyle = '#5d3f27';
+          ctx.fillRect(drawX, worldHeight - groundHeight, groundTileWidth, groundHeight);
+          ctx.fillStyle = '#6ea848';
+          ctx.fillRect(drawX, worldHeight - groundHeight, groundTileWidth, 14);
+        }
+      }
+
+      ctx.save();
+      ctx.translate(birdX, flappyState.birdY);
+      ctx.rotate(flappyState.birdRotation);
+      const birdSize = birdRadius * 3;
+      const frameIndex = Math.floor(flappyState.flapFrameIndex) % spriteMap.bird.length;
+      const currentFrame = spriteMap.bird[frameIndex] || spriteMap.bird[0];
+      if (!drawSprite(currentFrame, -birdSize / 2, -birdSize / 2, birdSize, birdSize)) {
+        ctx.fillStyle = '#f3c94c';
+        ctx.beginPath();
+        ctx.arc(0, 0, birdRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    };
+
+    const ensureFlappyAssets = () => {
+      if (!flappyCanvasEl) return;
+
+      if (this.flappyOrionPreparedAtlas) {
+        flappyState.spriteAtlas = this.flappyOrionPreparedAtlas;
+        flappyState.spriteReady = true;
+      }
+      if (this.flappyOrionCoinImage?.complete) {
+        flappyState.coinImage = this.flappyOrionCoinImage;
+        flappyState.coinReady = true;
+      }
+
+      if (flappyState.assetsLoading || (flappyState.spriteReady && flappyState.coinReady)) return;
+      flappyState.assetsLoading = true;
+
+      const spriteSrc = flappyCanvasEl.dataset.spriteSrc || '';
+      const coinSrc = flappyCanvasEl.dataset.coinSrc || '';
+
+      const finishLoad = () => {
+        flappyState.assetsLoading = false;
+        renderFlappyFrame();
+      };
+
+      let pendingAssets = 0;
+      const onAssetDone = () => {
+        pendingAssets -= 1;
+        if (pendingAssets <= 0) finishLoad();
+      };
+
+      if (!flappyState.spriteReady && spriteSrc) {
+        pendingAssets += 1;
+        const spriteImage = new Image();
+        spriteImage.decoding = 'async';
+        spriteImage.onload = () => {
+          this.flappyOrionPreparedAtlas = prepareFlappySpriteAtlas(spriteImage);
+          flappyState.spriteAtlas = this.flappyOrionPreparedAtlas;
+          flappyState.spriteImage = spriteImage;
+          flappyState.spriteReady = true;
+          onAssetDone();
+        };
+        spriteImage.onerror = () => onAssetDone();
+        spriteImage.src = spriteSrc;
+      }
+
+      if (!flappyState.coinReady && coinSrc) {
+        pendingAssets += 1;
+        const coinImage = new Image();
+        coinImage.decoding = 'async';
+        coinImage.onload = () => {
+          this.flappyOrionCoinImage = coinImage;
+          flappyState.coinImage = coinImage;
+          flappyState.coinReady = true;
+          onAssetDone();
+        };
+        coinImage.onerror = () => onAssetDone();
+        coinImage.src = coinSrc;
+      }
+
+      if (!pendingAssets) finishLoad();
+    };
+
+    const spawnFlappyPipe = () => {
+      const groundHeight = getFlappyGroundHeight();
+      const minGapCenter = 120 + FLAPPY_PIPE_GAP / 2;
+      const maxGapCenter = flappyState.worldHeight - groundHeight - 80 - FLAPPY_PIPE_GAP / 2;
+      const range = Math.max(0, maxGapCenter - minGapCenter);
+      const gapCenter = minGapCenter + Math.random() * range;
+      const pipe = {
+        x: flappyState.worldWidth + FLAPPY_PIPE_WIDTH + 20,
+        width: FLAPPY_PIPE_WIDTH,
+        gapCenter,
+        passed: false,
+        coin: null
+      };
+
+      if (Math.random() > 0.32) {
+        const coinSpread = FLAPPY_PIPE_GAP * 0.42;
+        pipe.coin = {
+          x: pipe.x + FLAPPY_PIPE_WIDTH * 0.5,
+          y: gapCenter + (Math.random() * 2 - 1) * coinSpread * 0.5,
+          collected: false
+        };
+      }
+
+      flappyState.pipes.push(pipe);
+    };
+
+    const resetFlappyRound = () => {
+      const groundHeight = getFlappyGroundHeight();
+      flappyState.score = 0;
+      flappyState.coins = 0;
+      flappyState.earnedCents = 0;
+      flappyState.rewardLogged = false;
+      flappyState.gameOver = false;
+      flappyState.birdY = Math.round((flappyState.worldHeight - groundHeight) * 0.42);
+      flappyState.birdVelocity = 0;
+      flappyState.birdRotation = 0;
+      flappyState.pipes = [];
+      flappyState.pipeSpawnTimer = 0.72;
+      flappyState.lastTimestamp = performance.now();
+      flappyState.flapFrame = 0;
+      flappyState.flapFrameIndex = 0;
+      updateFlappyHud();
+      renderFlappyFrame();
+    };
+
+    const circleRectCollision = (cx, cy, radius, rx, ry, rw, rh) => {
+      const nearestX = Math.max(rx, Math.min(cx, rx + rw));
+      const nearestY = Math.max(ry, Math.min(cy, ry + rh));
+      const dx = cx - nearestX;
+      const dy = cy - nearestY;
+      return dx * dx + dy * dy <= radius * radius;
+    };
+
+    const stopFlappyOrion = (reason = 'finished') => {
+      const hasProgress = flappyState.score > 0 || flappyState.coins > 0 || flappyState.earnedCents > 0;
+      const shouldHandle = flappyState.isRunning || ((reason === 'switch' || reason === 'restart') && hasProgress);
+      if (!shouldHandle) return;
+
+      flappyState.isRunning = false;
+      if (flappyState.rafId) {
+        window.cancelAnimationFrame(flappyState.rafId);
+        flappyState.rafId = null;
+      }
+      if (this.flappyOrionAnimationFrame) {
+        window.cancelAnimationFrame(this.flappyOrionAnimationFrame);
+        this.flappyOrionAnimationFrame = null;
+      }
+
+      commitFlappyReward();
+      if (flappyState.score > flappyState.best) {
+        flappyState.best = flappyState.score;
+        saveFlappyBest();
+      }
+
+      if (reason !== 'restart') {
+        flappyState.gameOver = reason !== 'switch';
+      }
+
+      if (flappyPanelEl) {
+        flappyPanelEl.classList.remove('is-running');
+      }
+      if (flappyStartBtn) {
+        flappyStartBtn.textContent = 'Старт';
+      }
+
+      if (reason === 'switch') {
+        setFlappyStatus('Гру призупинено. Повернись у Flappy Orion та натисни «Старт».');
+      } else if (reason !== 'restart') {
+        setFlappyStatus(`Гру завершено. Очки: ${flappyState.score}. Монет: ${flappyState.coins}. Зароблено: ${this.formatCoinBalance(flappyState.earnedCents)}.`);
+      }
+
+      updateFlappyHud();
+      renderFlappyFrame();
+    };
+
+    const stepFlappyOrion = (timestamp) => {
+      if (!flappyState.isRunning) return;
+      if (!miniGamesSection.isConnected || !miniGamesSection.classList.contains('active') || currentMiniGameView !== 'flappy') {
+        stopFlappyOrion('switch');
+        return;
+      }
+      const birdX = getFlappyBirdX();
+      const birdRadius = getFlappyBirdRadius();
+      const groundHeight = getFlappyGroundHeight();
+
+      const elapsedSeconds = Math.min(FLAPPY_MAX_DT, Math.max(0, (timestamp - flappyState.lastTimestamp) / 1000));
+      flappyState.lastTimestamp = timestamp;
+      flappyState.pipeSpawnTimer -= elapsedSeconds;
+      flappyState.groundOffset += FLAPPY_PIPE_SPEED * elapsedSeconds;
+      flappyState.cloudOffset += FLAPPY_PIPE_SPEED * elapsedSeconds * 0.16;
+      flappyState.flapFrameIndex += elapsedSeconds * 14;
+
+      if (flappyState.pipeSpawnTimer <= 0) {
+        spawnFlappyPipe();
+        flappyState.pipeSpawnTimer = FLAPPY_PIPE_SPAWN_INTERVAL + Math.random() * 0.28;
+      }
+
+      flappyState.birdVelocity += FLAPPY_GRAVITY * elapsedSeconds;
+      flappyState.birdY += flappyState.birdVelocity * elapsedSeconds;
+      flappyState.birdRotation = Math.max(-0.52, Math.min(1.08, flappyState.birdVelocity / 560));
+
+      const topLimit = birdRadius * 0.86;
+      const bottomLimit = flappyState.worldHeight - groundHeight - birdRadius * 0.82;
+      if (flappyState.birdY < topLimit || flappyState.birdY > bottomLimit) {
+        stopFlappyOrion('collision');
+        return;
+      }
+
+      const passReward = Math.max(1, Math.floor(this.getTapLevelStats().rewardPerTapCents / 2));
+      const coinReward = Math.max(4, this.getTapLevelStats().rewardPerTapCents * 2);
+      flappyState.pipes.forEach((pipe) => {
+        pipe.x -= FLAPPY_PIPE_SPEED * elapsedSeconds;
+        if (pipe.coin) {
+          pipe.coin.x = pipe.x + pipe.width * 0.5;
+        }
+
+        const topEnd = pipe.gapCenter - FLAPPY_PIPE_GAP / 2;
+        const bottomStart = pipe.gapCenter + FLAPPY_PIPE_GAP / 2;
+        const topCollision = circleRectCollision(
+          birdX,
+          flappyState.birdY,
+          birdRadius,
+          pipe.x,
+          0,
+          pipe.width,
+          topEnd
+        );
+        const bottomCollision = circleRectCollision(
+          birdX,
+          flappyState.birdY,
+          birdRadius,
+          pipe.x,
+          bottomStart,
+          pipe.width,
+          flappyState.worldHeight - groundHeight - bottomStart
+        );
+        if (topCollision || bottomCollision) {
+          stopFlappyOrion('collision');
+          return;
+        }
+
+        if (!pipe.passed && pipe.x + pipe.width < birdX - birdRadius * 0.35) {
+          pipe.passed = true;
+          flappyState.score += 1;
+          addFlappyReward(passReward);
+        }
+
+        if (pipe.coin && !pipe.coin.collected) {
+          const coinSize = Math.max(30, Math.round(flappyState.worldHeight * 0.078));
+          const dx = birdX - pipe.coin.x;
+          const dy = flappyState.birdY - pipe.coin.y;
+          const collisionDistance = birdRadius + coinSize * 0.38;
+          if (dx * dx + dy * dy <= collisionDistance * collisionDistance) {
+            pipe.coin.collected = true;
+            flappyState.coins += 1;
+            addFlappyReward(coinReward);
+          }
+        }
+      });
+
+      if (!flappyState.isRunning) return;
+
+      flappyState.pipes = flappyState.pipes.filter((pipe) => pipe.x + pipe.width > -120);
+      updateFlappyHud();
+      renderFlappyFrame();
+      flappyState.rafId = window.requestAnimationFrame(stepFlappyOrion);
+      this.flappyOrionAnimationFrame = flappyState.rafId;
+    };
+
+    const startFlappyOrion = () => {
+      if (!flappyCanvasEl) return;
+      resolveFlappyWorldSize();
+      ensureFlappyAssets();
+      stopFlappyOrion('restart');
+      resetFlappyRound();
+      flappyState.isRunning = true;
+      flappyState.lastTimestamp = performance.now();
+      if (flappyPanelEl) {
+        flappyPanelEl.classList.add('is-running');
+      }
+      if (flappyStartBtn) {
+        flappyStartBtn.textContent = 'Перезапуск';
+      }
+      setFlappyStatus('Лети вперед: клікай, торкайся або натискай Space для стрибка.');
+      flappyState.rafId = window.requestAnimationFrame(stepFlappyOrion);
+      this.flappyOrionAnimationFrame = flappyState.rafId;
+    };
+
+    const flappyJump = () => {
+      if (!flappyCanvasEl) return;
+      if (!flappyState.isRunning) {
+        startFlappyOrion();
+        return;
+      }
+      flappyState.birdVelocity = FLAPPY_FLAP_VELOCITY;
+      flappyState.birdRotation = -0.52;
+      flappyState.flapFrameIndex += 2;
     };
 
     const stopSignalHunt = (reason = 'finished') => {
@@ -774,6 +1319,13 @@ export class ChatAppFeaturesMethods {
       if (safeView !== 'grid2048') {
         commitGridReward();
       }
+      if (safeView !== 'flappy') {
+        stopFlappyOrion('switch');
+      } else {
+        resolveFlappyWorldSize();
+        ensureFlappyAssets();
+        renderFlappyFrame();
+      }
 
       try {
         window.localStorage.setItem(MINI_GAME_VIEW_KEY, safeView);
@@ -823,11 +1375,30 @@ export class ChatAppFeaturesMethods {
       });
     }
 
+    if (flappyStartBtn && flappyStartBtn.dataset.bound !== 'true') {
+      flappyStartBtn.dataset.bound = 'true';
+      flappyStartBtn.addEventListener('click', () => {
+        setMiniGameView('flappy');
+        startFlappyOrion();
+      });
+    }
+
+    if (flappyCanvasWrapEl && flappyCanvasWrapEl.dataset.bound !== 'true') {
+      flappyCanvasWrapEl.dataset.bound = 'true';
+      flappyCanvasWrapEl.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        setMiniGameView('flappy');
+        flappyJump();
+      });
+    }
+
     if (this.grid2048KeyHandler) {
       document.removeEventListener('keydown', this.grid2048KeyHandler);
       this.grid2048KeyHandler = null;
     }
     this.grid2048KeyHandler = (event) => {
+      if (currentMiniGameView !== 'grid2048') return;
       if (event.defaultPrevented) return;
       const keyMap = {
         ArrowUp: 'up',
@@ -845,6 +1416,26 @@ export class ChatAppFeaturesMethods {
       handleGridMove(direction);
     };
     document.addEventListener('keydown', this.grid2048KeyHandler);
+
+    if (this.flappyOrionKeyHandler) {
+      document.removeEventListener('keydown', this.flappyOrionKeyHandler);
+      this.flappyOrionKeyHandler = null;
+    }
+    this.flappyOrionKeyHandler = (event) => {
+      if (currentMiniGameView !== 'flappy') return;
+      if (!miniGamesSection.isConnected || !miniGamesSection.classList.contains('active')) return;
+      if (event.defaultPrevented) return;
+      if (event.repeat && flappyState.isRunning) return;
+
+      const isJumpKey = event.code === 'Space'
+        || event.code === 'ArrowUp'
+        || event.code === 'KeyW';
+      if (!isJumpKey) return;
+
+      event.preventDefault();
+      flappyJump();
+    };
+    document.addEventListener('keydown', this.flappyOrionKeyHandler);
 
     let gridTouchStartX = 0;
     let gridTouchStartY = 0;
@@ -874,8 +1465,23 @@ export class ChatAppFeaturesMethods {
     }
 
     updateSignalHud();
+    resolveFlappyWorldSize();
+    ensureFlappyAssets();
+    setFlappyStatus('Натисни «Старт», щоб полетіти. Клікай або тисни Space для стрибка.');
+    updateFlappyHud();
+    renderFlappyFrame();
     startGrid2048();
     setMiniGameView(currentMiniGameView);
+
+    if (this.flappyOrionResizeHandler) {
+      window.removeEventListener('resize', this.flappyOrionResizeHandler);
+      this.flappyOrionResizeHandler = null;
+    }
+    this.flappyOrionResizeHandler = () => {
+      resolveFlappyWorldSize();
+      renderFlappyFrame();
+    };
+    window.addEventListener('resize', this.flappyOrionResizeHandler, { passive: true });
 
     if (window.innerWidth <= 768 && tapperContentEl && levelIslandEl) {
       if (rateEl && rateEl.parentElement === tapperContentEl) {
