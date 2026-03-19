@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? '/Orion/' : '/'
-});
+const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'Orion';
+const pagesBase = `/${repositoryName}/`;
+
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? pagesBase : '/'
+}));
