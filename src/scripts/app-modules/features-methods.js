@@ -1,5 +1,7 @@
 import { setupSettingsSwipeBack } from '../swipe-handlers.js';
 import { escapeHtml } from '../ui-helpers.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const flappyCoinSoundUrl = new URL('../../Sounds/coin-sound.mp3', import.meta.url).href;
 
@@ -430,7 +432,6 @@ export class ChatAppFeaturesMethods {
     const driftMultiplierEl = settingsContainer.querySelector('#orionDriftMultiplier');
     const driftSpeedEl = settingsContainer.querySelector('#orionDriftSpeed');
     const driftOrbsEl = settingsContainer.querySelector('#orionDriftOrbs');
-    const driftBoostFillEl = settingsContainer.querySelector('#orionDriftBoostFill');
     const driftBestEl = settingsContainer.querySelector('#orionDriftBest');
     const driftStartBtn = settingsContainer.querySelector('#orionDriftStart');
     const driftSteerLeftBtn = settingsContainer.querySelector('#orionDriftSteerLeft');
@@ -512,29 +513,34 @@ export class ChatAppFeaturesMethods {
       cameraY: 0,
       prevCameraX: 0,
       prevCameraY: 0,
+      cameraShakeX: 0,
+      cameraShakeY: 0,
+      backgroundScroll: 0,
+      backgroundFlowSpeed: 0,
       runTime: 0,
       speed: 0,
       carX: 0,
       carY: 0,
       carAngle: 0,
+      steerAngle: 0,
+      yawRate: 0,
       driftCharge: 0,
       driftTime: 0,
-      boostValue: 0,
-      zoneBonusActive: false,
       coins: [],
-      zones: [],
+      obstacles: [],
       particles: [],
       tireTracks: [],
       trackSpawnCarry: 0,
       coinSpawnTimer: 0,
-      zoneSpawnTimer: 0,
+      obstacleSpawnTimer: 0,
+      hitCooldown: 0,
       lastTimestamp: 0,
       rafId: null,
       assetsLoading: false,
       carReady: false,
+      coneReady: false,
+      boxReady: false,
       orbReady: false,
-      carImage: null,
-      orbImage: null,
       steerDirection: 0,
       throttleDirection: 0,
       touchSteerDirection: 0,
@@ -543,11 +549,66 @@ export class ChatAppFeaturesMethods {
       keyRight: false,
       keyGas: false,
       keyBrake: false,
+      lastSteerInput: 0,
+      cameraSteer: 0,
       gearDirection: 1,
       shiftTargetDirection: 0,
       shiftDelayTimer: 0,
       swipeStartX: 0,
       swipeStartY: 0
+    };
+    const drift3d = {
+      scene: null,
+      camera: null,
+      renderer: null,
+      ground: null,
+      grid: null,
+      carRoot: null,
+      carVisual: null,
+      carFallback: null,
+      conePrototype: null,
+      boxPrototype: null,
+      coinTexture: null,
+      coinMaterial: null,
+      coinObjects: new Map(),
+      obstacleObjects: new Map(),
+      headlights: [],
+      brakeLights: [],
+      reverseLights: [],
+      frontWheels: [],
+      steerVisual: 0,
+      cameraPosition: new THREE.Vector3(0, 10, 14),
+      cameraLookAt: new THREE.Vector3(0, 0, 0),
+      loader: new GLTFLoader(),
+      textureLoader: new THREE.TextureLoader(),
+      themeKey: '',
+      worldScale: 0.03,
+      failed: false
+    };
+    const disposeDriftThreeContext = (context) => {
+      if (!context) return;
+      try {
+        if (context.scene) {
+          context.scene.traverse((node) => {
+            if (node.isMesh || node.isSprite) {
+              if (node.geometry) node.geometry.dispose();
+              const materials = Array.isArray(node.material) ? node.material : [node.material];
+              materials.forEach((material) => {
+                if (!material || material === context.coinMaterial) return;
+                Object.values(material).forEach((value) => {
+                  if (value && value.isTexture) value.dispose();
+                });
+                material.dispose?.();
+              });
+            }
+          });
+        }
+        context.coinMaterial?.dispose?.();
+        context.coinTexture?.dispose?.();
+        context.renderer?.dispose?.();
+      } catch {
+        // Ignore renderer dispose issues.
+      }
     };
 
     if (this.signalHuntTickTimer) {
@@ -566,6 +627,11 @@ export class ChatAppFeaturesMethods {
       window.cancelAnimationFrame(this.orionDriftAnimationFrame);
       this.orionDriftAnimationFrame = null;
     }
+    if (this.orionDriftThreeContext) {
+      disposeDriftThreeContext(this.orionDriftThreeContext);
+      this.orionDriftThreeContext = null;
+    }
+    this.orionDriftThreeContext = drift3d;
 
     try {
       const savedBest = Number.parseInt(window.localStorage.getItem(SIGNAL_HUNT_BEST_KEY) || '0', 10);
@@ -1241,7 +1307,7 @@ export class ChatAppFeaturesMethods {
       if (driftState.rewardLogged || driftState.earnedCents <= 0) return;
       this.addCoinTransaction({
         amountCents: driftState.earnedCents,
-        title: 'Гра: Orion Drift',
+        title: 'Гра: Orion Drive',
         category: 'games'
       });
       driftState.rewardLogged = true;
@@ -1263,7 +1329,6 @@ export class ChatAppFeaturesMethods {
         driftSpeedEl.textContent = String(speedKmh);
       }
       if (driftOrbsEl) driftOrbsEl.textContent = String(driftState.orbs);
-      if (driftBoostFillEl) driftBoostFillEl.style.width = `${Math.round(driftState.boostValue * 100)}%`;
       if (driftBestEl) driftBestEl.textContent = String(driftState.best);
     };
 
@@ -1304,6 +1369,12 @@ export class ChatAppFeaturesMethods {
       const targetHeight = Math.max(1, Math.round(driftState.worldHeight * devicePixelRatio));
       if (driftCanvasEl.width !== targetWidth) driftCanvasEl.width = targetWidth;
       if (driftCanvasEl.height !== targetHeight) driftCanvasEl.height = targetHeight;
+      if (drift3d.renderer && drift3d.camera) {
+        drift3d.renderer.setPixelRatio(Math.min(2, Math.max(1, window.devicePixelRatio || 1)));
+        drift3d.renderer.setSize(driftState.worldWidth, driftState.worldHeight, false);
+        drift3d.camera.aspect = driftState.worldWidth / Math.max(1, driftState.worldHeight);
+        drift3d.camera.updateProjectionMatrix();
+      }
       if (!driftState.isRunning) {
         driftState.carX = 0;
         driftState.carY = 0;
@@ -1311,6 +1382,8 @@ export class ChatAppFeaturesMethods {
         driftState.cameraY = 0;
         driftState.prevCameraX = 0;
         driftState.prevCameraY = 0;
+        driftState.cameraShakeX = 0;
+        driftState.cameraShakeY = 0;
       }
     };
 
@@ -1361,253 +1434,436 @@ export class ChatAppFeaturesMethods {
       });
     };
 
-    const spawnDriftZone = () => {
-      if (driftState.zones.length >= 8) return;
+    const spawnDriftObstacle = (minDistance = 280, maxDistance = 1600) => {
+      if (driftState.obstacles.length >= 22) return;
       const angle = Math.random() * Math.PI * 2;
-      const distance = 480 + Math.random() * 1400;
-      driftState.zones.push({
+      const distance = minDistance + Math.random() * (maxDistance - minDistance);
+      const type = Math.random() < 0.36 ? 'box' : 'cone';
+      const size = type === 'box'
+        ? Math.max(30, Math.round(driftState.worldHeight * (0.07 + Math.random() * 0.024)))
+        : Math.max(28, Math.round(driftState.worldHeight * (0.062 + Math.random() * 0.02)));
+      driftState.obstacles.push({
         id: Math.floor(Math.random() * 1_000_000),
         x: driftState.carX + Math.cos(angle) * distance,
         y: driftState.carY + Math.sin(angle) * distance,
-        radius: 160 + Math.random() * 90,
-        life: 20 + Math.random() * 18
+        type,
+        size,
+        rotation: (Math.random() - 0.5) * (type === 'box' ? 0.58 : 0.18)
       });
     };
 
-    const worldToScreen = (x, y) => {
-      return {
-        x: x - driftState.cameraX + driftState.worldWidth * 0.5,
-        y: y - driftState.cameraY + driftState.worldHeight * 0.5
-      };
+    const createDriftCoinObject = () => {
+      if (drift3d.coinMaterial) {
+        const spriteMaterial = drift3d.coinMaterial.clone();
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.renderOrder = 2;
+        return sprite;
+      }
+      const geometry = new THREE.CylinderGeometry(0.25, 0.25, 0.08, 20);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xf8b449,
+        emissive: 0x265a8e,
+        emissiveIntensity: 0.42,
+        metalness: 0.45,
+        roughness: 0.35
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = false;
+      mesh.position.y = 0.92;
+      return mesh;
+    };
+
+    const createFallbackConeMesh = () => {
+      const geometry = new THREE.ConeGeometry(0.34, 0.92, 18);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xff8d3d,
+        metalness: 0.08,
+        roughness: 0.72
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = false;
+      mesh.position.y = 0.46;
+      return mesh;
+    };
+
+    const createFallbackBoxMesh = () => {
+      const geometry = new THREE.BoxGeometry(0.72, 0.72, 0.72);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x8f704b,
+        metalness: 0.06,
+        roughness: 0.82
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = false;
+      mesh.position.y = 0.36;
+      return mesh;
+    };
+
+    const alignDriftCarLights = (carBody = drift3d.carVisual || drift3d.carFallback) => {
+      if (!drift3d.carRoot || !carBody) return;
+      drift3d.carRoot.updateMatrixWorld(true);
+      const worldBox = new THREE.Box3().setFromObject(carBody);
+      if (worldBox.isEmpty()) return;
+
+      const localMin = worldBox.min.clone();
+      const localMax = worldBox.max.clone();
+      drift3d.carRoot.worldToLocal(localMin);
+      drift3d.carRoot.worldToLocal(localMax);
+
+      const minX = Math.min(localMin.x, localMax.x);
+      const maxX = Math.max(localMin.x, localMax.x);
+      const minY = Math.min(localMin.y, localMax.y);
+      const maxY = Math.max(localMin.y, localMax.y);
+      const minZ = Math.min(localMin.z, localMax.z);
+      const maxZ = Math.max(localMin.z, localMax.z);
+      const width = Math.max(0.2, maxX - minX);
+      const height = Math.max(0.2, maxY - minY);
+      const length = Math.max(0.4, maxZ - minZ);
+
+      const sideOffset = Math.max(0.14, Math.min(0.55, width * 0.23));
+      const frontY = minY + height * 0.38;
+      const rearY = minY + height * 0.33;
+      const frontZ = maxZ - Math.max(0.03, length * 0.02);
+      const rearZ = minZ + Math.max(0.03, length * 0.03);
+      const targetZ = frontZ + Math.max(8.5, length * 7.2);
+      const targetY = minY + Math.max(0.02, height * 0.06);
+
+      drift3d.headlights.forEach((light, index) => {
+        const side = index === 0 ? -1 : 1;
+        const x = sideOffset * side;
+        light.position.set(x, frontY, frontZ);
+        const target = light.userData.targetNode;
+        if (target) target.position.set(x * 0.7, targetY, targetZ);
+      });
+      drift3d.brakeLights.forEach((light, index) => {
+        const side = index === 0 ? -1 : 1;
+        light.position.set(sideOffset * side, rearY, rearZ);
+      });
+      drift3d.reverseLights.forEach((light, index) => {
+        const side = index === 0 ? -1 : 1;
+        light.position.set(sideOffset * side * 0.88, rearY, rearZ + 0.01);
+      });
+    };
+
+    const ensureDriftThreeScene = () => {
+      if (!driftCanvasEl || drift3d.failed) return false;
+      if (drift3d.renderer && drift3d.scene && drift3d.camera && drift3d.carRoot) return true;
+
+      try {
+        const renderer = new THREE.WebGLRenderer({
+          canvas: driftCanvasEl,
+          antialias: true,
+          alpha: false,
+          powerPreference: 'high-performance'
+        });
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(2, Math.max(1, window.devicePixelRatio || 1)));
+        renderer.setSize(driftState.worldWidth, driftState.worldHeight, false);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(
+          58,
+          driftState.worldWidth / Math.max(1, driftState.worldHeight),
+          0.1,
+          420
+        );
+        camera.position.copy(drift3d.cameraPosition);
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.34);
+        const hemi = new THREE.HemisphereLight(0x8eb5ff, 0x1c2027, 0.48);
+        const directional = new THREE.DirectionalLight(0xffffff, 0.6);
+        directional.position.set(18, 24, 10);
+        directional.castShadow = true;
+        directional.shadow.mapSize.width = 1024;
+        directional.shadow.mapSize.height = 1024;
+        directional.shadow.camera.near = 0.5;
+        directional.shadow.camera.far = 120;
+        directional.shadow.camera.left = -28;
+        directional.shadow.camera.right = 28;
+        directional.shadow.camera.top = 28;
+        directional.shadow.camera.bottom = -28;
+
+        const ground = new THREE.Mesh(
+          new THREE.PlaneGeometry(720, 720, 1, 1),
+          new THREE.MeshStandardMaterial({ color: 0x1b1d21, roughness: 0.95, metalness: 0.02 })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.02;
+        ground.receiveShadow = true;
+
+        const grid = new THREE.GridHelper(720, 120, 0x2f3a47, 0x2f3a47);
+        grid.position.y = 0.01;
+        grid.material.opacity = 0.28;
+        grid.material.transparent = true;
+
+        const carRoot = new THREE.Group();
+        carRoot.position.set(0, 0.08, 0);
+
+        const fallbackCar = new THREE.Mesh(
+          new THREE.BoxGeometry(1.35, 0.46, 2.35),
+          new THREE.MeshStandardMaterial({ color: 0xdd4040, metalness: 0.2, roughness: 0.55 })
+        );
+        fallbackCar.position.y = 0.38;
+        fallbackCar.castShadow = true;
+        fallbackCar.receiveShadow = false;
+        carRoot.add(fallbackCar);
+
+        const makeHeadlight = (offsetX) => {
+          const light = new THREE.SpotLight(0xffd996, 3.2, 42, Math.PI / 4.6, 0.56, 0.85);
+          light.position.set(offsetX, 0.5, 0.96);
+          const target = new THREE.Object3D();
+          target.position.set(offsetX * 0.7, 0.04, 10);
+          carRoot.add(target);
+          light.target = target;
+          light.userData.targetNode = target;
+          carRoot.add(light);
+          return light;
+        };
+        const makeRearLight = (offsetX, color) => {
+          const light = new THREE.PointLight(color, 0, 3.6, 2.1);
+          light.position.set(offsetX, 0.34, -1.02);
+          carRoot.add(light);
+          return light;
+        };
+
+        drift3d.headlights = [makeHeadlight(-0.28), makeHeadlight(0.28)];
+        drift3d.brakeLights = [makeRearLight(-0.26, 0xff4a4a), makeRearLight(0.26, 0xff4a4a)];
+        drift3d.reverseLights = [makeRearLight(-0.23, 0xffffff), makeRearLight(0.23, 0xffffff)];
+
+        scene.add(ground);
+        scene.add(grid);
+        scene.add(ambient);
+        scene.add(hemi);
+        scene.add(directional);
+        scene.add(carRoot);
+
+        drift3d.renderer = renderer;
+        drift3d.scene = scene;
+        drift3d.camera = camera;
+        drift3d.ground = ground;
+        drift3d.grid = grid;
+        drift3d.carRoot = carRoot;
+        drift3d.carFallback = fallbackCar;
+        drift3d.themeKey = '';
+        alignDriftCarLights(fallbackCar);
+      } catch {
+        drift3d.failed = true;
+        setDriftStatus('3D рендер недоступний у цьому браузері. Спробуй інший браузер або пристрій.');
+        return false;
+      }
+
+      return true;
+    };
+
+    const syncDriftThreeEntities = () => {
+      if (!drift3d.scene) return;
+
+      const coinIds = new Set(driftState.coins.map((coin) => coin.id));
+      drift3d.coinObjects.forEach((object3d, id) => {
+        if (coinIds.has(id)) return;
+        drift3d.scene.remove(object3d);
+        if (object3d.geometry) object3d.geometry.dispose();
+        if (object3d.material && object3d.material !== drift3d.coinMaterial) object3d.material.dispose();
+        drift3d.coinObjects.delete(id);
+      });
+
+      driftState.coins.forEach((coin) => {
+        let coinObject = drift3d.coinObjects.get(coin.id);
+        if (!coinObject) {
+          coinObject = createDriftCoinObject();
+          drift3d.scene.add(coinObject);
+          drift3d.coinObjects.set(coin.id, coinObject);
+        }
+        const sceneX = coin.x * drift3d.worldScale;
+        const sceneZ = coin.y * drift3d.worldScale;
+        const bob = Math.sin(driftState.runTime * 4.2 + coin.id * 0.01) * 0.12;
+        coinObject.position.set(sceneX, 0.94 + bob, sceneZ);
+        if (coinObject.isSprite) {
+          const coinScale = Math.max(1.8, coin.size * drift3d.worldScale * 0.86);
+          coinObject.scale.set(coinScale, coinScale, 1);
+          coinObject.material.rotation = coin.spin;
+        } else {
+          coinObject.rotation.y = coin.spin;
+        }
+      });
+
+      const obstacleIds = new Set(driftState.obstacles.map((obstacle) => obstacle.id));
+      drift3d.obstacleObjects.forEach((object3d, id) => {
+        if (obstacleIds.has(id)) return;
+        drift3d.scene.remove(object3d);
+        drift3d.obstacleObjects.delete(id);
+      });
+
+      driftState.obstacles.forEach((obstacle) => {
+        let obstacleObject = drift3d.obstacleObjects.get(obstacle.id);
+        if (!obstacleObject) {
+          const obstacleType = obstacle.type === 'box' ? 'box' : 'cone';
+          if (obstacleType === 'box') {
+            if (drift3d.boxPrototype) {
+              obstacleObject = drift3d.boxPrototype.clone(true);
+            } else {
+              obstacleObject = createFallbackBoxMesh();
+            }
+          } else if (drift3d.conePrototype) {
+            obstacleObject = drift3d.conePrototype.clone(true);
+          } else {
+            obstacleObject = createFallbackConeMesh();
+          }
+          obstacleObject.userData.baseScale = obstacleObject.scale.clone();
+          drift3d.scene.add(obstacleObject);
+          drift3d.obstacleObjects.set(obstacle.id, obstacleObject);
+        }
+        const sceneX = obstacle.x * drift3d.worldScale;
+        const sceneZ = obstacle.y * drift3d.worldScale;
+        const obstacleType = obstacle.type === 'box' ? 'box' : 'cone';
+        const baseSize = obstacleType === 'box' ? 42 : 36;
+        const scaleMultiplier = Math.max(0.68, obstacle.size / baseSize);
+        if (obstacleObject.userData.baseScale) {
+          obstacleObject.scale.copy(obstacleObject.userData.baseScale).multiplyScalar(scaleMultiplier);
+        } else {
+          obstacleObject.scale.setScalar(scaleMultiplier);
+        }
+        obstacleObject.position.x = sceneX;
+        obstacleObject.position.z = sceneZ;
+        obstacleObject.rotation.y = -obstacle.rotation;
+      });
     };
 
     const renderOrionDriftFrame = () => {
       if (!driftCanvasEl) return;
-      const ctx = driftCanvasEl.getContext('2d');
-      if (!ctx) return;
+      if (!ensureDriftThreeScene()) return;
+      resolveDriftWorldSize();
+      syncDriftThreeEntities();
 
-      const worldWidth = driftState.worldWidth || 900;
-      const worldHeight = driftState.worldHeight || 540;
-      const dpr = worldWidth > 0 ? driftCanvasEl.width / worldWidth : 1;
-      const carHeight = Math.max(62, Math.round(worldHeight * 0.2));
-      const carWidth = Math.max(34, Math.round(carHeight * 0.52));
       const isDarkTheme = document.documentElement.classList.contains('dark-theme');
-      const speedAbs = Math.abs(driftState.speed);
-      const speedRatio = Math.max(0, Math.min(1, (speedAbs - 40) / 560));
-      const backdropTop = isDarkTheme ? '#1b1d21' : '#f8f1e5';
-      const backdropBottom = isDarkTheme ? '#0f1114' : '#ebdcc4';
-      const gridLineColor = isDarkTheme ? 'rgba(255, 255, 255, 0.04)' : 'rgba(109, 90, 63, 0.12)';
-      const tireTrackColor = isDarkTheme ? 'rgba(9, 12, 18, 0.86)' : 'rgba(31, 45, 66, 0.42)';
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.imageSmoothingEnabled = true;
-      ctx.clearRect(0, 0, worldWidth, worldHeight);
-
-      const backdrop = ctx.createLinearGradient(0, 0, 0, worldHeight);
-      backdrop.addColorStop(0, backdropTop);
-      backdrop.addColorStop(1, backdropBottom);
-      ctx.fillStyle = backdrop;
-      ctx.fillRect(0, 0, worldWidth, worldHeight);
-
-      const tile = 120;
-      const speedGridFactor = 1 + speedRatio * 0.85;
-      const offsetX = ((-(driftState.cameraX * speedGridFactor) % tile) + tile) % tile;
-      const offsetY = ((-(driftState.cameraY * speedGridFactor) % tile) + tile) % tile;
-      ctx.fillStyle = gridLineColor;
-      for (let x = -tile; x < worldWidth + tile; x += tile) {
-        ctx.fillRect(Math.round(offsetX + x), 0, 2, worldHeight);
-      }
-      for (let y = -tile; y < worldHeight + tile; y += tile) {
-        ctx.fillRect(0, Math.round(offsetY + y), worldWidth, 2);
-      }
-
-      driftState.tireTracks.forEach((track) => {
-        const p = worldToScreen(track.x, track.y);
-        if (p.x < -48 || p.y < -48 || p.x > worldWidth + 48 || p.y > worldHeight + 48) return;
-        const lifeRatio = track.maxLife > 0 ? track.life / track.maxLife : 0;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(track.angle);
-        ctx.globalAlpha = Math.max(0, Math.min(0.42, lifeRatio * 0.44)) * track.intensity;
-        ctx.strokeStyle = tireTrackColor;
-        ctx.lineWidth = track.width;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(0, track.length * 0.5);
-        ctx.lineTo(0, -track.length * 0.5);
-        ctx.stroke();
-        ctx.restore();
-      });
-      ctx.globalAlpha = 1;
-
-      driftState.zones.forEach((zone) => {
-        const p = worldToScreen(zone.x, zone.y);
-        const pulse = 0.12 + Math.sin((driftState.runTime * 3 + zone.id * 0.01)) * 0.05;
-        ctx.fillStyle = `rgba(58, 165, 255, ${Math.max(0.06, pulse)})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, zone.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(86, 188, 255, 0.36)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, zone.radius, 0, Math.PI * 2);
-        ctx.stroke();
-      });
-
-      driftState.coins.forEach((coin) => {
-        const p = worldToScreen(coin.x, coin.y);
-        const coinSize = coin.size;
-        if (p.x < -coinSize || p.y < -coinSize || p.x > worldWidth + coinSize || p.y > worldHeight + coinSize) return;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(coin.spin);
-        ctx.shadowColor = 'rgba(62, 181, 255, 0.82)';
-        ctx.shadowBlur = 16;
-        if (driftState.orbReady && driftState.orbImage) {
-          ctx.drawImage(driftState.orbImage, -coinSize / 2, -coinSize / 2, coinSize, coinSize);
-        } else {
-          ctx.fillStyle = '#48b9ff';
-          ctx.beginPath();
-          ctx.arc(0, 0, coinSize * 0.45, 0, Math.PI * 2);
-          ctx.fill();
+      const themeKey = isDarkTheme ? 'dark' : 'light';
+      if (drift3d.themeKey !== themeKey) {
+        drift3d.themeKey = themeKey;
+        const clearColor = isDarkTheme ? 0x111318 : 0xf0e6d4;
+        const groundColor = isDarkTheme ? 0x1a1d22 : 0xe7dac3;
+        const gridColor = isDarkTheme ? 0x2e3642 : 0x9f8e72;
+        drift3d.renderer.setClearColor(clearColor, 1);
+        drift3d.scene.fog = new THREE.Fog(clearColor, 30, 130);
+        if (drift3d.ground?.material) drift3d.ground.material.color.setHex(groundColor);
+        if (drift3d.grid) {
+          drift3d.grid.material.color.setHex(gridColor);
+          drift3d.grid.material.opacity = isDarkTheme ? 0.28 : 0.34;
         }
-        ctx.restore();
-      });
-
-      driftState.particles.forEach((particle) => {
-        const p = worldToScreen(particle.x, particle.y);
-        ctx.fillStyle = particle.color;
-        ctx.globalAlpha = Math.max(0, Math.min(1, particle.life * 3));
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, particle.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      ctx.globalAlpha = 1;
-
-      const carPoint = worldToScreen(driftState.carX, driftState.carY);
-      ctx.save();
-      ctx.translate(carPoint.x, carPoint.y);
-      ctx.rotate(driftState.carAngle);
-
-      const beamReach = Math.max(180, worldHeight * 0.44) + Math.min(80, speedAbs * 0.12);
-      const beamNear = Math.max(10, carWidth * 0.2);
-      const beamFar = Math.max(74, worldWidth * 0.12);
-      const beamAlpha = (driftState.isRunning ? 0.9 : 0.68) * (0.86 + Math.min(0.18, speedAbs / 760));
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      const drawHeadlightBeam = (offsetX) => {
-        const outerGradient = ctx.createLinearGradient(offsetX, -carHeight * 0.34, offsetX, -beamReach);
-        outerGradient.addColorStop(0, `rgba(255, 227, 143, ${0.18 * beamAlpha})`);
-        outerGradient.addColorStop(0.42, `rgba(255, 217, 124, ${0.09 * beamAlpha})`);
-        outerGradient.addColorStop(1, 'rgba(255, 214, 120, 0)');
-        ctx.fillStyle = outerGradient;
-        ctx.beginPath();
-        ctx.moveTo(offsetX - beamNear * 1.35, -carHeight * 0.36);
-        ctx.lineTo(offsetX + beamNear * 1.35, -carHeight * 0.36);
-        ctx.lineTo(offsetX + beamFar * 1.65, -beamReach);
-        ctx.lineTo(offsetX - beamFar * 1.65, -beamReach);
-        ctx.closePath();
-        ctx.fill();
-
-        const innerGradient = ctx.createLinearGradient(offsetX, -carHeight * 0.36, offsetX, -beamReach * 0.92);
-        innerGradient.addColorStop(0, `rgba(255, 238, 180, ${0.3 * beamAlpha})`);
-        innerGradient.addColorStop(0.5, `rgba(255, 224, 138, ${0.14 * beamAlpha})`);
-        innerGradient.addColorStop(1, 'rgba(255, 220, 132, 0)');
-        ctx.fillStyle = innerGradient;
-        ctx.beginPath();
-        ctx.moveTo(offsetX - beamNear * 0.9, -carHeight * 0.37);
-        ctx.lineTo(offsetX + beamNear * 0.9, -carHeight * 0.37);
-        ctx.lineTo(offsetX + beamFar * 1.02, -beamReach * 0.94);
-        ctx.lineTo(offsetX - beamFar * 1.02, -beamReach * 0.94);
-        ctx.closePath();
-        ctx.fill();
-      };
-      drawHeadlightBeam(-carWidth * 0.19);
-      drawHeadlightBeam(carWidth * 0.19);
-      ctx.restore();
-
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.fillStyle = `rgba(255, 236, 184, ${0.92 * beamAlpha})`;
-      ctx.shadowColor = 'rgba(255, 212, 129, 0.92)';
-      ctx.shadowBlur = 15;
-      ctx.beginPath();
-      ctx.arc(-carWidth * 0.19, -carHeight * 0.4, Math.max(2.2, carWidth * 0.07), 0, Math.PI * 2);
-      ctx.arc(carWidth * 0.19, -carHeight * 0.4, Math.max(2.2, carWidth * 0.07), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      if (driftState.carReady && driftState.carImage) {
-        ctx.drawImage(driftState.carImage, -carWidth / 2, -carHeight / 2, carWidth, carHeight);
-      } else {
-        ctx.fillStyle = '#ec4d43';
-        ctx.fillRect(-carWidth / 2, -carHeight / 2, carWidth, carHeight);
       }
+
+      const carX = driftState.carX * drift3d.worldScale;
+      const carZ = driftState.carY * drift3d.worldScale;
+      const forwardX = Math.sin(driftState.carAngle);
+      const forwardZ = -Math.cos(driftState.carAngle);
+      const sideX = Math.cos(driftState.carAngle);
+      const sideZ = Math.sin(driftState.carAngle);
+      const speedAbs = Math.abs(driftState.speed);
+      const speedRatio = Math.max(0, Math.min(1, speedAbs / 620));
+      const yaw = Math.atan2(forwardX, forwardZ);
+
+      drift3d.carRoot.position.set(carX, 0.08, carZ);
+      drift3d.carRoot.rotation.y = yaw;
+      const visualSteerTarget = Math.max(-0.62, Math.min(0.62, driftState.steerAngle * 1.1));
+      drift3d.steerVisual += (visualSteerTarget - drift3d.steerVisual) * 0.22;
+      const wheelTurnAngle = Math.max(-0.48, Math.min(0.48, drift3d.steerVisual));
+      drift3d.frontWheels.forEach((wheel) => {
+        wheel.node.rotation.y = wheel.baseY - wheelTurnAngle;
+      });
+
+      const beamAlpha = (driftState.isRunning ? 0.9 : 0.5) * (0.55 + Math.min(0.45, speedAbs / 640));
+      drift3d.headlights.forEach((light) => {
+        light.intensity = (isDarkTheme ? 4.4 : 3.2) * beamAlpha;
+        light.distance = 22 + Math.min(24, speedAbs * 0.07);
+      });
 
       const brakeInput = driftState.isRunning ? Math.max(0, -resolveDriftThrottleInput()) : 0;
       const brakeStrength = Math.min(1, brakeInput * (speedAbs > 10 ? 1 : 0.7));
-      const rearBase = driftState.isRunning ? 0.18 : 0.12;
-      const rearGlowAlpha = rearBase + brakeStrength * 0.76;
-      const drawTailLight = (offsetX) => {
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.shadowColor = `rgba(255, 74, 74, ${0.55 + brakeStrength * 0.35})`;
-        ctx.shadowBlur = 7 + brakeStrength * 15;
-        ctx.fillStyle = `rgba(255, 86, 86, ${rearGlowAlpha})`;
-        ctx.beginPath();
-        ctx.ellipse(offsetX, carHeight * 0.41, carWidth * 0.11, carHeight * 0.04, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = `rgba(255, 174, 174, ${0.32 + brakeStrength * 0.42})`;
-        ctx.beginPath();
-        ctx.ellipse(offsetX, carHeight * 0.405, carWidth * 0.06, carHeight * 0.02, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      };
-      drawTailLight(-carWidth * 0.19);
-      drawTailLight(carWidth * 0.19);
-
+      drift3d.brakeLights.forEach((light) => {
+        light.intensity = 0.18 + brakeStrength * 2.2;
+      });
       const isReversePreparing = driftState.isRunning
         && driftState.shiftTargetDirection < 0
         && driftState.shiftDelayTimer > 0
         && Math.abs(driftState.speed) < 1.5;
       const isReverseEngaged = driftState.isRunning && driftState.gearDirection < 0;
-      const reverseLightStrength = isReversePreparing ? 0.38 : isReverseEngaged ? 0.26 : 0;
-      const drawReverseLight = (offsetX) => {
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.shadowColor = `rgba(255, 255, 255, ${0.08 + reverseLightStrength * 0.18})`;
-        ctx.shadowBlur = 2 + reverseLightStrength * 5;
-        ctx.fillStyle = `rgba(255, 255, 245, ${0.08 + reverseLightStrength * 0.22})`;
-        ctx.beginPath();
-        ctx.ellipse(offsetX, carHeight * 0.41, carWidth * 0.07, carHeight * 0.022, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      };
-      if (reverseLightStrength > 0) {
-        drawReverseLight(-carWidth * 0.19);
-        drawReverseLight(carWidth * 0.19);
+      const reverseStrength = isReversePreparing ? 0.35 : isReverseEngaged ? 0.22 : 0;
+      drift3d.reverseLights.forEach((light) => {
+        light.intensity = reverseStrength;
+      });
+
+      const steerBlend = Math.min(1, 0.065 + speedRatio * 0.14);
+      driftState.cameraSteer += (driftState.lastSteerInput - driftState.cameraSteer) * steerBlend;
+      const lateralShift = driftState.cameraSteer * (0.14 + speedRatio * 0.42);
+      const lookAhead = 4.4 + speedRatio * 6.2;
+      const followDistance = 8.2 + speedRatio * 2.2;
+      const cameraHeight = 5 + speedRatio * 1.7;
+      const desiredCamera = new THREE.Vector3(
+        carX - forwardX * followDistance + sideX * lateralShift + driftState.cameraShakeX * 0.012,
+        cameraHeight,
+        carZ - forwardZ * followDistance + sideZ * lateralShift + driftState.cameraShakeY * 0.012
+      );
+      const desiredLookAt = new THREE.Vector3(
+        carX + forwardX * lookAhead + sideX * lateralShift * 0.34,
+        0.82,
+        carZ + forwardZ * lookAhead + sideZ * lateralShift * 0.34
+      );
+      const cameraLerp = Math.min(1, 0.12 + speedRatio * 0.22);
+      drift3d.cameraPosition.lerp(desiredCamera, cameraLerp);
+      drift3d.cameraLookAt.lerp(desiredLookAt, Math.min(1, cameraLerp * 1.35));
+      const targetFov = 56 + speedRatio * 7;
+      if (Math.abs(drift3d.camera.fov - targetFov) > 0.05) {
+        drift3d.camera.fov += (targetFov - drift3d.camera.fov) * Math.min(1, cameraLerp * 0.9);
+        drift3d.camera.updateProjectionMatrix();
       }
-      ctx.restore();
+      drift3d.camera.position.copy(drift3d.cameraPosition);
+      drift3d.camera.lookAt(drift3d.cameraLookAt);
+
+      drift3d.renderer.render(drift3d.scene, drift3d.camera);
     };
 
     const ensureDriftAssets = () => {
       if (!driftCanvasEl) return;
-
-      if (this.orionDriftCarImage?.complete) {
-        driftState.carImage = this.orionDriftCarImage;
-        driftState.carReady = true;
-      }
-      if (this.orionDriftOrbImage?.complete) {
-        driftState.orbImage = this.orionDriftOrbImage;
-        driftState.orbReady = true;
-      }
-
-      if (driftState.assetsLoading || (driftState.carReady && driftState.orbReady)) return;
-      driftState.assetsLoading = true;
-
+      if (!ensureDriftThreeScene()) return;
       const carSrc = driftCanvasEl.dataset.carSrc || '';
+      const coneSrc = driftCanvasEl.dataset.coneSrc || '';
+      const boxSrc = driftCanvasEl.dataset.boxSrc || '';
       const orbSrc = driftCanvasEl.dataset.orbSrc || '';
+      if (!boxSrc) driftState.boxReady = true;
+
+      if (
+        driftState.assetsLoading
+        || (driftState.carReady && driftState.coneReady && driftState.boxReady && driftState.orbReady)
+      ) return;
+      driftState.assetsLoading = true;
       const tasks = [];
+
+      const normalizeLoadedModel = (object3d, targetSize) => {
+        object3d.traverse((node) => {
+          if (!node.isMesh) return;
+          node.castShadow = true;
+          node.receiveShadow = false;
+          if (node.material) {
+            node.material.metalness = Math.min(0.65, node.material.metalness ?? 0.12);
+            node.material.roughness = Math.max(0.28, node.material.roughness ?? 0.62);
+          }
+        });
+        const box = new THREE.Box3().setFromObject(object3d);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDimension = Math.max(size.x, size.y, size.z, 0.001);
+        const scaleFactor = targetSize / maxDimension;
+        object3d.scale.multiplyScalar(scaleFactor);
+        box.setFromObject(object3d);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        object3d.position.sub(center);
+        box.setFromObject(object3d);
+        object3d.position.y -= box.min.y;
+      };
 
       const finish = () => {
         driftState.assetsLoading = false;
@@ -1616,29 +1872,88 @@ export class ChatAppFeaturesMethods {
 
       if (!driftState.carReady && carSrc) {
         tasks.push(new Promise((resolve) => {
-          const image = new Image();
-          image.onload = () => {
-            this.orionDriftCarImage = image;
-            driftState.carImage = image;
+          drift3d.loader.load(carSrc, (gltf) => {
+            const carScene = gltf.scene || gltf.scenes?.[0];
+            if (carScene && drift3d.carRoot) {
+              normalizeLoadedModel(carScene, 2.7);
+              if (drift3d.carVisual) drift3d.carRoot.remove(drift3d.carVisual);
+              if (drift3d.carFallback) drift3d.carRoot.remove(drift3d.carFallback);
+              drift3d.carVisual = carScene;
+              drift3d.carRoot.add(carScene);
+              drift3d.frontWheels = [];
+              drift3d.steerVisual = 0;
+              carScene.traverse((node) => {
+                const nodeName = String(node.name || '').toLowerCase();
+                if (!nodeName.includes('wheel') || !nodeName.includes('front')) return;
+                drift3d.frontWheels.push({
+                  node,
+                  baseY: node.rotation.y
+                });
+              });
+              alignDriftCarLights(carScene);
+            }
             driftState.carReady = true;
             resolve();
-          };
-          image.onerror = () => resolve();
-          image.src = carSrc;
+          }, undefined, () => {
+            driftState.carReady = true;
+            resolve();
+          });
+        }));
+      }
+
+      if (!driftState.coneReady && coneSrc) {
+        tasks.push(new Promise((resolve) => {
+          drift3d.loader.load(coneSrc, (gltf) => {
+            const coneScene = gltf.scene || gltf.scenes?.[0];
+            if (coneScene) {
+              normalizeLoadedModel(coneScene, 1.05);
+              drift3d.conePrototype = coneScene;
+            }
+            driftState.coneReady = true;
+            resolve();
+          }, undefined, () => {
+            driftState.coneReady = true;
+            resolve();
+          });
+        }));
+      }
+
+      if (!driftState.boxReady && boxSrc) {
+        tasks.push(new Promise((resolve) => {
+          drift3d.loader.load(boxSrc, (gltf) => {
+            const boxScene = gltf.scene || gltf.scenes?.[0];
+            if (boxScene) {
+              normalizeLoadedModel(boxScene, 1.18);
+              drift3d.boxPrototype = boxScene;
+            }
+            driftState.boxReady = true;
+            resolve();
+          }, undefined, () => {
+            driftState.boxReady = true;
+            resolve();
+          });
         }));
       }
 
       if (!driftState.orbReady && orbSrc) {
         tasks.push(new Promise((resolve) => {
-          const image = new Image();
-          image.onload = () => {
-            this.orionDriftOrbImage = image;
-            driftState.orbImage = image;
+          drift3d.textureLoader.load(orbSrc, (texture) => {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.anisotropy = Math.min(8, drift3d.renderer?.capabilities?.getMaxAnisotropy?.() || 1);
+            texture.needsUpdate = true;
+            drift3d.coinTexture = texture;
+            drift3d.coinMaterial = new THREE.SpriteMaterial({
+              map: texture,
+              transparent: true,
+              depthWrite: false,
+              depthTest: false
+            });
             driftState.orbReady = true;
             resolve();
-          };
-          image.onerror = () => resolve();
-          image.src = orbSrc;
+          }, undefined, () => {
+            driftState.orbReady = true;
+            resolve();
+          });
         }));
       }
 
@@ -1646,7 +1961,6 @@ export class ChatAppFeaturesMethods {
         finish();
         return;
       }
-
       Promise.all(tasks).finally(finish);
     };
 
@@ -1662,21 +1976,26 @@ export class ChatAppFeaturesMethods {
       driftState.carX = 0;
       driftState.carY = 0;
       driftState.carAngle = 0;
+      driftState.steerAngle = 0;
+      driftState.yawRate = 0;
       driftState.cameraX = 0;
       driftState.cameraY = 0;
       driftState.prevCameraX = 0;
       driftState.prevCameraY = 0;
+      driftState.cameraShakeX = 0;
+      driftState.cameraShakeY = 0;
+      driftState.backgroundScroll = 0;
+      driftState.backgroundFlowSpeed = 0;
       driftState.driftCharge = 0;
       driftState.driftTime = 0;
-      driftState.zoneBonusActive = false;
-      driftState.boostValue = 0;
       driftState.coins = [];
-      driftState.zones = [];
+      driftState.obstacles = [];
       driftState.particles = [];
       driftState.tireTracks = [];
       driftState.trackSpawnCarry = 0;
       driftState.coinSpawnTimer = 0.5;
-      driftState.zoneSpawnTimer = 3.2;
+      driftState.obstacleSpawnTimer = 0.9;
+      driftState.hitCooldown = 0;
       driftState.lastTimestamp = performance.now();
       driftState.steerDirection = 0;
       driftState.throttleDirection = 0;
@@ -1686,11 +2005,13 @@ export class ChatAppFeaturesMethods {
       driftState.keyRight = false;
       driftState.keyGas = false;
       driftState.keyBrake = false;
+      driftState.lastSteerInput = 0;
+      driftState.cameraSteer = 0;
       driftState.gearDirection = 1;
       driftState.shiftTargetDirection = 0;
       driftState.shiftDelayTimer = 0;
       for (let i = 0; i < 10; i += 1) spawnDriftCoin(180, 1200);
-      for (let i = 0; i < 3; i += 1) spawnDriftZone();
+      for (let i = 0; i < 8; i += 1) spawnDriftObstacle(220, 1800);
       syncDriftControlButtons();
       updateDriftHud();
       renderOrionDriftFrame();
@@ -1721,9 +2042,9 @@ export class ChatAppFeaturesMethods {
       if (driftStartBtn) driftStartBtn.textContent = 'Старт';
 
       if (reason === 'switch') {
-        setDriftStatus('Режим призупинено. Повернись в Orion Drift, щоб продовжити поїздку.');
+        setDriftStatus('Режим призупинено. Повернись в Orion Drive, щоб продовжити поїздку.');
       } else if (reason !== 'restart') {
-        setDriftStatus(`Сесію завершено. Очки: ${Math.floor(driftState.score)}. Сфери: ${driftState.orbs}. Зароблено: ${this.formatCoinBalance(driftState.earnedCents)}.`);
+        setDriftStatus(`Сесію завершено. Очки: ${Math.floor(driftState.score)}. Орби: ${driftState.orbs}. Зароблено: ${this.formatCoinBalance(driftState.earnedCents)}.`);
       }
 
       syncDriftControlButtons();
@@ -1741,9 +2062,11 @@ export class ChatAppFeaturesMethods {
       const elapsedSeconds = Math.min(1 / 30, Math.max(0, (timestamp - driftState.lastTimestamp) / 1000));
       driftState.lastTimestamp = timestamp;
       driftState.runTime += elapsedSeconds;
+      driftState.hitCooldown = Math.max(0, driftState.hitCooldown - elapsedSeconds);
 
       const steerInput = resolveDriftSteerInput();
       const throttleInput = resolveDriftThrottleInput();
+      driftState.lastSteerInput = Math.max(-1, Math.min(1, steerInput));
       syncDriftControlButtons();
 
       const desiredDirection = throttleInput > 0 ? 1 : throttleInput < 0 ? -1 : 0;
@@ -1794,11 +2117,27 @@ export class ChatAppFeaturesMethods {
       driftState.speed = Math.max(-maxReverse, Math.min(maxForward, driftState.speed));
 
       const speedAbs = Math.abs(driftState.speed);
-      const turnRate = 1.1 + Math.min(1.6, speedAbs / 170) * 1.2;
-      const reverseFactor = driftState.speed >= 0 ? 1 : -1;
-      driftState.carAngle += steerInput * turnRate * reverseFactor * elapsedSeconds;
+      const targetBackgroundSpeed = speedAbs * 0.42;
+      const backgroundLerp = Math.min(1, elapsedSeconds * (throttleInput === 0 ? 2.4 : 4));
+      driftState.backgroundFlowSpeed += (targetBackgroundSpeed - driftState.backgroundFlowSpeed) * backgroundLerp;
+      driftState.backgroundScroll = (driftState.backgroundScroll + driftState.backgroundFlowSpeed * elapsedSeconds) % 20000;
+      const steerSpeedPenalty = Math.max(0, Math.min(1, speedAbs / 620));
+      const maxSteerAngle = (36 - steerSpeedPenalty * 14) * (Math.PI / 180);
+      const targetSteerAngle = steerInput * maxSteerAngle;
+      const steerResponse = 10.2 - steerSpeedPenalty * 2.1;
+      driftState.steerAngle += (targetSteerAngle - driftState.steerAngle) * Math.min(1, elapsedSeconds * steerResponse);
 
-      const isDrifting = Math.abs(steerInput) > 0.12 && speedAbs > 90;
+      const wheelBase = Math.max(56, Math.round(driftState.worldHeight * 0.11));
+      const gripFactor = 1 - Math.max(0, Math.min(0.38, (speedAbs - 220) / 740));
+      const steerAuthority = 1.95 - steerSpeedPenalty * 0.45;
+      const targetYawRate = (driftState.speed / wheelBase) * Math.tan(driftState.steerAngle) * gripFactor * steerAuthority;
+      const yawResponse = 9.4 - steerSpeedPenalty * 2.2;
+      driftState.yawRate += (targetYawRate - driftState.yawRate) * Math.min(1, elapsedSeconds * yawResponse);
+      driftState.yawRate *= Math.exp(-elapsedSeconds * (0.58 + steerSpeedPenalty * 0.32));
+      driftState.carAngle += driftState.yawRate * elapsedSeconds;
+
+      const steerNormalized = maxSteerAngle > 0.001 ? Math.abs(driftState.steerAngle) / maxSteerAngle : 0;
+      const isDrifting = steerNormalized > 0.42 && speedAbs > 90;
       if (isDrifting) {
         driftState.driftTime += elapsedSeconds;
         driftState.driftCharge = Math.min(1, driftState.driftCharge + elapsedSeconds * 0.72);
@@ -1806,7 +2145,6 @@ export class ChatAppFeaturesMethods {
         driftState.driftTime = Math.max(0, driftState.driftTime - elapsedSeconds * 2.4);
         driftState.driftCharge = Math.max(0, driftState.driftCharge - elapsedSeconds * 0.52);
       }
-      driftState.boostValue = driftState.driftCharge;
 
       const targetMultiplier = isDrifting ? Math.min(5, 1 + driftState.driftCharge * 2.6) : 1;
       driftState.multiplier += (targetMultiplier - driftState.multiplier) * Math.min(1, elapsedSeconds * 8);
@@ -1819,10 +2157,42 @@ export class ChatAppFeaturesMethods {
       driftState.carY += forwardY * driftState.speed * elapsedSeconds;
 
       if (isDrifting) {
-        const sideSlip = steerInput * speedAbs * (0.08 + driftState.driftCharge * 0.22);
+        const steerSlip = maxSteerAngle > 0.001 ? driftState.steerAngle / maxSteerAngle : 0;
+        const sideSlip = steerSlip * speedAbs * (0.06 + driftState.driftCharge * 0.2);
         driftState.carX += sideX * sideSlip * elapsedSeconds;
         driftState.carY += sideY * sideSlip * elapsedSeconds;
         addDriftParticles(driftState.carX - sideX * 26, driftState.carY - sideY * 26, 2);
+      }
+
+      const carHitRadius = Math.max(22, Math.round(driftState.worldHeight * 0.045));
+      for (let i = driftState.obstacles.length - 1; i >= 0; i -= 1) {
+        const obstacle = driftState.obstacles[i];
+        const dx = driftState.carX - obstacle.x;
+        const dy = driftState.carY - obstacle.y;
+        const obstacleRadius = obstacle.size * (obstacle.type === 'box' ? 0.38 : 0.32);
+        const hitDistance = carHitRadius + obstacleRadius;
+        const distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared > hitDistance * hitDistance) continue;
+
+        const distance = Math.max(0.001, Math.sqrt(distanceSquared));
+        const normalX = dx / distance;
+        const normalY = dy / distance;
+        const overlap = hitDistance - distance;
+        driftState.carX += normalX * overlap;
+        driftState.carY += normalY * overlap;
+        driftState.speed *= -0.16;
+        if (Math.abs(driftState.speed) < 18) driftState.speed = 0;
+        driftState.yawRate += (Math.random() - 0.5) * 1.2;
+        driftState.scoreRaw = Math.max(0, driftState.scoreRaw - 18);
+        addDriftParticles(obstacle.x, obstacle.y, 12, 'rgba(255, 148, 96, 0.86)');
+        driftState.cameraShakeX += normalX * 2.1;
+        driftState.cameraShakeY += normalY * 2.1;
+        if (driftState.hitCooldown <= 0) {
+          setDriftStatus('Удар об перешкоду! Обережніше на швидкості.');
+          driftState.hitCooldown = 1.05;
+        }
+        driftState.obstacles.splice(i, 1);
+        driftState.obstacleSpawnTimer = Math.min(driftState.obstacleSpawnTimer, 0.35);
       }
 
       const shouldLeaveTracks = speedAbs > 56 && (isDrifting || throttleInput < 0 || (Math.abs(steerInput) > 0.35 && speedAbs > 130));
@@ -1859,36 +2229,42 @@ export class ChatAppFeaturesMethods {
       driftState.cameraY += (cameraTargetY - driftState.cameraY) * camLerp;
       driftState.prevCameraX = previousCameraX;
       driftState.prevCameraY = previousCameraY;
+      const shakeIntensity = Math.max(0, Math.min(1, (speedAbs - 240) / 300));
+      if (shakeIntensity > 0.001) {
+        const shakeAmplitude = 2.8 * shakeIntensity;
+        const phaseBase = driftState.runTime * (22 + speedAbs * 0.03);
+        const targetShakeX = (
+          Math.sin(phaseBase * 1.09)
+          + Math.sin(phaseBase * 2.03 + 1.2) * 0.36
+        ) * shakeAmplitude * 0.62;
+        const targetShakeY = (
+          Math.cos(phaseBase * 0.98 + 0.8)
+          + Math.sin(phaseBase * 1.74) * 0.34
+        ) * shakeAmplitude * 0.84;
+        const shakeLerp = Math.min(1, elapsedSeconds * 14);
+        driftState.cameraShakeX += (targetShakeX - driftState.cameraShakeX) * shakeLerp;
+        driftState.cameraShakeY += (targetShakeY - driftState.cameraShakeY) * shakeLerp;
+      } else {
+        const settleLerp = Math.min(1, elapsedSeconds * 12);
+        driftState.cameraShakeX += (0 - driftState.cameraShakeX) * settleLerp;
+        driftState.cameraShakeY += (0 - driftState.cameraShakeY) * settleLerp;
+      }
 
       driftState.coinSpawnTimer -= elapsedSeconds;
-      driftState.zoneSpawnTimer -= elapsedSeconds;
+      driftState.obstacleSpawnTimer -= elapsedSeconds;
       if (driftState.coinSpawnTimer <= 0) {
         spawnDriftCoin();
         driftState.coinSpawnTimer = 0.7 + Math.random() * 1.4;
       }
-      if (driftState.zoneSpawnTimer <= 0) {
-        spawnDriftZone();
-        driftState.zoneSpawnTimer = 5 + Math.random() * 4;
+      if (driftState.obstacleSpawnTimer <= 0) {
+        spawnDriftObstacle(320, 1700);
+        driftState.obstacleSpawnTimer = 0.9 + Math.random() * 1.8;
       }
-
-      driftState.zoneBonusActive = false;
-      driftState.zones.forEach((zone) => {
-        zone.life -= elapsedSeconds;
-        const dx = driftState.carX - zone.x;
-        const dy = driftState.carY - zone.y;
-        if (dx * dx + dy * dy <= zone.radius * zone.radius) {
-          driftState.zoneBonusActive = true;
-          if (isDrifting) {
-            driftState.scoreRaw += 18 * driftState.multiplier * elapsedSeconds;
-            addDriftParticles(driftState.carX, driftState.carY, 3, 'rgba(80, 188, 255, 0.75)');
-          }
-        }
-      });
 
       const pickupReward = Math.max(2, Math.ceil(this.getTapLevelStats().rewardPerTapCents * 0.6));
       for (let i = driftState.coins.length - 1; i >= 0; i -= 1) {
         const coin = driftState.coins[i];
-        coin.spin += elapsedSeconds * 2.2;
+        coin.spin = (coin.spin + elapsedSeconds * 2.2) % (Math.PI * 2);
         const dx = driftState.carX - coin.x;
         const dy = driftState.carY - coin.y;
         const pickupDistance = Math.max(48, coin.size * 0.85);
@@ -1905,12 +2281,12 @@ export class ChatAppFeaturesMethods {
         }
       }
 
-      for (let i = driftState.zones.length - 1; i >= 0; i -= 1) {
-        const zone = driftState.zones[i];
-        const dx = driftState.carX - zone.x;
-        const dy = driftState.carY - zone.y;
-        if (zone.life <= 0 || (dx * dx + dy * dy > 7_500_000)) {
-          driftState.zones.splice(i, 1);
+      for (let i = driftState.obstacles.length - 1; i >= 0; i -= 1) {
+        const obstacle = driftState.obstacles[i];
+        const dx = driftState.carX - obstacle.x;
+        const dy = driftState.carY - obstacle.y;
+        if (dx * dx + dy * dy > 8_600_000) {
+          driftState.obstacles.splice(i, 1);
         }
       }
 
@@ -1946,7 +2322,7 @@ export class ChatAppFeaturesMethods {
       driftState.isRunning = true;
       driftState.lastTimestamp = performance.now();
       if (driftPanelEl) driftPanelEl.classList.add('is-running');
-      if (driftStartBtn) driftStartBtn.textContent = 'Перезапуск';
+      if (driftStartBtn) driftStartBtn.textContent = 'Рестарт';
       setDriftStatus('Відкритий режим: катайся вільно. W/S або ↑/↓ для газу й гальма, A/D або ←/→ для повороту.');
       driftState.rafId = window.requestAnimationFrame(stepOrionDrift);
       this.orionDriftAnimationFrame = driftState.rafId;

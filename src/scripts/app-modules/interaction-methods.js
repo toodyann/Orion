@@ -132,7 +132,7 @@ export class ChatAppInteractionMethods {
               { label: 'Полювання на сигнал', section: 'mini-games', icon: 'target', miniGameView: 'signal' },
               { label: 'Orion 2048', section: 'mini-games', icon: 'grid2048', miniGameView: 'grid2048' },
               { label: 'Flappy Orion', section: 'mini-games', icon: 'flappy', miniGameView: 'flappy' },
-              { label: 'Orion Drift', section: 'mini-games', icon: 'drift', miniGameView: 'drift' }
+              { label: 'Orion Drive', section: 'mini-games', icon: 'drift', miniGameView: 'drift' }
             ]
           },
           {
