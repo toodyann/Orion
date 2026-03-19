@@ -319,7 +319,7 @@ export const settingsTemplates = {
           <div class="shop-balance-value" id="shopBalanceValue">0,00</div>
         </div>
       </div>
-      <p class="shop-balance-note">Прокачуйте профіль предметами, які купуються лише за монети.</p>
+      <p class="shop-balance-note">Прокачуйте профіль і Orion Drive предметами, які купуються лише за монети.</p>
     </div>
 
     <div class="shop-filter-toolbar">
@@ -352,6 +352,7 @@ export const settingsTemplates = {
 	              <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="aura">Фон</button>
 	              <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="motion">Анімація</button>
 	              <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="badge">Значки</button>
+                <button type="button" class="shop-filter-btn" data-shop-filter-group="category" data-shop-filter-value="car">Авто Orion Drive</button>
 	            </div>
 	          </div>
 

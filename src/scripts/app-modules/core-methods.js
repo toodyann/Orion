@@ -30,7 +30,8 @@ export class ChatAppCoreMethods {
         equippedAvatarFrame: data.equippedAvatarFrame || '',
         equippedProfileAura: data.equippedProfileAura || '',
         equippedProfileMotion: data.equippedProfileMotion || '',
-        equippedProfileBadge: data.equippedProfileBadge || ''
+        equippedProfileBadge: data.equippedProfileBadge || '',
+        equippedDriveCar: data.equippedDriveCar || ''
       };
     }
     return {
@@ -45,7 +46,8 @@ export class ChatAppCoreMethods {
       equippedAvatarFrame: '',
       equippedProfileAura: '',
       equippedProfileMotion: '',
-      equippedProfileBadge: ''
+      equippedProfileBadge: '',
+      equippedDriveCar: ''
     };
   }
 

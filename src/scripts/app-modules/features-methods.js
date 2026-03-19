@@ -4,8 +4,79 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const flappyCoinSoundUrl = new URL('../../Sounds/coin-sound.mp3', import.meta.url).href;
+const ORION_DRIVE_SHOP_CARS = [
+  {
+    id: 'car_taxi',
+    type: 'car',
+    effect: 'taxi',
+    title: 'Taxi Sprint',
+    description: 'Класичне таксі з кращою видимістю у щільному трафіку.',
+    price: 820,
+    assetSrc: new URL('../../Assets/OrionDrive/Сar-kit/Models/GLB format/taxi.glb', import.meta.url).href,
+    previewSrc: new URL('../../Assets/OrionDrive/Сar-kit/Previews/taxi.png', import.meta.url).href
+  },
+  {
+    id: 'car_sedan_sports',
+    type: 'car',
+    effect: 'sedan-sports',
+    title: 'Sedan Sports',
+    description: 'Легка спортивна седан-платформа для маневрених заїздів.',
+    price: 980,
+    assetSrc: new URL('../../Assets/OrionDrive/Сar-kit/Models/GLB format/sedan-sports.glb', import.meta.url).href,
+    previewSrc: new URL('../../Assets/OrionDrive/Сar-kit/Previews/sedan-sports.png', import.meta.url).href
+  },
+  {
+    id: 'car_suv_luxury',
+    type: 'car',
+    effect: 'suv-luxury',
+    title: 'SUV Luxury',
+    description: 'Преміум SUV для стабільної їзди та важкого стилю.',
+    price: 1260,
+    assetSrc: new URL('../../Assets/OrionDrive/Сar-kit/Models/GLB format/suv-luxury.glb', import.meta.url).href,
+    previewSrc: new URL('../../Assets/OrionDrive/Сar-kit/Previews/suv-luxury.png', import.meta.url).href
+  },
+  {
+    id: 'car_police',
+    type: 'car',
+    effect: 'police',
+    title: 'Interceptor',
+    description: 'Поліцейський перехоплювач із агресивним силуетом.',
+    price: 1490,
+    assetSrc: new URL('../../Assets/OrionDrive/Сar-kit/Models/GLB format/police.glb', import.meta.url).href,
+    previewSrc: new URL('../../Assets/OrionDrive/Сar-kit/Previews/police.png', import.meta.url).href
+  },
+  {
+    id: 'car_race_future',
+    type: 'car',
+    effect: 'race-future',
+    title: 'Race Future',
+    description: 'Футуристичний болід для Orion Drive.',
+    price: 1740,
+    assetSrc: new URL('../../Assets/OrionDrive/Сar-kit/Models/GLB format/race-future.glb', import.meta.url).href,
+    previewSrc: new URL('../../Assets/OrionDrive/Сar-kit/Previews/race-future.png', import.meta.url).href
+  },
+  {
+    id: 'car_firetruck',
+    type: 'car',
+    effect: 'firetruck',
+    title: 'Firetruck XL',
+    description: 'Пожежний важковаговик для нестандартного драйву.',
+    price: 1980,
+    assetSrc: new URL('../../Assets/OrionDrive/Сar-kit/Models/GLB format/firetruck.glb', import.meta.url).href,
+    previewSrc: new URL('../../Assets/OrionDrive/Сar-kit/Previews/firetruck.png', import.meta.url).href
+  }
+];
 
 export class ChatAppFeaturesMethods {
+  getOrionDriveCarCatalog() {
+    return ORION_DRIVE_SHOP_CARS.map((item) => ({ ...item }));
+  }
+
+  getOrionDriveCarAssetSrc(effect = '') {
+    const match = ORION_DRIVE_SHOP_CARS.find((item) => item.effect === effect);
+    return match?.assetSrc || '';
+  }
+
   initShop(settingsContainer) {
     const balanceEl = settingsContainer.querySelector('#shopBalanceValue');
     const islandBalanceEl = settingsContainer.querySelector('#shopIslandBalance');
@@ -28,7 +99,8 @@ export class ChatAppFeaturesMethods {
     if (!balanceEl || !gridEl || !shopContentEl) return;
 
     const inventory = new Set(this.loadShopInventory());
-    const catalog = this.getShopCatalog();
+    const catalog = [...this.getShopCatalog(), ...this.getOrionDriveCarCatalog()];
+    const catalogById = new Map(catalog.map((item) => [item.id, item]));
     const minCatalogPrice = Math.min(...catalog.map(item => item.price));
     const maxCatalogPrice = Math.max(...catalog.map(item => item.price));
     const filterState = {
@@ -39,7 +111,7 @@ export class ChatAppFeaturesMethods {
       minPrice: minCatalogPrice,
       maxPrice: maxCatalogPrice
     };
-    const presetCategory = ['all', 'frame', 'aura', 'motion', 'badge'].includes(this.pendingShopCategory)
+    const presetCategory = ['all', 'frame', 'aura', 'motion', 'badge', 'car'].includes(this.pendingShopCategory)
       ? this.pendingShopCategory
       : null;
     if (presetCategory) {
@@ -61,6 +133,144 @@ export class ChatAppFeaturesMethods {
       maxPriceEl.value = String(maxCatalogPrice);
     }
 
+    const carPreviewCache = this.shopCarPreviewCache instanceof Map ? this.shopCarPreviewCache : new Map();
+    const carPreviewPending = this.shopCarPreviewPending instanceof Map ? this.shopCarPreviewPending : new Map();
+    const shopPreviewLoader = this.shopPreviewLoader || new GLTFLoader();
+    this.shopCarPreviewCache = carPreviewCache;
+    this.shopCarPreviewPending = carPreviewPending;
+    this.shopPreviewLoader = shopPreviewLoader;
+
+    const loadShopPreviewModel = (assetSrc) => new Promise((resolve, reject) => {
+      shopPreviewLoader.load(assetSrc, (gltf) => {
+        resolve(gltf.scene || gltf.scenes?.[0] || null);
+      }, undefined, reject);
+    });
+
+    const disposeShopPreviewObject = (object3d) => {
+      if (!object3d) return;
+      object3d.traverse((node) => {
+        if (!node.isMesh) return;
+        node.geometry?.dispose?.();
+        const materials = Array.isArray(node.material) ? node.material : [node.material];
+        materials.forEach((material) => {
+          if (!material) return;
+          Object.values(material).forEach((value) => {
+            if (value && value.isTexture) value.dispose?.();
+          });
+          material.dispose?.();
+        });
+      });
+    };
+
+    const generateShopCarPreviewDataUrl = async (assetSrc) => {
+      if (!assetSrc) return '';
+      const previewCanvas = document.createElement('canvas');
+      const width = 360;
+      const height = 220;
+      previewCanvas.width = width;
+      previewCanvas.height = height;
+
+      let renderer;
+      let model;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas: previewCanvas,
+          antialias: true,
+          alpha: true,
+          preserveDrawingBuffer: true,
+          powerPreference: 'high-performance'
+        });
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.setPixelRatio(Math.min(2, Math.max(1, window.devicePixelRatio || 1)));
+        renderer.setSize(width, height, false);
+        renderer.setClearColor(0x000000, 0);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 60);
+        camera.position.set(2.9, 1.95, 3.6);
+        camera.lookAt(0, 0.64, 0);
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+        const hemi = new THREE.HemisphereLight(0xc2ddff, 0x1c2026, 0.62);
+        const directional = new THREE.DirectionalLight(0xfff2da, 1.2);
+        directional.position.set(3.8, 4.8, 2.9);
+        scene.add(ambient, hemi, directional);
+
+        model = await loadShopPreviewModel(assetSrc);
+        if (!model) return '';
+        model.traverse((node) => {
+          if (!node.isMesh) return;
+          if (node.material) {
+            node.material.metalness = Math.min(0.65, node.material.metalness ?? 0.16);
+            node.material.roughness = Math.max(0.26, node.material.roughness ?? 0.64);
+          }
+          node.castShadow = false;
+          node.receiveShadow = false;
+        });
+
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+        const scale = 2.28 / maxDim;
+        model.scale.multiplyScalar(scale);
+        box.setFromObject(model);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        model.position.sub(center);
+        box.setFromObject(model);
+        model.position.y -= box.min.y;
+        model.rotation.y = Math.PI * 0.78;
+        scene.add(model);
+
+        renderer.render(scene, camera);
+        return previewCanvas.toDataURL('image/png');
+      } catch {
+        return '';
+      } finally {
+        if (model) disposeShopPreviewObject(model);
+        renderer?.dispose?.();
+        renderer?.forceContextLoss?.();
+      }
+    };
+
+    const applyShopCarPreviewToGrid = (effect, dataUrl) => {
+      if (!effect || !dataUrl) return;
+      const safeEffect = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+        ? CSS.escape(effect)
+        : String(effect).replace(/"/g, '\\"');
+      gridEl.querySelectorAll(`img[data-shop-car-effect="${safeEffect}"]`).forEach((imgEl) => {
+        imgEl.src = dataUrl;
+        imgEl.classList.remove('is-fallback');
+        imgEl.classList.add('is-enhanced');
+      });
+    };
+
+    const ensureShopCarPreview = (item) => {
+      if (!item || item.type !== 'car' || !item.assetSrc || !item.effect) return;
+      const cachedDataUrl = carPreviewCache.get(item.effect);
+      if (cachedDataUrl) {
+        applyShopCarPreviewToGrid(item.effect, cachedDataUrl);
+        return;
+      }
+      if (carPreviewPending.has(item.effect)) return;
+
+      const renderTask = generateShopCarPreviewDataUrl(item.assetSrc)
+        .then((dataUrl) => {
+          if (!dataUrl) return;
+          carPreviewCache.set(item.effect, dataUrl);
+          applyShopCarPreviewToGrid(item.effect, dataUrl);
+        })
+        .catch(() => {
+          // Keep PNG fallback if preview render fails.
+        })
+        .finally(() => {
+          carPreviewPending.delete(item.effect);
+        });
+
+      carPreviewPending.set(item.effect, renderTask);
+    };
+
     const createPreview = (item) => {
       if (item.type === 'frame') {
         return `
@@ -79,6 +289,20 @@ export class ChatAppFeaturesMethods {
         `;
       }
 
+      if (item.type === 'car') {
+        return `
+          <div class="shop-item-preview-vehicle">
+            <img
+              class="shop-item-preview-vehicle-image is-fallback"
+              src="${item.previewSrc}"
+              alt="${escapeHtml(item.title)}"
+              loading="lazy"
+              data-shop-car-effect="${this.escapeAttr(item.effect)}"
+            />
+          </div>
+        `;
+      }
+
       return `
         <div class="shop-item-preview-card" ${item.type === 'motion' ? `data-profile-motion="${item.effect}"` : `data-profile-aura="${item.effect}"`}>
           <div class="shop-item-preview-card-line primary"></div>
@@ -93,7 +317,17 @@ export class ChatAppFeaturesMethods {
       if (item.type === 'aura') return this.user?.equippedProfileAura === item.effect;
       if (item.type === 'motion') return this.user?.equippedProfileMotion === item.effect;
       if (item.type === 'badge') return this.user?.equippedProfileBadge === item.effect;
+      if (item.type === 'car') return this.user?.equippedDriveCar === item.effect;
       return false;
+    };
+
+    const getItemTypeLabel = (type) => {
+      if (type === 'frame') return 'Аватар';
+      if (type === 'aura') return 'Фон';
+      if (type === 'motion') return 'Анімація';
+      if (type === 'badge') return 'Значок';
+      if (type === 'car') return 'Авто Orion Drive';
+      return 'Предмет';
     };
 
     const getFilterSummary = () => {
@@ -102,6 +336,7 @@ export class ChatAppFeaturesMethods {
       if (filterState.category === 'aura') parts.push('Профіль');
       if (filterState.category === 'motion') parts.push('Анімація');
       if (filterState.category === 'badge') parts.push('Значки');
+      if (filterState.category === 'car') parts.push('Авто Orion Drive');
       if (filterState.ownership === 'owned') parts.push('Куплені');
       if (filterState.ownership === 'unowned') parts.push('Не куплені');
       if (filterState.availability === 'equipped') parts.push('Встановлені');
@@ -215,7 +450,7 @@ export class ChatAppFeaturesMethods {
         return `
           <article class="shop-item-card ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
             <div class="shop-item-top">
-              <span class="shop-item-type">Предмет</span>
+              <span class="shop-item-type">${getItemTypeLabel(item.type)}</span>
               <span class="shop-item-price">${this.formatCoinBalance(item.price, 1)}</span>
             </div>
             <div class="shop-item-preview">
@@ -232,6 +467,10 @@ export class ChatAppFeaturesMethods {
           </article>
         `;
       }).join('');
+
+      visibleItems.forEach((item) => {
+        if (item.type === 'car') ensureShopCarPreview(item);
+      });
     };
 
     renderShop();
@@ -330,7 +569,7 @@ export class ChatAppFeaturesMethods {
       const actionBtn = event.target.closest('[data-shop-item]');
       if (!actionBtn) return;
 
-      const item = this.getShopItem(actionBtn.dataset.shopItem);
+      const item = catalogById.get(actionBtn.dataset.shopItem || '');
       if (!item) return;
 
       if (!inventory.has(item.id)) {
@@ -354,6 +593,8 @@ export class ChatAppFeaturesMethods {
         this.user.equippedProfileMotion = this.user.equippedProfileMotion === item.effect ? '' : item.effect;
       } else if (item.type === 'badge') {
         this.user.equippedProfileBadge = this.user.equippedProfileBadge === item.effect ? '' : item.effect;
+      } else if (item.type === 'car') {
+        this.user.equippedDriveCar = this.user.equippedDriveCar === item.effect ? '' : item.effect;
       }
 
       this.saveUserProfile({
@@ -361,7 +602,8 @@ export class ChatAppFeaturesMethods {
         equippedAvatarFrame: this.user.equippedAvatarFrame || '',
         equippedProfileAura: this.user.equippedProfileAura || '',
         equippedProfileMotion: this.user.equippedProfileMotion || '',
-        equippedProfileBadge: this.user.equippedProfileBadge || ''
+        equippedProfileBadge: this.user.equippedProfileBadge || '',
+        equippedDriveCar: this.user.equippedDriveCar || ''
       });
       this.syncProfileCosmetics();
       renderShop();
@@ -438,6 +680,13 @@ export class ChatAppFeaturesMethods {
     const driftSteerRightBtn = settingsContainer.querySelector('#orionDriftSteerRight');
     const driftGasBtn = settingsContainer.querySelector('#orionDriftGas');
     const driftBrakeBtn = settingsContainer.querySelector('#orionDriftBrake');
+    if (driftCanvasEl) {
+      if (!driftCanvasEl.dataset.defaultCarSrc) {
+        driftCanvasEl.dataset.defaultCarSrc = driftCanvasEl.dataset.carSrc || '';
+      }
+      const equippedCarSrc = this.getOrionDriveCarAssetSrc(this.user?.equippedDriveCar || '');
+      driftCanvasEl.dataset.carSrc = equippedCarSrc || driftCanvasEl.dataset.defaultCarSrc;
+    }
     const SIGNAL_HUNT_BEST_KEY = 'orionSignalHuntBest';
     const SIGNAL_HUNT_DURATION = 30;
     const SIGNAL_MOVE_INTERVAL_MS = 760;
@@ -2973,7 +3222,8 @@ export class ChatAppFeaturesMethods {
     if (!balanceEl || !itemsCountEl || !gridEl) return;
 
     const inventory = new Set(this.loadShopInventory());
-    const catalogById = new Map(this.getShopCatalog().map(item => [item.id, item]));
+    const shopCatalog = [...this.getShopCatalog(), ...this.getOrionDriveCarCatalog()];
+    const catalogById = new Map(shopCatalog.map(item => [item.id, item]));
     const SELL_MULTIPLIER = 0.6;
     const PROFILE_ITEMS_VIEW_KEY = 'orionProfileItemsView';
     const normalizeView = (value) => (value === 'list' ? 'list' : 'cards');
@@ -3007,6 +3257,7 @@ export class ChatAppFeaturesMethods {
       if (type === 'aura') return 'Фон';
       if (type === 'motion') return 'Анімація';
       if (type === 'badge') return 'Бейдж';
+      if (type === 'car') return 'Авто Orion Drive';
       return 'Предмет';
     };
 
@@ -3028,6 +3279,14 @@ export class ChatAppFeaturesMethods {
         `;
       }
 
+      if (item.type === 'car') {
+        return `
+          <div class="shop-item-preview-vehicle">
+            <img src="${item.previewSrc}" alt="${escapeHtml(item.title)}" loading="lazy" />
+          </div>
+        `;
+      }
+
       return `
         <div class="shop-item-preview-card" ${item.type === 'motion' ? `data-profile-motion="${item.effect}"` : `data-profile-aura="${item.effect}"`}>
           <div class="shop-item-preview-card-line primary"></div>
@@ -3042,6 +3301,7 @@ export class ChatAppFeaturesMethods {
       if (item.type === 'aura') return this.user?.equippedProfileAura === item.effect;
       if (item.type === 'motion') return this.user?.equippedProfileMotion === item.effect;
       if (item.type === 'badge') return this.user?.equippedProfileBadge === item.effect;
+      if (item.type === 'car') return this.user?.equippedDriveCar === item.effect;
       return false;
     };
 
@@ -3050,6 +3310,7 @@ export class ChatAppFeaturesMethods {
       if (item.type === 'aura') this.user.equippedProfileAura = value;
       if (item.type === 'motion') this.user.equippedProfileMotion = value;
       if (item.type === 'badge') this.user.equippedProfileBadge = value;
+      if (item.type === 'car') this.user.equippedDriveCar = value;
     };
 
     const saveCosmetics = () => {
@@ -3058,7 +3319,8 @@ export class ChatAppFeaturesMethods {
         equippedAvatarFrame: this.user.equippedAvatarFrame || '',
         equippedProfileAura: this.user.equippedProfileAura || '',
         equippedProfileMotion: this.user.equippedProfileMotion || '',
-        equippedProfileBadge: this.user.equippedProfileBadge || ''
+        equippedProfileBadge: this.user.equippedProfileBadge || '',
+        equippedDriveCar: this.user.equippedDriveCar || ''
       });
       this.syncProfileCosmetics();
     };
@@ -3908,7 +4170,8 @@ export class ChatAppFeaturesMethods {
       equippedAvatarFrame: this.user.equippedAvatarFrame || '',
       equippedProfileAura: this.user.equippedProfileAura || '',
       equippedProfileMotion: this.user.equippedProfileMotion || '',
-      equippedProfileBadge: this.user.equippedProfileBadge || ''
+      equippedProfileBadge: this.user.equippedProfileBadge || '',
+      equippedDriveCar: this.user.equippedDriveCar || ''
     };
     
     this.saveUserProfile(profileData);

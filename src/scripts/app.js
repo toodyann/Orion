@@ -1,3 +1,4 @@
+import './init.js';
 import { ChatAppCoreMethods } from './app-modules/core-methods.js';
 import { ChatAppInteractionMethods } from './app-modules/interaction-methods.js';
 import { ChatAppMessagingMethods } from './app-modules/messaging-methods.js';
