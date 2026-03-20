@@ -878,12 +878,16 @@ export const settingsTemplates = {
             <div class="orion-drift-main">
               <strong class="orion-drift-score" id="orionDriftScore">0</strong>
               <span class="orion-drift-multiplier" id="orionDriftMultiplier">x1.0</span>
-              <span class="orion-drift-speed">Швидкість: <strong id="orionDriftSpeed">0</strong> км/год</span>
               <span class="orion-drift-best">Рекорд: <strong id="orionDriftBest">0</strong></span>
             </div>
           </div>
 
-          <p class="orion-drift-status" id="orionDriftStatus">Відкритий режим: катайся вільно. Керуй газом, гальмом і поворотом.</p>
+          <div class="orion-drift-speedometer" aria-live="polite">
+            <span class="orion-drift-speedometer-value" id="orionDriftSpeed">0</span>
+            <span class="orion-drift-speedometer-unit">км/год</span>
+          </div>
+
+          <p class="orion-drift-status" id="orionDriftStatus">Відкритий режим: катайся вільно. Керуй газом, гальмом і поворотом, Space — ручне гальмо.</p>
 
           <button class="orion-drift-start-overlay" id="orionDriftStart" type="button">Старт</button>
         </div>

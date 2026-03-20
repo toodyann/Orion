@@ -709,7 +709,7 @@ export class ChatAppFeaturesMethods {
     const FLAPPY_PIPE_WIDTH = 86;
     const FLAPPY_PIPE_GAP_BASE = 198;
     const FLAPPY_MAX_DT = 1 / 30;
-    const DRIFT_SPEED_FACTOR = 0.56;
+    const DRIFT_SPEED_FACTOR = 0.32;
     const DRIFT_SHIFT_DELAY_SECONDS = 0.5;
     const grid2048State = {
       board: new Array(GRID_2048_SIZE * GRID_2048_SIZE).fill(0),
@@ -790,6 +790,9 @@ export class ChatAppFeaturesMethods {
       exhaustPuffs: [],
       exhaustSpawnTimer: 0,
       exhaustIdSeed: 0,
+      wheelSmokePuffs: [],
+      wheelSmokeSpawnCarry: 0,
+      wheelSmokeIdSeed: 0,
       exhaustRearOffset: 16,
       exhaustSideOffset: 0,
       exhaustHeight: 0.16,
@@ -811,6 +814,7 @@ export class ChatAppFeaturesMethods {
       keyRight: false,
       keyGas: false,
       keyBrake: false,
+      keyHandbrake: false,
       lastSteerInput: 0,
       cameraSteer: 0,
       cameraDriveDirection: 1,
@@ -842,6 +846,9 @@ export class ChatAppFeaturesMethods {
       exhaustTexture: null,
       exhaustMaterial: null,
       exhaustObjects: new Map(),
+      wheelSmokeTexture: null,
+      wheelSmokeMaterial: null,
+      wheelSmokeObjects: new Map(),
       obstacleObjects: new Map(),
       headlights: [],
       brakeLights: [],
@@ -880,6 +887,8 @@ export class ChatAppFeaturesMethods {
         context.trackGeometry?.dispose?.();
         context.exhaustMaterial?.dispose?.();
         context.exhaustTexture?.dispose?.();
+        context.wheelSmokeMaterial?.dispose?.();
+        context.wheelSmokeTexture?.dispose?.();
         context.renderer?.dispose?.();
       } catch {
         // Ignore renderer dispose issues.
@@ -1730,7 +1739,36 @@ export class ChatAppFeaturesMethods {
       }
     };
 
-    const spawnDriftCoin = (minDistance = 260, maxDistance = 980) => {
+    const addDriftWheelSmokePuff = (x, y, angle, strength = 0.45, speedAbs = 0, burnout = false) => {
+      driftState.wheelSmokeIdSeed = (driftState.wheelSmokeIdSeed + 1) % 1_000_000_000;
+      const forwardX = Math.sin(angle);
+      const forwardY = -Math.cos(angle);
+      const sideX = Math.cos(angle);
+      const sideY = Math.sin(angle);
+      const backSpeed = 0.28 + speedAbs * 0.02 + strength * 0.7;
+      const sideSpread = 0.24 + strength * 0.48 + (burnout ? 0.22 : 0);
+      const jitter = burnout ? 0.32 : 0.18;
+      driftState.wheelSmokePuffs.push({
+        id: driftState.wheelSmokeIdSeed,
+        x: x + sideX * (Math.random() * 2 - 1) * jitter,
+        y: y + sideY * (Math.random() * 2 - 1) * jitter,
+        height: 0.04 + Math.random() * 0.018,
+        vx: -forwardX * backSpeed + sideX * (Math.random() * 2 - 1) * sideSpread,
+        vy: -forwardY * backSpeed + sideY * (Math.random() * 2 - 1) * sideSpread,
+        rise: 0.1 + Math.random() * 0.08 + strength * 0.1 + (burnout ? 0.06 : 0),
+        size: 4.8 + Math.random() * 2.2 + strength * 2.8 + (burnout ? 2.1 : 0),
+        opacity: 0.16 + strength * 0.18 + (burnout ? 0.08 : 0),
+        life: 0.5 + Math.random() * 0.28 + strength * 0.28 + (burnout ? 0.12 : 0),
+        maxLife: 1
+      });
+      const lastPuff = driftState.wheelSmokePuffs[driftState.wheelSmokePuffs.length - 1];
+      if (lastPuff) lastPuff.maxLife = lastPuff.life;
+      if (driftState.wheelSmokePuffs.length > 320) {
+        driftState.wheelSmokePuffs.splice(0, driftState.wheelSmokePuffs.length - 320);
+      }
+    };
+
+    const spawnDriftCoin = (minDistance = 200, maxDistance = 760) => {
       if (driftState.coins.length >= 24) return;
       const angle = Math.random() * Math.PI * 2;
       const distance = minDistance + Math.random() * (maxDistance - minDistance);
@@ -1745,7 +1783,7 @@ export class ChatAppFeaturesMethods {
       });
     };
 
-    const spawnDriftObstacle = (minDistance = 280, maxDistance = 1600) => {
+    const spawnDriftObstacle = (minDistance = 240, maxDistance = 1250) => {
       if (driftState.obstacles.length >= 22) return;
       const angle = Math.random() * Math.PI * 2;
       const distance = minDistance + Math.random() * (maxDistance - minDistance);
@@ -1838,6 +1876,40 @@ export class ChatAppFeaturesMethods {
       const material = drift3d.exhaustMaterial.clone();
       const sprite = new THREE.Sprite(material);
       sprite.renderOrder = 4;
+      return sprite;
+    };
+
+    const createDriftWheelSmokeObject = () => {
+      if (!drift3d.wheelSmokeTexture) {
+        const textureCanvas = document.createElement('canvas');
+        textureCanvas.width = 128;
+        textureCanvas.height = 128;
+        const ctx = textureCanvas.getContext('2d');
+        if (ctx) {
+          const gradient = ctx.createRadialGradient(64, 64, 10, 64, 64, 60);
+          gradient.addColorStop(0, 'rgba(168, 174, 186, 0.48)');
+          gradient.addColorStop(0.42, 'rgba(126, 134, 148, 0.26)');
+          gradient.addColorStop(1, 'rgba(94, 102, 116, 0)');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, 128, 128);
+        }
+        const texture = new THREE.CanvasTexture(textureCanvas);
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = false;
+        drift3d.wheelSmokeTexture = texture;
+      }
+      if (!drift3d.wheelSmokeMaterial) {
+        drift3d.wheelSmokeMaterial = new THREE.SpriteMaterial({
+          map: drift3d.wheelSmokeTexture,
+          transparent: true,
+          opacity: 0.26,
+          depthWrite: false
+        });
+      }
+      const material = drift3d.wheelSmokeMaterial.clone();
+      const sprite = new THREE.Sprite(material);
+      sprite.renderOrder = 5;
       return sprite;
     };
 
@@ -2103,6 +2175,35 @@ export class ChatAppFeaturesMethods {
         }
       });
 
+      const wheelSmokeIds = new Set(driftState.wheelSmokePuffs.map((puff) => puff.id));
+      drift3d.wheelSmokeObjects.forEach((object3d, id) => {
+        if (wheelSmokeIds.has(id)) return;
+        drift3d.scene.remove(object3d);
+        if (object3d.material) object3d.material.dispose?.();
+        drift3d.wheelSmokeObjects.delete(id);
+      });
+
+      driftState.wheelSmokePuffs.forEach((puff) => {
+        let smokeObject = drift3d.wheelSmokeObjects.get(puff.id);
+        if (!smokeObject) {
+          smokeObject = createDriftWheelSmokeObject();
+          drift3d.scene.add(smokeObject);
+          drift3d.wheelSmokeObjects.set(puff.id, smokeObject);
+        }
+        const sceneX = puff.x * drift3d.worldScale;
+        const sceneZ = puff.y * drift3d.worldScale;
+        const fade = puff.maxLife > 0 ? Math.max(0, puff.life / puff.maxLife) : 0;
+        const scale = Math.max(0.11, puff.size * drift3d.worldScale * (1 + (1 - fade) * 1.55));
+        smokeObject.position.set(sceneX, puff.height, sceneZ);
+        smokeObject.scale.set(scale, scale, 1);
+        if (smokeObject.material?.isMaterial) {
+          smokeObject.material.opacity = Math.max(
+            0,
+            Math.min(0.36, puff.opacity * fade * (isDarkTheme ? 1 : 0.72))
+          );
+        }
+      });
+
       const coinIds = new Set(driftState.coins.map((coin) => coin.id));
       drift3d.coinObjects.forEach((object3d, id) => {
         if (coinIds.has(id)) return;
@@ -2238,9 +2339,9 @@ export class ChatAppFeaturesMethods {
       const steerBlend = Math.min(1, 0.035 + speedRatio * 0.06);
       driftState.cameraSteer += (driftState.lastSteerInput - driftState.cameraSteer) * steerBlend;
       const lateralShift = driftState.cameraSteer * (0.08 + speedRatio * 0.24);
-      const lookAhead = 4.4 + speedRatio * 6.2;
-      const followDistance = 8.2 + speedRatio * 2.2;
-      const cameraHeight = 5 + speedRatio * 1.7;
+      const lookAhead = 5.6 + speedRatio * 9.4;
+      const followDistance = 6.8 + speedRatio * 1.6;
+      const cameraHeight = 3.9 + speedRatio * 1.0;
       const reverseBlend = (1 - driftState.cameraDriveDirection) * 0.5;
       const baseCameraHeading = Number.isFinite(driftState.cameraHeading)
         ? driftState.cameraHeading
@@ -2260,10 +2361,10 @@ export class ChatAppFeaturesMethods {
         0.82,
         carZ + cameraForwardZ * lookAhead + cameraSideZ * lateralShift * 0.34
       );
-      const cameraLerp = Math.min(1, 0.07 + speedRatio * 0.15);
+      const cameraLerp = Math.min(1, 0.045 + speedRatio * 0.09);
       drift3d.cameraPosition.lerp(desiredCamera, cameraLerp);
       drift3d.cameraLookAt.lerp(desiredLookAt, Math.min(1, cameraLerp * 1.15));
-      const targetFov = 56 + speedRatio * 7;
+      const targetFov = 60 + speedRatio * 12;
       if (Math.abs(drift3d.camera.fov - targetFov) > 0.05) {
         drift3d.camera.fov += (targetFov - drift3d.camera.fov) * Math.min(1, cameraLerp * 0.9);
         drift3d.camera.updateProjectionMatrix();
@@ -2448,6 +2549,9 @@ export class ChatAppFeaturesMethods {
       driftState.exhaustPuffs = [];
       driftState.exhaustSpawnTimer = 0;
       driftState.exhaustIdSeed = 0;
+      driftState.wheelSmokePuffs = [];
+      driftState.wheelSmokeSpawnCarry = 0;
+      driftState.wheelSmokeIdSeed = 0;
       driftState.coinSpawnTimer = 0.5;
       driftState.obstacleSpawnTimer = 0.9;
       driftState.hitCooldown = 0;
@@ -2460,6 +2564,7 @@ export class ChatAppFeaturesMethods {
       driftState.keyRight = false;
       driftState.keyGas = false;
       driftState.keyBrake = false;
+      driftState.keyHandbrake = false;
       driftState.lastSteerInput = 0;
       driftState.cameraSteer = 0;
       driftState.cameraDriveDirection = 1;
@@ -2468,8 +2573,8 @@ export class ChatAppFeaturesMethods {
       driftState.gearDirection = 1;
       driftState.shiftTargetDirection = 0;
       driftState.shiftDelayTimer = 0;
-      for (let i = 0; i < 10; i += 1) spawnDriftCoin(180, 1200);
-      for (let i = 0; i < 8; i += 1) spawnDriftObstacle(220, 1800);
+      for (let i = 0; i < 10; i += 1) spawnDriftCoin(140, 900);
+      for (let i = 0; i < 8; i += 1) spawnDriftObstacle(190, 1200);
       syncDriftControlButtons();
       updateDriftHud();
       renderOrionDriftFrame();
@@ -2527,6 +2632,7 @@ export class ChatAppFeaturesMethods {
 
       const steerInput = resolveDriftSteerInput();
       const throttleInput = resolveDriftThrottleInput();
+      const handbrakeRequested = driftState.keyHandbrake;
       driftState.lastSteerInput = Math.max(-1, Math.min(1, steerInput));
       syncDriftControlButtons();
 
@@ -2562,22 +2668,29 @@ export class ChatAppFeaturesMethods {
         }
 
         if (desiredDirection === 0) {
-          driftState.speed *= Math.exp(-0.22 * elapsedSeconds);
+          const coastingDrag = handbrakeRequested ? 1.95 : 0.22;
+          driftState.speed *= Math.exp(-coastingDrag * elapsedSeconds);
           if (Math.abs(driftState.speed) < 0.35) driftState.speed = 0;
         } else if (desiredDirection > 0) {
           if (driftState.speed < 0) driftState.speed += 760 * elapsedSeconds;
-          driftState.speed += 300 * elapsedSeconds;
+          driftState.speed += handbrakeRequested ? 130 * elapsedSeconds : 360 * elapsedSeconds;
         } else {
           if (driftState.speed > 0) driftState.speed -= 760 * elapsedSeconds;
           driftState.speed -= 360 * elapsedSeconds;
         }
       }
 
-      const maxForward = 620;
+      const maxForward = 700;
       const maxReverse = 260;
       driftState.speed = Math.max(-maxReverse, Math.min(maxForward, driftState.speed));
 
-      const speedAbs = Math.abs(driftState.speed);
+      let speedAbs = Math.abs(driftState.speed);
+      const handbrakeActive = handbrakeRequested && driftState.gearDirection >= 0 && speedAbs > 5;
+      if (handbrakeActive) {
+        const handbrakeDrag = 1.35 + Math.min(1.45, speedAbs / 300);
+        driftState.speed *= Math.exp(-handbrakeDrag * elapsedSeconds);
+        speedAbs = Math.abs(driftState.speed);
+      }
       const speedRatio = Math.max(0, Math.min(1, speedAbs / 620));
       const throttleActive = Math.abs(throttleInput) > 0.08;
       const idleExhaust = !throttleActive && speedAbs < 5;
@@ -2625,7 +2738,9 @@ export class ChatAppFeaturesMethods {
       driftState.steerAngle += (targetSteerAngle - driftState.steerAngle) * Math.min(1, elapsedSeconds * steerResponse);
 
       const wheelBase = Math.max(56, Math.round(driftState.worldHeight * 0.11));
-      const gripFactor = 1 - Math.max(0, Math.min(0.52, (speedAbs - 170) / 620));
+      const baseGripFactor = 1 - Math.max(0, Math.min(0.52, (speedAbs - 170) / 620));
+      const handbrakeGripPenalty = handbrakeActive ? Math.min(0.42, 0.18 + speedAbs / 760) : 0;
+      const gripFactor = Math.max(0.16, baseGripFactor - handbrakeGripPenalty);
       const steerAuthority = 2.35 - steerSpeedPenalty * 0.3;
       const targetYawRate = (driftState.speed / wheelBase) * Math.tan(driftState.steerAngle) * gripFactor * steerAuthority;
       const yawResponse = 10.8 - steerSpeedPenalty * 1.6;
@@ -2636,12 +2751,18 @@ export class ChatAppFeaturesMethods {
       const driftSpeedFactor = Math.max(0, Math.min(1, (speedAbs - 102) / 260));
       const driftSteerFactor = Math.max(0, Math.min(1, (steerAbs - 0.24) / 0.5));
       const driftThrottleFactor = throttleInput > 0 ? 1 : 0.68;
-      const driftIntentStrength = desiredDirection >= 0
+      let driftIntentStrength = desiredDirection >= 0
         ? driftSpeedFactor * driftSteerFactor * driftThrottleFactor
         : 0;
+      if (handbrakeActive) {
+        const handbrakeBoost = (0.22 + Math.min(0.46, speedAbs / 300)) * Math.max(0.28, steerAbs);
+        driftIntentStrength += handbrakeBoost;
+      }
+      driftIntentStrength = Math.max(0, Math.min(1.45, driftIntentStrength));
       const driftIntent = driftIntentStrength > 0.04;
       const steadyCornerSlip = Math.sign(steerInput) * speedAbs * steerNormalized * 0.02;
-      const driftSlipTarget = Math.sign(steerInput) * speedAbs * (0.055 + driftIntentStrength * 0.23);
+      const handbrakeSlipBoost = handbrakeActive ? 0.16 : 0;
+      const driftSlipTarget = Math.sign(steerInput) * speedAbs * (0.055 + driftIntentStrength * 0.23 + handbrakeSlipBoost);
       const slipTarget = driftIntent ? driftSlipTarget : steadyCornerSlip;
       const slipBuild = 2.5 + driftIntentStrength * 5.6 + steerSpeedPenalty * 0.9;
       driftState.driftSlipVelocity += (slipTarget - driftState.driftSlipVelocity) * Math.min(1, elapsedSeconds * slipBuild);
@@ -2654,7 +2775,8 @@ export class ChatAppFeaturesMethods {
       const slipRatio = speedAbs > 1
         ? Math.min(1.2, Math.abs(driftState.driftSlipVelocity) / Math.max(42, speedAbs * 0.62))
         : 0;
-      const yawSlipAssist = (driftState.driftSlipVelocity / Math.max(108, speedAbs * 0.9)) * (1.5 + driftIntentStrength * 4.8);
+      const yawSlipAssist = (driftState.driftSlipVelocity / Math.max(108, speedAbs * 0.9))
+        * (1.5 + driftIntentStrength * 4.8 + (handbrakeActive ? 2 : 0));
       driftState.yawRate += yawSlipAssist * elapsedSeconds;
       driftState.yawRate *= Math.exp(-elapsedSeconds * (0.52 + (1 - driftIntentStrength) * 0.24 + steerSpeedPenalty * 0.16));
       driftState.carAngle += driftState.yawRate * elapsedSeconds;
@@ -2752,23 +2874,31 @@ export class ChatAppFeaturesMethods {
         driftState.obstacleSpawnTimer = Math.min(driftState.obstacleSpawnTimer, 0.35);
       }
 
+      const visualForwardX = Math.sin(driftState.bodyAngle);
+      const visualForwardY = -Math.cos(driftState.bodyAngle);
+      const visualSideX = Math.cos(driftState.bodyAngle);
+      const visualSideY = Math.sin(driftState.bodyAngle);
+      const rearOffset = driftState.trackRearOffset;
+      const wheelOffset = driftState.trackWheelOffset;
+      const trackWidth = driftState.trackMarkWidth;
+      const trackLength = driftState.trackMarkLength;
+      const rearX = driftState.carX - visualForwardX * rearOffset;
+      const rearY = driftState.carY - visualForwardY * rearOffset;
+      const leftWheelX = rearX - visualSideX * wheelOffset;
+      const leftWheelY = rearY - visualSideY * wheelOffset;
+      const rightWheelX = rearX + visualSideX * wheelOffset;
+      const rightWheelY = rearY + visualSideY * wheelOffset;
+      const burnoutActive = handbrakeRequested && throttleInput > 0.24 && speedAbs < 96;
+      const wheelSlipLevel = Math.min(
+        1.35,
+        slipRatio
+          + driftIntentStrength * 0.86
+          + (handbrakeActive ? 0.34 : 0)
+          + (burnoutActive ? 0.42 : 0)
+      );
       const shouldLeaveTracks = speedAbs > 42
-        && (isDrifting || driftIntentStrength > 0.12 || throttleInput < 0 || (Math.abs(steerInput) > 0.26 && speedAbs > 88));
+        && (isDrifting || handbrakeActive || driftIntentStrength > 0.12 || throttleInput < 0 || (Math.abs(steerInput) > 0.26 && speedAbs > 88));
       if (shouldLeaveTracks) {
-        const visualForwardX = Math.sin(driftState.bodyAngle);
-        const visualForwardY = -Math.cos(driftState.bodyAngle);
-        const visualSideX = Math.cos(driftState.bodyAngle);
-        const visualSideY = Math.sin(driftState.bodyAngle);
-        const rearOffset = driftState.trackRearOffset;
-        const wheelOffset = driftState.trackWheelOffset;
-        const trackWidth = driftState.trackMarkWidth;
-        const trackLength = driftState.trackMarkLength;
-        const rearX = driftState.carX - visualForwardX * rearOffset;
-        const rearY = driftState.carY - visualForwardY * rearOffset;
-        const leftWheelX = rearX - visualSideX * wheelOffset;
-        const leftWheelY = rearY - visualSideY * wheelOffset;
-        const rightWheelX = rearX + visualSideX * wheelOffset;
-        const rightWheelY = rearY + visualSideY * wheelOffset;
         const driftTrackBoost = Math.min(0.7, driftIntentStrength * 1.1);
         const intensity = isDrifting
           ? 1
@@ -2782,6 +2912,26 @@ export class ChatAppFeaturesMethods {
         }
       } else {
         driftState.trackSpawnCarry = Math.max(0, driftState.trackSpawnCarry - elapsedSeconds * 5);
+      }
+
+      const shouldEmitWheelSmoke = wheelSlipLevel > 0.1 && (speedAbs > 28 || burnoutActive);
+      if (shouldEmitWheelSmoke) {
+        const smokeRate = (isDrifting ? 62 : burnoutActive ? 48 : 30) * (0.56 + wheelSlipLevel * 0.8);
+        driftState.wheelSmokeSpawnCarry += elapsedSeconds * smokeRate;
+        while (driftState.wheelSmokeSpawnCarry >= 1) {
+          driftState.wheelSmokeSpawnCarry -= 1;
+          const smokeStrength = Math.min(
+            1.25,
+            0.24
+              + wheelSlipLevel * 0.58
+              + (isDrifting ? 0.22 : 0)
+              + (burnoutActive ? 0.3 : 0)
+          );
+          addDriftWheelSmokePuff(leftWheelX, leftWheelY, driftState.bodyAngle, smokeStrength, speedAbs, burnoutActive);
+          addDriftWheelSmokePuff(rightWheelX, rightWheelY, driftState.bodyAngle, smokeStrength, speedAbs, burnoutActive);
+        }
+      } else {
+        driftState.wheelSmokeSpawnCarry = Math.max(0, driftState.wheelSmokeSpawnCarry - elapsedSeconds * 6);
       }
 
       const previousCameraX = driftState.cameraX;
@@ -2798,7 +2948,7 @@ export class ChatAppFeaturesMethods {
       driftState.cameraY += (cameraTargetY - driftState.cameraY) * camLerp;
       driftState.prevCameraX = previousCameraX;
       driftState.prevCameraY = previousCameraY;
-      const shakeIntensity = Math.max(0, Math.min(1, (speedAbs - 240) / 300));
+      const shakeIntensity = Math.max(0, Math.min(1, (speedAbs - 190) / 280));
       if (shakeIntensity > 0.001) {
         const shakeAmplitude = 2.8 * shakeIntensity;
         const phaseBase = driftState.runTime * (22 + speedAbs * 0.03);
@@ -2826,7 +2976,7 @@ export class ChatAppFeaturesMethods {
         driftState.coinSpawnTimer = 0.7 + Math.random() * 1.4;
       }
       if (driftState.obstacleSpawnTimer <= 0) {
-        spawnDriftObstacle(320, 1700);
+        spawnDriftObstacle(230, 1200);
         driftState.obstacleSpawnTimer = 0.9 + Math.random() * 1.8;
       }
 
@@ -2873,6 +3023,15 @@ export class ChatAppFeaturesMethods {
         puff.life -= elapsedSeconds;
       });
       driftState.exhaustPuffs = driftState.exhaustPuffs.filter((puff) => puff.life > 0);
+      driftState.wheelSmokePuffs.forEach((puff) => {
+        puff.x += puff.vx * elapsedSeconds;
+        puff.y += puff.vy * elapsedSeconds;
+        puff.height += puff.rise * elapsedSeconds;
+        puff.vx *= Math.exp(-elapsedSeconds * 3.1);
+        puff.vy *= Math.exp(-elapsedSeconds * 3.1);
+        puff.life -= elapsedSeconds;
+      });
+      driftState.wheelSmokePuffs = driftState.wheelSmokePuffs.filter((puff) => puff.life > 0);
       driftState.tireTracks.forEach((track) => {
         track.life -= elapsedSeconds;
       });
@@ -2900,7 +3059,7 @@ export class ChatAppFeaturesMethods {
       driftState.lastTimestamp = performance.now();
       if (driftPanelEl) driftPanelEl.classList.add('is-running');
       if (driftStartBtn) driftStartBtn.textContent = 'Рестарт';
-      setDriftStatus('Відкритий режим: катайся вільно. W/S або ↑/↓ для газу й гальма, A/D або ←/→ для повороту.');
+      setDriftStatus('Відкритий режим: катайся вільно. W/S або ↑/↓ для газу й гальма, A/D або ←/→ для повороту, Space — ручне гальмо.');
       driftState.rafId = window.requestAnimationFrame(stepOrionDrift);
       this.orionDriftAnimationFrame = driftState.rafId;
     };
@@ -3381,6 +3540,9 @@ export class ChatAppFeaturesMethods {
       } else if (event.code === 'ArrowDown' || event.code === 'KeyS') {
         driftState.keyBrake = true;
         event.preventDefault();
+      } else if (event.code === 'Space') {
+        driftState.keyHandbrake = true;
+        event.preventDefault();
       }
       syncDriftControlButtons();
     };
@@ -3393,6 +3555,9 @@ export class ChatAppFeaturesMethods {
         driftState.keyGas = false;
       } else if (event.code === 'ArrowDown' || event.code === 'KeyS') {
         driftState.keyBrake = false;
+      } else if (event.code === 'Space') {
+        driftState.keyHandbrake = false;
+        event.preventDefault();
       }
       syncDriftControlButtons();
     };
@@ -3434,7 +3599,7 @@ export class ChatAppFeaturesMethods {
     renderFlappyFrame();
     resolveDriftWorldSize();
     ensureDriftAssets();
-    setDriftStatus('Натисни «Старт». Відкритий режим: W/S або ↑/↓ для газу й гальма, A/D або ←/→ для повороту.');
+    setDriftStatus('Натисни «Старт». Відкритий режим: W/S або ↑/↓ для газу й гальма, A/D або ←/→ для повороту, Space — ручне гальмо.');
     updateDriftHud();
     renderOrionDriftFrame();
     startGrid2048();
