@@ -3839,12 +3839,13 @@ export class ChatAppFeaturesMethods {
     });
   }
 
-  initProfileItems(settingsContainer) {
+  initProfileItems(settingsContainer, options = {}) {
     const balanceEl = settingsContainer.querySelector('#profileItemsBalance');
     const itemsCountEl = settingsContainer.querySelector('#profileItemsCount');
     const gridEl = settingsContainer.querySelector('#profileItemsGrid');
     const viewButtons = settingsContainer.querySelectorAll('[data-profile-items-view]');
     if (!balanceEl || !itemsCountEl || !gridEl) return;
+    const scope = options?.scope === 'games' ? 'games' : 'all';
 
     const inventory = new Set(this.loadShopInventory());
     const shopCatalog = [
@@ -3891,6 +3892,8 @@ export class ChatAppFeaturesMethods {
       if (type === 'smoke') return 'Дим Orion Drive';
       return 'Предмет';
     };
+
+    const isGameItem = (item) => item?.type === 'car' || item?.type === 'smoke';
 
     const createPreview = (item) => {
       if (item.type === 'frame') {
@@ -3987,7 +3990,8 @@ export class ChatAppFeaturesMethods {
     const renderInventory = () => {
       const ownedItems = [...inventory]
         .map(id => catalogById.get(id))
-        .filter(Boolean);
+        .filter(Boolean)
+        .filter((item) => (scope === 'games' ? isGameItem(item) : true));
 
       balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
       itemsCountEl.textContent = String(ownedItems.length);
@@ -3995,8 +3999,8 @@ export class ChatAppFeaturesMethods {
       if (!ownedItems.length) {
         gridEl.innerHTML = `
           <div class="profile-items-empty">
-            <strong>Інвентар порожній</strong>
-            <span>Купи предмети в магазині, щоб керувати ними тут.</span>
+            <strong>${scope === 'games' ? 'Ігрових предметів поки немає' : 'Інвентар порожній'}</strong>
+            <span>${scope === 'games' ? 'Купи предмети Orion Drive у магазині, щоб керувати ними тут.' : 'Купи предмети в магазині, щоб керувати ними тут.'}</span>
           </div>
         `;
         return;
@@ -4579,6 +4583,7 @@ export class ChatAppFeaturesMethods {
         if (profileMyItemsBtn) {
           profileMyItemsBtn.addEventListener('click', () => {
             this.settingsParentSection = 'profile';
+            this.pendingProfileItemsScope = 'all';
             this.showSettings('profile-items');
           });
         }
@@ -4594,6 +4599,7 @@ export class ChatAppFeaturesMethods {
       }
 
       if (sectionName === 'mini-games') {
+        this.settingsParentSection = 'mini-games';
         this.initMiniGames(settingsContainer);
       }
 
@@ -4608,8 +4614,15 @@ export class ChatAppFeaturesMethods {
       }
 
       if (sectionName === 'profile-items') {
-        this.settingsParentSection = 'profile';
-        this.initProfileItems(settingsContainer);
+        const inheritedScope = this.settingsParentSection === 'mini-games' ? 'games' : 'all';
+        const profileItemsScope = this.pendingProfileItemsScope === 'games'
+          ? 'games'
+          : (this.pendingProfileItemsScope === 'all' ? 'all' : inheritedScope);
+        this.pendingProfileItemsScope = null;
+        if (!this.settingsParentSection) {
+          this.settingsParentSection = profileItemsScope === 'games' ? 'mini-games' : 'profile';
+        }
+        this.initProfileItems(settingsContainer, { scope: profileItemsScope });
       }
       
       const bindLiveSave = (element, eventName = 'change', afterChange = null) => {

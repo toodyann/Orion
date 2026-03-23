@@ -3678,8 +3678,16 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   box-sizing: border-box;
 }
 
-.profile-settings-menu-card {
+.profile-settings-card.profile-settings-menu-card {
   padding: 14px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-color) 84%, transparent);
+  box-shadow: none;
+}
+
+html.dark-theme .profile-settings-card.profile-settings-menu-card {
+  background: color-mix(in srgb, var(--bg-color) 84%, transparent);
+  box-shadow: none;
 }
 
 .profile-content > .profile-settings-menu-card {

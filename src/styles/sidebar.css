@@ -54,9 +54,37 @@
   }
 
   .sidebar.compact
-    .desktop-secondary-menu.active
+    .desktop-secondary-menu.active[data-menu-root="navChats"]
     .desktop-secondary-menu-header {
-    display: none;
+    display: flex;
+    justify-content: center;
+    height: auto;
+    padding: 8px 0 4px !important;
+  }
+
+  .sidebar.compact
+    .desktop-secondary-menu.active[data-menu-root="navChats"]
+    .desktop-secondary-menu-header
+    h3,
+  .sidebar.compact
+    .desktop-secondary-menu.active[data-menu-root="navChats"]
+    .desktop-secondary-menu-header-actions {
+    display: none !important;
+  }
+
+  .sidebar.compact
+    .desktop-secondary-menu.active[data-menu-root="navChats"]
+    #desktopSecondaryMenuBack {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .sidebar.compact
+    .desktop-secondary-menu.active[data-menu-root="navChats"]
+    #desktopSecondaryMenuBack
+    svg {
+    transform: rotate(180deg);
   }
 
   .sidebar.compact
@@ -1233,6 +1261,11 @@ html.dark-theme .bottom-nav-indicator {
     display: none !important;
   }
 
+  .desktop-secondary-menu.active[data-menu-root="navChats"]
+    #desktopSecondaryMenuBack {
+    display: inline-flex !important;
+  }
+
   .desktop-secondary-menu.active .desktop-secondary-menu-header-actions {
     display: none !important;
   }
@@ -1440,6 +1473,8 @@ html.dark-theme .bottom-nav-indicator {
   }
 
   .desktop-secondary-menu-list--chats {
+    flex: 1;
+    min-height: 0;
     gap: 0;
     padding: 8px 0 12px !important;
   }
@@ -1451,7 +1486,12 @@ html.dark-theme .bottom-nav-indicator {
   }
 
   .desktop-secondary-chat-empty {
+    flex: 1;
+    min-height: 100%;
     padding: 16px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: rgba(241, 241, 241, 0.72);
     font-size: 14px;
     font-weight: 500;
