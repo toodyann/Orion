@@ -180,24 +180,6 @@ html:not(.dark-theme) .app-header {
   z-index: 32;
   isolation: isolate;
   margin: 0 auto;
-  padding: 6px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
-  background: transparent !important;
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-html:not(.dark-theme) .orion-app.chat-open #appChatInfo,
-html:not(.dark-theme) .orion-app.chat-active #appChatInfo {
-  background: transparent !important;
-  border-color: var(--border-color);
-  box-shadow:
-    0 10px 24px rgba(15, 19, 32, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .app-chat-avatar {
@@ -252,16 +234,57 @@ html:not(.dark-theme) .orion-app.chat-active #appChatInfo {
 .orion-app.chat-open .app-header-right,
 .orion-app.chat-active .app-header-right {
   position: absolute;
-  right: 32px;
+  right: 40px;
   top: 50%;
   transform: translateY(-50%);
   gap: 12px;
   margin: 0;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+}
+
+.orion-app.chat-open #appChatInfo,
+.orion-app.chat-active #appChatInfo,
+.orion-app.chat-open .app-header-right,
+.orion-app.chat-active .app-header-right {
+  width: var(--chat-header-pill-width, 168px);
+  min-width: var(--chat-header-pill-width, 168px);
+  padding: 4px 14px;
+  min-height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+  border-radius: 14px;
+  border: 1px solid var(--border-color) !important;
+  background: color-mix(in srgb, var(--bg-elevated) 84%, transparent) !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.orion-app.chat-open #appChatInfo,
+.orion-app.chat-active #appChatInfo {
+  justify-content: center;
+}
+
+.orion-app.chat-open #appChatInfo .app-chat-meta,
+.orion-app.chat-active #appChatInfo .app-chat-meta {
+  justify-content: center;
+}
+
+.orion-app.chat-open #appChatInfo .app-chat-name,
+.orion-app.chat-active #appChatInfo .app-chat-name {
+  text-align: center;
+}
+
+html:not(.dark-theme) .orion-app.chat-open #appChatInfo,
+html:not(.dark-theme) .orion-app.chat-active #appChatInfo,
+html:not(.dark-theme) .orion-app.chat-open .app-header-right,
+html:not(.dark-theme) .orion-app.chat-active .app-header-right {
+  background: color-mix(in srgb, #ffffff 86%, transparent) !important;
+  border-color: rgba(15, 19, 32, 0.16) !important;
+  box-shadow:
+    0 10px 24px rgba(15, 19, 32, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
 }
 
 .orion-app.chat-open .app-header-left,
@@ -866,7 +889,7 @@ html:not(.dark-theme) .orion-app.chat-active #appChatInfo {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-height: 0;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;

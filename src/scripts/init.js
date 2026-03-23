@@ -657,25 +657,25 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="message-menu-date" id="messageMenuDate"></div>
   <button class="message-menu-item" id="messageMenuReply">
     <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-      <path d="M224,128a8,8,0,0,1-8,8H91.31l34.35,34.34a8,8,0,0,1-11.32,11.32l-48-48a8,8,0,0,1,0-11.32l48-48a8,8,0,0,1,11.32,11.32L91.31,120H216A8,8,0,0,1,224,128Z"></path>
+      <path d="M232,112a64.07,64.07,0,0,1-64,64H51.31l34.35,34.34a8,8,0,0,1-11.32,11.32l-48-48a8,8,0,0,1,0-11.32l48-48a8,8,0,0,1,11.32,11.32L51.31,160H168a48,48,0,0,0,0-96H80a8,8,0,0,1,0-16h88A64.07,64.07,0,0,1,232,112Z"></path>
     </svg>
     <span>Відповісти</span>
   </button>
   <button class="message-menu-item" id="messageMenuEdit">
     <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-      <path d="M227.31,73.37,182.63,28.69a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96A16,16,0,0,0,227.31,73.37ZM92.69,208H48V163.31L136,75.31,180.69,120Z"></path>
+      <path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z"></path>
     </svg>
     <span>Редагувати</span>
   </button>
   <button class="message-menu-item" id="messageMenuDelete">
     <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-      <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16Z"></path>
+      <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path>
     </svg>
     <span>Видалити</span>
   </button>
   <button class="message-menu-item" id="messageMenuCopy">
     <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-      <path d="M216,40H120A16,16,0,0,0,104,56V80H80A16,16,0,0,0,64,96V216a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V192h24a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"></path>
+      <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"></path>
     </svg>
     <span>Копіювати</span>
   </button>

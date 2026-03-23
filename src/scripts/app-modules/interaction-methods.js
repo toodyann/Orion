@@ -2279,7 +2279,7 @@ export class ChatAppInteractionMethods {
       avatarHtml = this.getUserAvatarHtml();
     }
       
-      const editedLabel = msg.edited ? '<span class="message-edited">• редаговано</span>' : '';
+      const editedLabel = msg.edited ? '<span class="message-edited">редаговано</span>' : '';
       const editedClass = msg.edited ? ' edited' : '';
       const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
       const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
@@ -2328,91 +2328,9 @@ export class ChatAppInteractionMethods {
 
     if (!messagesContainer || !menu || !menuDate || !btnReply || !btnEdit || !btnDelete || !btnCopy || !backdrop) return;
 
-    let focusedMessageClone = null;
-    let focusedMessageSource = null;
     let activeMenuMessageId = null;
     let menuCloseTimer = null;
     const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-    const clearFocusedMessage = () => {
-      if (focusedMessageSource) {
-        focusedMessageSource.style.removeProperty('visibility');
-        focusedMessageSource = null;
-      }
-      if (focusedMessageClone) {
-        focusedMessageClone.remove();
-        focusedMessageClone = null;
-      }
-      activeMenuMessageId = null;
-    };
-
-    const focusMessageAboveOverlay = (messageEl, reservedMenuHeight = 0) => {
-      clearFocusedMessage();
-      if (!messageEl) return;
-
-      const rect = messageEl.getBoundingClientRect();
-      const viewportPadding = 8;
-      const menuReserve = Math.max(0, Number(reservedMenuHeight) || 0);
-      const maxCloneHeight = Math.max(
-        140,
-        window.innerHeight - viewportPadding * 2 - menuReserve - 8
-      );
-      const cloneWidth = Math.min(rect.width, Math.max(120, window.innerWidth - viewportPadding * 2));
-      const left = clamp(rect.left, viewportPadding, window.innerWidth - cloneWidth - viewportPadding);
-      const clone = messageEl.cloneNode(true);
-      clone.classList.add('message-menu-focus-clone');
-      clone.classList.remove('longpress-pulse');
-      clone.style.left = `${Math.round(left)}px`;
-      clone.style.top = `${Math.round(rect.top)}px`;
-      clone.style.width = `${Math.round(cloneWidth)}px`;
-
-      focusedMessageSource = messageEl;
-      focusedMessageSource.style.visibility = 'hidden';
-      focusedMessageClone = clone;
-      document.body.appendChild(clone);
-
-      let cloneHeight = clone.getBoundingClientRect().height;
-      if (cloneHeight > maxCloneHeight) {
-        clone.classList.add('is-scrollable');
-        clone.style.maxHeight = `${Math.round(maxCloneHeight)}px`;
-        clone.style.overflowY = 'auto';
-        clone.style.overflowX = 'hidden';
-        clone.scrollTop = 0;
-        cloneHeight = maxCloneHeight;
-      }
-
-      const top = clamp(rect.top, viewportPadding, window.innerHeight - cloneHeight - viewportPadding);
-      clone.style.top = `${Math.round(top)}px`;
-
-      window.requestAnimationFrame(() => {
-        if (focusedMessageClone) focusedMessageClone.classList.add('show');
-      });
-    };
-
-    const ensureMessageVisibleForMenu = (messageEl) => {
-      if (!messageEl) return;
-      const containerRect = messagesContainer.getBoundingClientRect();
-      if (!containerRect.height) return;
-
-      const inset = 12;
-      const viewTop = containerRect.top + inset;
-      const viewBottom = containerRect.bottom - inset;
-      const rect = messageEl.getBoundingClientRect();
-      const maxVisibleHeight = Math.max(120, viewBottom - viewTop);
-
-      let delta = 0;
-      if (rect.height > maxVisibleHeight) {
-        delta = rect.top - viewTop;
-      } else if (rect.top < viewTop) {
-        delta = rect.top - viewTop;
-      } else if (rect.bottom > viewBottom) {
-        delta = rect.bottom - viewBottom;
-      }
-
-      if (Math.abs(delta) > 0.5) {
-        messagesContainer.scrollTop += delta;
-      }
-    };
 
     const finishCloseMenu = () => {
       backdrop.classList.remove('active', 'is-closing');
@@ -2420,7 +2338,7 @@ export class ChatAppInteractionMethods {
       menu.classList.remove('active', 'is-closing');
       menu.setAttribute('aria-hidden', 'true');
       this.messageMenuState = { id: null, from: null, text: '' };
-      clearFocusedMessage();
+      activeMenuMessageId = null;
     };
 
     const closeMenu = (immediate = false) => {
@@ -2440,10 +2358,6 @@ export class ChatAppInteractionMethods {
         return;
       }
 
-      if (focusedMessageClone) {
-        focusedMessageClone.classList.remove('show');
-      }
-
       backdrop.classList.remove('active');
       backdrop.classList.add('is-closing');
       backdrop.setAttribute('aria-hidden', 'true');
@@ -2457,23 +2371,8 @@ export class ChatAppInteractionMethods {
       }, 180);
     };
 
-    const runLongPressPulse = (messageEl) => {
-      if (!messageEl) return;
-      messageEl.classList.remove('longpress-pulse');
-      void messageEl.offsetWidth;
-      messageEl.classList.add('longpress-pulse');
-      window.setTimeout(() => {
-        messageEl.classList.remove('longpress-pulse');
-      }, 280);
-    };
-
-    const openMenu = (messageEl) => {
+    const openMenu = (messageEl, clientX, clientY) => {
       const id = Number(messageEl.dataset.id);
-      if (menu.classList.contains('active') && !menu.classList.contains('is-closing') && activeMenuMessageId === id) {
-        return;
-      }
-
-      ensureMessageVisibleForMenu(messageEl);
       closeMenu(true);
       const from = messageEl.dataset.from;
       const text = messageEl.dataset.text || '';
@@ -2495,52 +2394,59 @@ export class ChatAppInteractionMethods {
 
       menu.style.left = '0px';
       menu.style.top = '0px';
-      const menuProbeRect = menu.getBoundingClientRect();
-      const reservedMenuHeight = menuProbeRect.height > 0 ? menuProbeRect.height : 220;
-      focusMessageAboveOverlay(messageEl, reservedMenuHeight);
-      backdrop.classList.remove('is-closing');
-      backdrop.classList.add('active');
-      backdrop.setAttribute('aria-hidden', 'false');
+      backdrop.classList.remove('active', 'is-closing');
+      backdrop.setAttribute('aria-hidden', 'true');
       menu.classList.remove('is-closing');
       menu.classList.add('active');
       menu.setAttribute('aria-hidden', 'false');
 
       const menuRect = menu.getBoundingClientRect();
-      const msgRect = (focusedMessageClone || messageEl).getBoundingClientRect();
-      const desiredX = from === 'own'
-        ? msgRect.right - menuRect.width
-        : msgRect.left;
-      const x = Math.min(Math.max(8, desiredX), window.innerWidth - menuRect.width - 8);
-      let y = msgRect.bottom + 6;
+      const msgRect = messageEl.getBoundingClientRect();
+      const pointerX = Number.isFinite(clientX)
+        ? clientX
+        : (from === 'own' ? msgRect.right : msgRect.left);
+      const pointerY = Number.isFinite(clientY)
+        ? clientY
+        : (msgRect.top + Math.min(48, msgRect.height));
+
+      const x = clamp(pointerX, 8, window.innerWidth - menuRect.width - 8);
+      let y = pointerY + 8;
       if (y + menuRect.height > window.innerHeight - 8) {
-        y = msgRect.top - menuRect.height - 6;
+        y = pointerY - menuRect.height - 8;
       }
-      y = Math.max(8, Math.min(y, window.innerHeight - menuRect.height - 8));
-      const opensAboveMessage = y < msgRect.top;
-      menu.style.setProperty('--menu-origin-x', from === 'own' ? '100%' : '0%');
-      menu.style.setProperty('--menu-origin-y', opensAboveMessage ? '100%' : '0%');
-      menu.style.left = `${Math.max(8, x)}px`;
-      menu.style.top = `${Math.max(8, y)}px`;
+      y = clamp(y, 8, window.innerHeight - menuRect.height - 8);
+      const originX = clamp(((pointerX - x) / Math.max(1, menuRect.width)) * 100, 0, 100);
+      const originY = clamp(((pointerY - y) / Math.max(1, menuRect.height)) * 100, 0, 100);
+      menu.style.setProperty('--menu-origin-x', `${originX}%`);
+      menu.style.setProperty('--menu-origin-y', `${originY}%`);
+      menu.style.left = `${x}px`;
+      menu.style.top = `${y}px`;
     };
 
     messagesContainer.addEventListener('contextmenu', (e) => {
       const messageEl = e.target.closest('.message');
       if (!messageEl) return;
       e.preventDefault();
-      openMenu(messageEl);
+      openMenu(messageEl, e.clientX, e.clientY);
     });
 
     let pressTimer = null;
     let activePressMessage = null;
+    let activePressPoint = null;
     messagesContainer.addEventListener('touchstart', (e) => {
       const messageEl = e.target.closest('.message');
       if (!messageEl) return;
       activePressMessage = messageEl;
+      const touch = e.touches && e.touches[0];
+      activePressPoint = touch
+        ? { x: touch.clientX, y: touch.clientY }
+        : null;
       pressTimer = setTimeout(() => {
-        runLongPressPulse(messageEl);
-        window.setTimeout(() => {
-          openMenu(messageEl);
-        }, 110);
+        openMenu(
+          messageEl,
+          activePressPoint?.x,
+          activePressPoint?.y
+        );
       }, 450);
     }, { passive: true });
 
@@ -2548,18 +2454,18 @@ export class ChatAppInteractionMethods {
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = null;
       if (activePressMessage) {
-        activePressMessage.classList.remove('longpress-pulse');
         activePressMessage = null;
       }
+      activePressPoint = null;
     });
 
     messagesContainer.addEventListener('touchmove', () => {
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = null;
       if (activePressMessage) {
-        activePressMessage.classList.remove('longpress-pulse');
         activePressMessage = null;
       }
+      activePressPoint = null;
     });
 
     btnEdit.addEventListener('click', () => {

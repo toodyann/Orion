@@ -29,7 +29,7 @@ export class ChatAppMessagingMethods {
       avatarHtml = this.getUserAvatarHtml();
     }
     
-    const editedLabel = msg.edited ? '<span class="message-edited">• редаговано</span>' : '';
+    const editedLabel = msg.edited ? '<span class="message-edited">редаговано</span>' : '';
     const editedClass = msg.edited ? ' edited' : '';
     const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
     const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
@@ -793,7 +793,7 @@ export class ChatAppMessagingMethods {
         </div>
       `;
     }
-    return this.formatMessageText(msg?.text || '');
+    return `<div class="message-text">${this.formatMessageText(msg?.text || '')}</div>`;
   }
 
   formatVoiceDuration(seconds = 0) {
