@@ -3,6 +3,7 @@ import { escapeHtml } from '../../shared/helpers/ui-helpers.js';
 import { buildApiUrl, getAuthSession } from '../../shared/auth/auth-session.js';
 
 const SELF_DELETED_CHATS_STORAGE_KEY = 'orion_self_deleted_chats';
+const SELF_DELETED_MESSAGES_STORAGE_KEY = 'orion_self_deleted_messages';
 
 export class ChatAppMessagingMethods {
   decodeJwtPayload(token) {
@@ -84,6 +85,99 @@ export class ChatAppMessagingMethods {
     } catch {
       // Ignore storage write errors.
     }
+  }
+
+  getSelfDeletedMessagesMap() {
+    if (this.selfDeletedMessagesMap && typeof this.selfDeletedMessagesMap === 'object') {
+      return this.selfDeletedMessagesMap;
+    }
+
+    let parsed = {};
+    try {
+      const raw = localStorage.getItem(SELF_DELETED_MESSAGES_STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && typeof data === 'object') {
+          parsed = data;
+        }
+      }
+    } catch {
+      parsed = {};
+    }
+
+    this.selfDeletedMessagesMap = parsed;
+    return this.selfDeletedMessagesMap;
+  }
+
+  saveSelfDeletedMessagesMap() {
+    try {
+      localStorage.setItem(
+        SELF_DELETED_MESSAGES_STORAGE_KEY,
+        JSON.stringify(this.getSelfDeletedMessagesMap())
+      );
+    } catch {
+      // Ignore storage write errors.
+    }
+  }
+
+  getSelfDeletedMessageIdsForChat(chatServerId) {
+    const safeChatId = String(chatServerId || '').trim();
+    if (!safeChatId) return new Set();
+    const map = this.getSelfDeletedMessagesMap();
+    const chatMessages = map[safeChatId];
+    if (!chatMessages || typeof chatMessages !== 'object') return new Set();
+    return new Set(
+      Object.keys(chatMessages)
+        .map((id) => String(id || '').trim())
+        .filter(Boolean)
+    );
+  }
+
+  markMessageDeletedForSelf(chat, message) {
+    const chatServerId = this.resolveChatServerId(chat);
+    const messageServerId = String(message?.serverId ?? '').trim();
+    if (!chatServerId || !messageServerId) return;
+
+    const map = this.getSelfDeletedMessagesMap();
+    if (!map[chatServerId] || typeof map[chatServerId] !== 'object') {
+      map[chatServerId] = {};
+    }
+    map[chatServerId][messageServerId] = Date.now();
+    this.saveSelfDeletedMessagesMap();
+  }
+
+  unmarkMessageDeletedForSelf(chatServerId, messageServerId) {
+    const safeChatId = String(chatServerId || '').trim();
+    const safeMessageId = String(messageServerId || '').trim();
+    if (!safeChatId || !safeMessageId) return;
+
+    const map = this.getSelfDeletedMessagesMap();
+    const chatMessages = map[safeChatId];
+    if (!chatMessages || typeof chatMessages !== 'object') return;
+
+    if (Object.prototype.hasOwnProperty.call(chatMessages, safeMessageId)) {
+      delete chatMessages[safeMessageId];
+      if (!Object.keys(chatMessages).length) {
+        delete map[safeChatId];
+      }
+      this.saveSelfDeletedMessagesMap();
+    }
+  }
+
+  filterSelfDeletedServerMessages(chat, serverMessages = []) {
+    const source = Array.isArray(serverMessages) ? serverMessages : [];
+    if (!source.length) return source;
+    const chatServerId = this.resolveChatServerId(chat);
+    if (!chatServerId) return source;
+
+    const deletedIds = this.getSelfDeletedMessageIdsForChat(chatServerId);
+    if (!deletedIds.size) return source;
+
+    return source.filter((item) => {
+      const serverMessageId = String(item?.id ?? item?.messageId ?? item?._id ?? '').trim();
+      if (!serverMessageId) return true;
+      return !deletedIds.has(serverMessageId);
+    });
   }
 
   getLatestLocalServerMessageMeta(chat) {
@@ -1252,8 +1346,10 @@ export class ChatAppMessagingMethods {
 
   mapServerMessagesToLocal(chat, serverMessages = []) {
     const selfId = this.getAuthUserId();
+    const visibleServerMessages = this.filterSelfDeletedServerMessages(chat, serverMessages);
     const existingMessages = Array.isArray(chat?.messages) ? chat.messages : [];
     const existingByServerId = new Map();
+    const existingMessageByServerId = new Map();
     const existingLocalIds = [];
     const usedIds = new Set();
 
@@ -1263,14 +1359,16 @@ export class ChatAppMessagingMethods {
       const serverId = String(msg?.serverId ?? '').trim();
       if (serverId && Number.isFinite(localId) && localId > 0) {
         existingByServerId.set(serverId, localId);
+        existingMessageByServerId.set(serverId, msg);
       }
     });
 
     let nextLocalId = Math.max(0, ...existingLocalIds) + 1;
-    const nextMessages = serverMessages
+    const nextMessages = visibleServerMessages
       .map((item, index) => {
         const serverId = String(item.id ?? item.messageId ?? item._id ?? '').trim();
         let localId = serverId ? existingByServerId.get(serverId) : null;
+        const existingLocalMessage = serverId ? existingMessageByServerId.get(serverId) : null;
         if (!Number.isFinite(localId) || localId <= 0 || usedIds.has(localId)) {
           localId = nextLocalId;
           nextLocalId += 1;
@@ -1320,6 +1418,14 @@ export class ChatAppMessagingMethods {
         const audioUrl = String(item.audioUrl ?? '').trim();
         const attachmentMime = String(item.attachmentMimeType ?? item.mimeType ?? '').toLowerCase();
         let type = String(item.type ?? '').trim();
+        const serverEdited = Boolean(
+          item.edited
+            ?? (item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt)
+        );
+        const localEdited = Boolean(existingLocalMessage?.edited);
+        const textChangedComparedToLocal = Boolean(
+          existingLocalMessage && String(existingLocalMessage.text ?? '') !== text
+        );
         if (!type) {
           if (audioUrl || attachmentMime.startsWith('audio/')) {
             type = 'voice';
@@ -1345,10 +1451,7 @@ export class ChatAppMessagingMethods {
           imageUrl: type === 'image' ? imageUrl : '',
           audioUrl: type === 'voice' ? audioUrl : '',
           audioDuration: Number(item.audioDuration ?? item.duration ?? 0) || 0,
-          edited: Boolean(
-            item.edited
-              ?? (item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt)
-          ),
+          edited: serverEdited || localEdited || textChangedComparedToLocal,
           replyTo: null,
           _sortValue: new Date(createdAt).getTime() || index
         };
@@ -1824,6 +1927,158 @@ export class ChatAppMessagingMethods {
     throw new Error(bestError || lastError);
   }
 
+  async updateMessageOnServer(chat, message, text) {
+    const chatServerId = this.resolveChatServerId(chat);
+    const messageServerId = String(message?.serverId ?? '').trim();
+    if (!chatServerId || !messageServerId) {
+      return { skipped: true };
+    }
+
+    const attempts = [
+      {
+        endpoint: `/messages/${encodeURIComponent(messageServerId)}`,
+        method: 'PATCH',
+        payload: { content: text }
+      },
+      {
+        endpoint: `/messages/${encodeURIComponent(messageServerId)}`,
+        method: 'PATCH',
+        payload: { text }
+      },
+      {
+        endpoint: `/messages/${encodeURIComponent(messageServerId)}`,
+        method: 'PUT',
+        payload: { content: text }
+      },
+      {
+        endpoint: `/messages/${encodeURIComponent(messageServerId)}/edit`,
+        method: 'POST',
+        payload: { chatId: chatServerId, content: text }
+      },
+      {
+        endpoint: '/messages/edit',
+        method: 'POST',
+        payload: { chatId: chatServerId, messageId: messageServerId, content: text }
+      },
+      {
+        endpoint: '/messages/edit',
+        method: 'POST',
+        payload: { chatId: chatServerId, id: messageServerId, text }
+      }
+    ];
+
+    let lastError = 'Не вдалося відредагувати повідомлення.';
+    let bestError = '';
+
+    for (const attempt of attempts) {
+      const response = await fetch(buildApiUrl(attempt.endpoint), {
+        method: attempt.method,
+        headers: this.getApiHeaders({ json: true }),
+        body: JSON.stringify(attempt.payload)
+      });
+      const data = await this.readJsonSafe(response);
+
+      if (response.ok) {
+        return data || {};
+      }
+
+      const messageText = this.getRequestErrorMessage(data, lastError);
+      lastError = `HTTP ${response.status}: ${messageText}`;
+      if (!bestError || (response.status !== 404 && response.status !== 405)) {
+        bestError = lastError;
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(bestError || lastError);
+      }
+      if (response.status === 404 || response.status === 405) {
+        continue;
+      }
+    }
+
+    throw new Error(bestError || lastError);
+  }
+
+  async deleteMessageOnServer(chat, message, { scope = 'all' } = {}) {
+    const safeScope = scope === 'self' ? 'self' : 'all';
+    if (safeScope === 'self') {
+      return { skipped: true };
+    }
+
+    const chatServerId = this.resolveChatServerId(chat);
+    const messageServerId = String(message?.serverId ?? '').trim();
+    if (!chatServerId || !messageServerId) {
+      throw new Error('Повідомлення ще не синхронізовано з сервером.');
+    }
+
+    const attempts = [
+      {
+        endpoint: `/messages/${encodeURIComponent(messageServerId)}?chatId=${encodeURIComponent(chatServerId)}`,
+        method: 'DELETE'
+      },
+      {
+        endpoint: `/messages/${encodeURIComponent(messageServerId)}`,
+        method: 'DELETE'
+      },
+      {
+        endpoint: `/messages/${encodeURIComponent(messageServerId)}/delete`,
+        method: 'POST',
+        payload: { chatId: chatServerId }
+      },
+      {
+        endpoint: '/messages/delete',
+        method: 'POST',
+        payload: { chatId: chatServerId, messageId: messageServerId }
+      },
+      {
+        endpoint: '/messages/remove',
+        method: 'POST',
+        payload: { chatId: chatServerId, messageId: messageServerId }
+      },
+      {
+        endpoint: `/messages?chatId=${encodeURIComponent(chatServerId)}&messageId=${encodeURIComponent(messageServerId)}`,
+        method: 'DELETE'
+      }
+    ];
+
+    let lastError = 'Не вдалося видалити повідомлення на сервері.';
+    let bestError = '';
+
+    for (const attempt of attempts) {
+      const hasPayload = attempt.payload && typeof attempt.payload === 'object';
+      const response = await fetch(buildApiUrl(attempt.endpoint), {
+        method: attempt.method,
+        headers: this.getApiHeaders({ json: hasPayload }),
+        ...(hasPayload ? { body: JSON.stringify(attempt.payload) } : {})
+      });
+      const data = await this.readJsonSafe(response);
+
+      if (response.ok) {
+        return data || {};
+      }
+
+      const messageText = this.getRequestErrorMessage(data, lastError);
+      lastError = `HTTP ${response.status}: ${messageText}`;
+      if (!bestError || (response.status !== 404 && response.status !== 405)) {
+        bestError = lastError;
+      }
+
+      const alreadyDeleted = /already|вже|not found|не знайдено|does not exist|не існує/i.test(messageText);
+      if (alreadyDeleted) {
+        return {};
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(bestError || lastError);
+      }
+      if (response.status === 404 || response.status === 405) {
+        continue;
+      }
+    }
+
+    throw new Error(bestError || lastError);
+  }
+
   appendMessage(msg, highlightClass = '') {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer || !this.currentChat) return;
@@ -1858,6 +2113,7 @@ export class ChatAppMessagingMethods {
     const editedClass = msg.edited ? ' edited' : '';
     const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
     const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
+    const inlineMetaClass = this.shouldInlineMessageMeta(msg) ? ' inline-meta' : '';
     const replyHtml = msg.replyTo
       ? `<div class="message-reply">
           <div class="message-reply-name">${msg.replyTo.from === 'own' ? this.user.name : this.currentChat.name}</div>
@@ -1869,7 +2125,7 @@ export class ChatAppMessagingMethods {
       ${avatarHtml}
       <div class="message-bubble">
         ${senderNameHtml}
-        <div class="message-content${editedClass}${imageClass}${voiceClass}">
+        <div class="message-content${editedClass}${imageClass}${voiceClass}${inlineMetaClass}">
           ${replyHtml}
           ${this.buildMessageBodyHtml(msg)}
           <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>
@@ -2091,6 +2347,8 @@ export class ChatAppMessagingMethods {
         this.editingMessageId = null;
         return;
       }
+      const previousText = msg.text;
+      const previousEdited = Boolean(msg.edited);
       msg.text = message;
       msg.edited = true;
       this.saveChats();
@@ -2101,6 +2359,19 @@ export class ChatAppMessagingMethods {
       this.renderChatsList();
       if (window.innerWidth <= 900) {
         input.focus({ preventScroll: true });
+      }
+      if (msg.serverId) {
+        try {
+          await this.updateMessageOnServer(this.currentChat, msg, message);
+          await this.syncCurrentChatMessagesFromServer({ forceScroll: false, highlightOwn: false });
+        } catch (error) {
+          msg.text = previousText;
+          msg.edited = previousEdited;
+          this.saveChats();
+          this.renderChat();
+          this.renderChatsList();
+          await this.showAlert(error?.message || 'Не вдалося відредагувати повідомлення.');
+        }
       }
       return;
     }
@@ -2710,6 +2981,17 @@ export class ChatAppMessagingMethods {
 
   formatMessageText(text) {
     return this.escapeHtml(text || '').replace(/\r?\n/g, '<br>');
+  }
+
+  shouldInlineMessageMeta(msg) {
+    if (!msg || typeof msg !== 'object') return false;
+    if (msg.type && msg.type !== 'text') return false;
+    if (msg.replyTo) return false;
+    const rawText = String(msg.text || '');
+    if (!rawText.trim()) return false;
+    if (rawText.includes('\n') || rawText.includes('\r')) return false;
+    const normalized = rawText.replace(/\s+/g, ' ').trim();
+    return normalized.length > 0 && normalized.length <= 36;
   }
 
   buildMessageBodyHtml(msg) {

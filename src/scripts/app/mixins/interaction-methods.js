@@ -2328,6 +2328,7 @@ export class ChatAppInteractionMethods {
       const editedClass = msg.edited ? ' edited' : '';
       const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
       const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
+      const inlineMetaClass = this.shouldInlineMessageMeta(msg) ? ' inline-meta' : '';
       const replyHtml = msg.replyTo
         ? `<div class="message-reply">
             <div class="message-reply-name">${msg.replyTo.from === 'own' ? this.user.name : this.currentChat.name}</div>
@@ -2339,7 +2340,7 @@ export class ChatAppInteractionMethods {
         ${avatarHtml}
         <div class="message-bubble">
           ${senderNameHtml}
-          <div class="message-content${editedClass}${imageClass}${voiceClass}">
+          <div class="message-content${editedClass}${imageClass}${voiceClass}${inlineMetaClass}">
             ${replyHtml}
             ${this.buildMessageBodyHtml(msg)}
             <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>
@@ -2362,6 +2363,7 @@ export class ChatAppInteractionMethods {
   }
 
   bindMessageContextMenu() {
+    if (this.messageContextMenuBound) return;
     const messagesContainer = document.getElementById('messagesContainer');
     const backdrop = document.getElementById('messageMenuBackdrop');
     const menu = document.getElementById('messageMenu');
@@ -2372,6 +2374,7 @@ export class ChatAppInteractionMethods {
     const btnCopy = document.getElementById('messageMenuCopy');
 
     if (!messagesContainer || !menu || !menuDate || !btnReply || !btnEdit || !btnDelete || !btnCopy || !backdrop) return;
+    this.messageContextMenuBound = true;
 
     let activeMenuMessageId = null;
     let menuCloseTimer = null;
@@ -2527,14 +2530,32 @@ export class ChatAppInteractionMethods {
       closeMenu();
     });
 
-    btnDelete.addEventListener('click', () => {
+    btnDelete.addEventListener('click', async () => {
       if (this.messageMenuState.id == null) return;
       const messageId = this.messageMenuState.id;
-      this.showConfirm('Видалити це повідомлення?').then(ok => {
-        if (!ok) return;
-        this.deleteMessageById(messageId);
-      });
+      const targetMessage = Array.isArray(this.currentChat?.messages)
+        ? this.currentChat.messages.find((item) => Number(item?.id) === Number(messageId))
+        : null;
+      const canDeleteForAll = Boolean(
+        targetMessage
+        && targetMessage.from === 'own'
+        && String(targetMessage.serverId || '').trim()
+      );
       closeMenu();
+      const result = await this.showConfirmWithOption('Видалити це повідомлення?', {
+        title: 'Видалення повідомлення',
+        optionLabel: canDeleteForAll ? 'Видалити для всіх' : '',
+        optionChecked: false,
+        confirmText: 'Видалити',
+        cancelText: 'Скасувати'
+      });
+      if (!result?.confirmed) return;
+      const scope = result.optionChecked && canDeleteForAll ? 'all' : 'self';
+      try {
+        await this.deleteMessageWithScope(messageId, { scope });
+      } catch (error) {
+        await this.showAlert(error?.message || 'Не вдалося видалити повідомлення.');
+      }
     });
 
     btnCopy.addEventListener('click', async () => {
@@ -3045,6 +3066,43 @@ export class ChatAppInteractionMethods {
     if (this.isContactProfileSectionActive()) {
       this.renderContactProfileMedia();
     }
+  }
+
+  async deleteMessageWithScope(messageId, { scope = 'self' } = {}) {
+    if (!this.currentChat) return false;
+    const idx = this.currentChat.messages.findIndex((m) => Number(m?.id) === Number(messageId));
+    if (idx === -1) return false;
+    const targetMessage = this.currentChat.messages[idx];
+    const safeScope = scope === 'all' ? 'all' : 'self';
+
+    if (safeScope === 'all') {
+      if (targetMessage?.from !== 'own') {
+        throw new Error('Видалити для всіх можна лише власне повідомлення.');
+      }
+      if (typeof this.deleteMessageOnServer === 'function') {
+        await this.deleteMessageOnServer(this.currentChat, targetMessage, { scope: 'all' });
+      }
+      if (typeof this.unmarkMessageDeletedForSelf === 'function') {
+        this.unmarkMessageDeletedForSelf(
+          this.resolveChatServerId(this.currentChat),
+          targetMessage?.serverId
+        );
+      }
+    } else if (typeof this.markMessageDeletedForSelf === 'function') {
+      this.markMessageDeletedForSelf(this.currentChat, targetMessage);
+    }
+
+    this.currentChat.messages.splice(idx, 1);
+    if (Number(this.editingMessageId) === Number(messageId)) {
+      this.editingMessageId = null;
+    }
+    this.saveChats();
+    this.renderChat();
+    this.renderChatsList();
+    if (this.isContactProfileSectionActive()) {
+      this.renderContactProfileMedia();
+    }
+    return true;
   }
 
   formatMessageDateTime(dateStr, timeStr) {

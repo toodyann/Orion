@@ -237,6 +237,20 @@ html.dark-theme .message.other .message-content {
   hyphens: auto;
 }
 
+.message-content.inline-meta {
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  column-gap: 8px;
+  row-gap: 0;
+}
+
+.message-content.inline-meta .message-text {
+  width: auto;
+  min-width: 0;
+  display: inline;
+}
+
 .message-content.has-image {
   padding: 6px;
 }
@@ -451,6 +465,11 @@ html.dark-theme .message.other .message-content {
   font-size: 11px;
   color: color-mix(in srgb, var(--text-secondary) 92%, transparent);
   opacity: 0.78;
+}
+
+.message-content.inline-meta .message-meta {
+  margin-top: 0;
+  white-space: nowrap;
 }
 
 .message-meta .message-time,
