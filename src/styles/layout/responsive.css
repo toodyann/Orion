@@ -1513,13 +1513,6 @@
     height: 8px;
   }
 
-  .chat-modal-header .app-chat-status.typing {
-    width: auto;
-    height: auto;
-    font-size: 11px;
-    line-height: 1.1;
-  }
-
   .chat-modal-header .app-chat-avatar {
     width: 38px;
     height: 38px;
@@ -1527,7 +1520,17 @@
   }
 
   .chat-modal-header .app-chat-meta {
-    gap: 12px;
+    gap: 3px;
+    align-items: flex-start;
+  }
+
+  .chat-modal-header .app-chat-title-line {
+    justify-content: flex-start;
+  }
+
+  .chat-modal-header .app-chat-typing {
+    max-width: 108px;
+    font-size: 11px;
   }
 
   .chat-modal-header-right {

@@ -1703,6 +1703,7 @@ export class ChatAppMessagingMethods {
           || item.isOnline
           || item.online
         );
+        const activityAt = this.getChatActivityTimestampValue(item);
 
         return {
           serverId,
@@ -1713,7 +1714,8 @@ export class ChatAppMessagingMethods {
           avatarImage,
           avatarUrl: avatarImage,
           avatarColor,
-          status
+          status,
+          activityAt
         };
       })
       .filter(Boolean);
@@ -1724,6 +1726,145 @@ export class ChatAppMessagingMethods {
     const source = candidates.find(Array.isArray);
     if (!source) return [];
     return source.filter((item) => item && typeof item === 'object');
+  }
+
+  getChatActivityTimestampValue(chat) {
+    if (!chat || typeof chat !== 'object') return 0;
+    const parseCandidate = (value) => {
+      if (value == null || value === '') return NaN;
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+      const parsed = Date.parse(String(value));
+      return Number.isFinite(parsed) ? parsed : NaN;
+    };
+
+    const lastMessage = chat.lastMessage && typeof chat.lastMessage === 'object'
+      ? chat.lastMessage
+      : null;
+    const candidates = [
+      chat.activityAt,
+      chat.lastActivityAt,
+      chat.lastMessageAt,
+      chat.updatedAt,
+      lastMessage?.createdAt,
+      lastMessage?.timestamp,
+      lastMessage?.date,
+      chat.createdAt
+    ];
+
+    for (const candidate of candidates) {
+      const ts = parseCandidate(candidate);
+      if (Number.isFinite(ts) && ts > 0) return ts;
+    }
+    return 0;
+  }
+
+  getNormalizedChatDedupScore(chat) {
+    if (!chat || typeof chat !== 'object') return 0;
+    let score = 0;
+    if (chat.participantId) score += 4;
+    score += Math.max(0, Number(chat.participantConfidence || 0));
+    const safeName = String(chat.name || '').trim();
+    if (safeName && !this.isGenericOrInvalidChatName(safeName, { isGroup: Boolean(chat.isGroup) })) {
+      score += 2;
+    }
+    if (this.getAvatarImage(chat.avatarImage || chat.avatarUrl)) score += 1;
+    if (String(chat.avatarColor || '').trim()) score += 0.4;
+    if (this.normalizePresenceStatus(chat.status) === 'online') score += 0.2;
+    return score;
+  }
+
+  mergeNormalizedServerChat(primary, secondary) {
+    const primaryName = String(primary?.name || '').trim();
+    const secondaryName = String(secondary?.name || '').trim();
+    const primaryNameValid = primaryName && !this.isGenericOrInvalidChatName(primaryName, { isGroup: Boolean(primary?.isGroup) });
+    const secondaryNameValid = secondaryName && !this.isGenericOrInvalidChatName(secondaryName, { isGroup: Boolean(secondary?.isGroup) });
+    const resolvedName = primaryNameValid
+      ? primaryName
+      : (secondaryNameValid ? secondaryName : (primaryName || secondaryName || 'Новий чат'));
+
+    const primaryAvatar = this.getAvatarImage(primary?.avatarImage || primary?.avatarUrl);
+    const secondaryAvatar = this.getAvatarImage(secondary?.avatarImage || secondary?.avatarUrl);
+    const mergedStatus = this.normalizePresenceStatus(primary?.status)
+      || this.normalizePresenceStatus(secondary?.status)
+      || '';
+
+    return {
+      ...secondary,
+      ...primary,
+      name: resolvedName,
+      participantId: String(primary?.participantId || secondary?.participantId || '').trim() || null,
+      participantConfidence: Math.max(
+        Number(primary?.participantConfidence || 0),
+        Number(secondary?.participantConfidence || 0)
+      ),
+      avatarImage: primaryAvatar || secondaryAvatar,
+      avatarUrl: primaryAvatar || secondaryAvatar,
+      avatarColor: String(primary?.avatarColor || secondary?.avatarColor || '').trim(),
+      status: mergedStatus,
+      activityAt: Math.max(
+        this.getChatActivityTimestampValue(primary),
+        this.getChatActivityTimestampValue(secondary)
+      )
+    };
+  }
+
+  pickPreferredNormalizedServerChat(a, b) {
+    const aActivity = this.getChatActivityTimestampValue(a);
+    const bActivity = this.getChatActivityTimestampValue(b);
+    if (aActivity !== bActivity) {
+      return aActivity >= bActivity ? this.mergeNormalizedServerChat(a, b) : this.mergeNormalizedServerChat(b, a);
+    }
+
+    const aScore = this.getNormalizedChatDedupScore(a);
+    const bScore = this.getNormalizedChatDedupScore(b);
+    if (aScore !== bScore) {
+      return aScore >= bScore ? this.mergeNormalizedServerChat(a, b) : this.mergeNormalizedServerChat(b, a);
+    }
+
+    return this.mergeNormalizedServerChat(a, b);
+  }
+
+  deduplicateNormalizedServerChats(chats = []) {
+    const source = Array.isArray(chats) ? chats : [];
+    if (source.length <= 1) return source;
+
+    // 1) Hard dedupe by server chat id.
+    const byServerId = new Map();
+    source.forEach((chat) => {
+      const serverId = String(chat?.serverId || '').trim();
+      if (!serverId) return;
+      const existing = byServerId.get(serverId);
+      if (!existing) {
+        byServerId.set(serverId, chat);
+        return;
+      }
+      byServerId.set(serverId, this.pickPreferredNormalizedServerChat(existing, chat));
+    });
+    const uniqueByServer = [...byServerId.values()];
+
+    // 2) Collapse duplicate direct chats to one per participant.
+    const deduped = [];
+    const directIndexByParticipant = new Map();
+    uniqueByServer.forEach((chat) => {
+      const participantId = String(chat?.participantId || '').trim();
+      const isDirect = !chat?.isGroup && Boolean(participantId);
+      if (!isDirect) {
+        deduped.push(chat);
+        return;
+      }
+
+      const existingIndex = directIndexByParticipant.get(participantId);
+      if (existingIndex == null) {
+        directIndexByParticipant.set(participantId, deduped.length);
+        deduped.push(chat);
+        return;
+      }
+
+      const existing = deduped[existingIndex];
+      deduped[existingIndex] = this.pickPreferredNormalizedServerChat(existing, chat);
+    });
+
+    return deduped;
   }
 
   mapServerMessagesToLocal(chat, serverMessages = []) {
@@ -1871,6 +2012,7 @@ export class ChatAppMessagingMethods {
         visibleChats.push(serverChat);
       }
     }
+    const deduplicatedVisibleChats = this.deduplicateNormalizedServerChats(visibleChats);
 
     const previousChats = Array.isArray(this.chats) ? this.chats : [];
     const previousCurrentServerId = this.resolveChatServerId(this.currentChat);
@@ -1891,8 +2033,8 @@ export class ChatAppMessagingMethods {
     let activeChatMessagesChanged = false;
     let activeChatHighlightId = null;
     let nextLocalId = Math.max(0, ...previousChats.map((chat) => Number(chat?.id) || 0)) + 1;
-    let changed = previousChats.length !== visibleChats.length;
-    const nextChats = visibleChats.map((serverChat) => {
+    let changed = previousChats.length !== deduplicatedVisibleChats.length;
+    const nextChats = deduplicatedVisibleChats.map((serverChat) => {
       let existing = byServerId.get(serverChat.serverId) || null;
       if (!existing && !serverChat.isGroup && serverChat.participantId) {
         existing = byParticipantId.get(serverChat.participantId) || null;

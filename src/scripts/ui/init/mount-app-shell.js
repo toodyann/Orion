@@ -17,8 +17,11 @@ export function mountAppShell() {
       <div class="app-chat-info" id="appChatInfo">
         <div class="app-chat-avatar" id="appChatAvatar"></div>
         <div class="app-chat-meta">
-          <div class="app-chat-name" id="contactName">Виберіть контакт</div>
-          <div class="app-chat-status" id="contactStatus">онлайн</div>
+          <div class="app-chat-title-line">
+            <div class="app-chat-name" id="contactName">Виберіть контакт</div>
+            <div class="app-chat-status" id="contactStatus"></div>
+          </div>
+          <div class="app-chat-typing" id="contactTyping"></div>
         </div>
       </div>
     </div>
@@ -217,8 +220,11 @@ export function mountAppShell() {
           <div class="app-chat-info" id="chatModalInfo">
             <div class="app-chat-avatar" id="chatModalAvatar"></div>
             <div class="app-chat-meta">
-              <div class="app-chat-name" id="chatModalName">Виберіть контакт</div>
-              <div class="app-chat-status" id="chatModalStatus"></div>
+              <div class="app-chat-title-line">
+                <div class="app-chat-name" id="chatModalName">Виберіть контакт</div>
+                <div class="app-chat-status" id="chatModalStatus"></div>
+              </div>
+              <div class="app-chat-typing" id="chatModalTyping"></div>
             </div>
           </div>
         </div>

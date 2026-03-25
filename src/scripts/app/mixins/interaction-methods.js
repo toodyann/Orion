@@ -3174,18 +3174,20 @@ export class ChatAppInteractionMethods {
       {
         contactName: document.getElementById('contactName'),
         contactStatus: document.getElementById('contactStatus'),
+        contactTyping: document.getElementById('contactTyping'),
         avatar: document.getElementById('appChatAvatar'),
         contactDetails: document.getElementById('appChatInfo')
       },
       {
         contactName: document.getElementById('chatModalName'),
         contactStatus: document.getElementById('chatModalStatus'),
+        contactTyping: document.getElementById('chatModalTyping'),
         avatar: document.getElementById('chatModalAvatar'),
         contactDetails: document.getElementById('chatModalInfo')
       }
     ];
 
-    headerTargets.forEach(({ contactName, contactStatus, avatar, contactDetails }) => {
+    headerTargets.forEach(({ contactName, contactStatus, contactTyping, avatar, contactDetails }) => {
       if (this.currentChat && contactName && contactStatus) {
         contactName.textContent = this.currentChat.name;
         const showOnlineStatus = this.settings?.showOnlineStatus !== false;
@@ -3198,18 +3200,22 @@ export class ChatAppInteractionMethods {
         );
 
         if (isTyping) {
-          contactStatus.textContent = 'друкує...';
-          contactStatus.classList.add('typing');
-          contactStatus.classList.remove('online', 'offline', 'hidden');
-        } else if (!this.currentChat.isGroup && showOnlineStatus) {
-          contactStatus.textContent = '';
+          if (contactTyping) {
+            contactTyping.textContent = 'друкує...';
+            contactTyping.classList.add('active');
+          }
+        } else if (contactTyping) {
+          contactTyping.textContent = '';
+          contactTyping.classList.remove('active');
+        }
+
+        if (!this.currentChat.isGroup && showOnlineStatus) {
           const isOnline = (this.currentChat.status || 'offline') !== 'offline';
           contactStatus.classList.toggle('online', isOnline);
           contactStatus.classList.toggle('offline', !isOnline);
-          contactStatus.classList.remove('typing', 'hidden');
+          contactStatus.classList.remove('hidden');
         } else {
-          contactStatus.textContent = '';
-          contactStatus.classList.remove('online', 'offline', 'typing');
+          contactStatus.classList.remove('online', 'offline');
           contactStatus.classList.add('hidden');
         }
         if (avatar) {
@@ -3227,8 +3233,12 @@ export class ChatAppInteractionMethods {
         this.closeContactProfileSection();
         if (contactName) contactName.textContent = 'Виберіть контакт';
         if (contactStatus) {
-          contactStatus.textContent = '';
-          contactStatus.classList.remove('online', 'offline', 'typing', 'hidden');
+          contactStatus.classList.remove('online', 'offline');
+          contactStatus.classList.add('hidden');
+        }
+        if (contactTyping) {
+          contactTyping.textContent = '';
+          contactTyping.classList.remove('active');
         }
         if (avatar) {
           avatar.textContent = '';
