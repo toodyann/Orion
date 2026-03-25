@@ -5,12 +5,23 @@ body {
   min-height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  background: var(--bg-gradient);
 }
 
 body {
   font-family: "Inter", sans-serif;
   color: var(--text-primary);
+  background:
+    radial-gradient(
+      1100px 620px at 8% -10%,
+      rgba(59, 130, 246, 0.2),
+      transparent 52%
+    ),
+    radial-gradient(
+      1100px 700px at 102% 112%,
+      rgba(14, 165, 233, 0.16),
+      transparent 58%
+    ),
+    var(--bg-gradient);
 }
 
 .auth-page {
@@ -50,6 +61,29 @@ body {
 html.dark-theme .auth-page::before {
   color: color-mix(in srgb, #ffffff 20%, transparent);
   opacity: 0.12;
+}
+
+.auth-background-glow {
+  position: absolute;
+  width: min(42vw, 520px);
+  height: min(42vw, 520px);
+  border-radius: 999px;
+  filter: blur(58px);
+  opacity: 0.24;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.auth-background-glow--one {
+  top: -12%;
+  left: -12%;
+  background: #31435a;
+}
+
+.auth-background-glow--two {
+  right: -11%;
+  bottom: -18%;
+  background: #31435a;
 }
 
 .auth-shell {

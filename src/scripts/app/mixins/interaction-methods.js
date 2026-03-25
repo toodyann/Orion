@@ -2,6 +2,7 @@ import {
   showAlert,
   showNotice,
   showConfirm,
+  showConfirmWithOption,
   setupEmojiPicker,
   insertAtCursor,
   formatMessageDateTime
@@ -238,9 +239,11 @@ export class ChatAppInteractionMethods {
       const lastMessage = chat.messages[chat.messages.length - 1];
       const previewText = this.getMessagePreviewText(lastMessage);
       const safePreviewText = this.escapeHtml(previewText || 'Немає повідомлень');
+      const unreadCount = Math.max(0, Number(chat?.unreadCount || 0));
+      const unreadBadge = unreadCount > 99 ? '99+' : String(unreadCount);
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = `desktop-secondary-chat-item ${this.currentChat?.id === chat.id ? 'active' : ''}`;
+      button.className = `desktop-secondary-chat-item ${this.currentChat?.id === chat.id ? 'active' : ''} ${unreadCount > 0 ? 'has-unread' : ''}`;
       button.dataset.chatId = String(chat.id);
 
       button.innerHTML = `
@@ -249,7 +252,10 @@ export class ChatAppInteractionMethods {
           <span class="desktop-secondary-chat-name">${this.escapeHtml(chat.name)}</span>
           <span class="desktop-secondary-chat-preview">${safePreviewText}</span>
         </div>
-        <span class="desktop-secondary-chat-time">${lastMessage?.time || ''}</span>
+        <div class="desktop-secondary-chat-meta">
+          <span class="desktop-secondary-chat-time">${lastMessage?.time || ''}</span>
+          ${unreadCount > 0 ? `<span class="desktop-secondary-chat-unread">${unreadBadge}</span>` : ''}
+        </div>
       `;
 
       button.addEventListener('click', () => {
@@ -1251,6 +1257,10 @@ export class ChatAppInteractionMethods {
     return showConfirm(message, title);
   }
 
+  showConfirmWithOption(message, options = {}) {
+    return showConfirmWithOption(message, options);
+  }
+
   setupEmojiPicker() {
     setupEmojiPicker((input, text) => this.insertAtCursor(input, text));
   }
@@ -1666,6 +1676,7 @@ export class ChatAppInteractionMethods {
       `;
       chatsList.appendChild(emptyState);
       this.renderSidebarAvatarsStrip();
+      this.refreshDesktopSecondaryChatsListIfVisible();
       return;
     }
 
@@ -1931,6 +1942,9 @@ export class ChatAppInteractionMethods {
       this.stopActiveVoicePlayback();
     }
     this.currentChat = this.chats.find(c => c.id === chatId);
+    if (this.currentChat && typeof this.markChatAsRead === 'function') {
+      this.markChatAsRead(this.currentChat, { persist: true });
+    }
     document.getElementById('newContactInput').value = '';
     
     // Hide settings sections completely
@@ -2158,11 +2172,34 @@ export class ChatAppInteractionMethods {
   }
 
   async deleteChat(chatId) {
-    const ok = await this.showConfirm('Ви впевнені, що хочете видалити цей чат?');
-    if (!ok) return;
-
     const idx = this.chats.findIndex(c => c.id === chatId);
     if (idx === -1) return;
+    const chat = this.chats[idx];
+    const result = await this.showConfirmWithOption(
+      'Видалити чат?',
+      {
+        title: 'Видалення чату',
+        optionLabel: 'Видалити для всіх',
+        optionChecked: false,
+        confirmText: 'Видалити',
+        cancelText: 'Скасувати'
+      }
+    );
+    if (!result?.confirmed) return;
+    const deleteScope = result.optionChecked ? 'all' : 'self';
+
+    try {
+      if (deleteScope === 'self') {
+        if (typeof this.markChatDeletedForSelf === 'function') {
+          this.markChatDeletedForSelf(chat);
+        }
+      } else if (typeof this.deleteChatOnServer === 'function') {
+        await this.deleteChatOnServer(chat, { scope: deleteScope });
+      }
+    } catch (error) {
+      await this.showAlert(error?.message || 'Не вдалося видалити чат на сервері.');
+      return;
+    }
 
     this.chats.splice(idx, 1);
     this.saveChats();

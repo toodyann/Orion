@@ -113,6 +113,7 @@
   }
 
   .sidebar.compact .desktop-secondary-menu.active .desktop-secondary-chat-info,
+  .sidebar.compact .desktop-secondary-menu.active .desktop-secondary-chat-meta,
   .sidebar.compact .desktop-secondary-menu.active .desktop-secondary-chat-time {
     display: none;
   }
@@ -1387,6 +1388,13 @@ html.dark-theme .bottom-nav-indicator {
 
   html:not(.dark-theme)
     .desktop-secondary-menu.active
+    .desktop-secondary-chat-unread {
+    background: rgba(15, 35, 78, 0.18);
+    color: rgba(11, 23, 48, 0.92);
+  }
+
+  html:not(.dark-theme)
+    .desktop-secondary-menu.active
     .desktop-secondary-menu-item-badge {
     background: rgba(0, 0, 0, 0.08);
     color: rgba(0, 0, 0, 0.72);
@@ -1513,6 +1521,14 @@ html.dark-theme .bottom-nav-indicator {
     cursor: pointer;
   }
 
+  .desktop-secondary-chat-item.has-unread .desktop-secondary-chat-name {
+    font-weight: 700;
+  }
+
+  .desktop-secondary-chat-item.has-unread .desktop-secondary-chat-preview {
+    color: rgba(241, 241, 241, 0.88);
+  }
+
   .desktop-secondary-chat-item:hover {
     background: color-mix(in srgb, #ffffff 8%, transparent);
   }
@@ -1554,18 +1570,47 @@ html.dark-theme .bottom-nav-indicator {
   .desktop-secondary-chat-preview {
     color: rgba(241, 241, 241, 0.64);
     font-size: 13px;
-    line-height: 1;
+    line-height: 1.1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .desktop-secondary-chat-time {
-    margin-left: auto;
     color: rgba(241, 241, 241, 0.6);
     font-size: 12px;
     line-height: 1;
     flex-shrink: 0;
+  }
+
+  .desktop-secondary-chat-meta {
+    margin-left: auto;
+    min-width: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 6px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 10px;
+  }
+
+  .desktop-secondary-chat-unread {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--primary-color) 84%, #ffffff 16%);
+    color: #ffffff;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-sizing: border-box;
   }
 
   .desktop-secondary-menu-group {

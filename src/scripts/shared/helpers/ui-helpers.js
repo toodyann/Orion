@@ -183,6 +183,118 @@ export function showConfirm(message, title = 'Підтвердження') {
 }
 
 /**
+ * Показати діалог підтвердження з додатковою опцією (чекбоксом).
+ * @param {string} message - Текст повідомлення
+ * @param {object} options
+ * @param {string} [options.title='Підтвердження'] - Заголовок
+ * @param {string} [options.optionLabel=''] - Текст опції
+ * @param {boolean} [options.optionChecked=false] - Стан опції за замовчуванням
+ * @param {string} [options.confirmText='OK'] - Текст кнопки підтвердження
+ * @param {string} [options.cancelText='Скасувати'] - Текст кнопки скасування
+ * @returns {Promise<{confirmed: boolean, optionChecked: boolean}>}
+ */
+export function showConfirmWithOption(
+  message,
+  {
+    title = 'Підтвердження',
+    optionLabel = '',
+    optionChecked = false,
+    confirmText = 'OK',
+    cancelText = 'Скасувати'
+  } = {}
+) {
+  const overlay = document.getElementById('alertOverlay');
+  const titleEl = document.getElementById('alertTitle');
+  const messageEl = document.getElementById('alertMessage');
+  const okBtn = document.getElementById('alertOkBtn');
+  const cancelBtn = document.getElementById('alertCancelBtn');
+  const closeBtn = document.getElementById('alertCloseBtn');
+
+  if (!overlay || !titleEl || !messageEl || !okBtn || !cancelBtn || !closeBtn) {
+    const confirmed = confirm(message);
+    return Promise.resolve({ confirmed, optionChecked: false });
+  }
+
+  titleEl.textContent = title;
+  messageEl.textContent = '';
+  const textEl = document.createElement('div');
+  textEl.className = 'alert-message-text';
+  textEl.textContent = message;
+  messageEl.appendChild(textEl);
+
+  let optionInput = null;
+  const safeOptionLabel = String(optionLabel || '').trim();
+  if (safeOptionLabel) {
+    const optionId = `alertConfirmOption-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const optionEl = document.createElement('label');
+    optionEl.className = 'alert-confirm-option';
+    optionEl.setAttribute('for', optionId);
+
+    optionInput = document.createElement('input');
+    optionInput.type = 'checkbox';
+    optionInput.id = optionId;
+    optionInput.className = 'alert-confirm-option-input';
+    optionInput.checked = Boolean(optionChecked);
+
+    const optionText = document.createElement('span');
+    optionText.className = 'alert-confirm-option-text';
+    optionText.textContent = safeOptionLabel;
+
+    optionEl.appendChild(optionInput);
+    optionEl.appendChild(optionText);
+    messageEl.appendChild(optionEl);
+  }
+
+  const previousOkText = okBtn.textContent;
+  const previousCancelText = cancelBtn.textContent;
+  okBtn.textContent = confirmText;
+  cancelBtn.textContent = cancelText;
+  cancelBtn.style.display = 'inline-flex';
+  setAlertVariant(overlay, 'error');
+
+  overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  return new Promise(resolve => {
+    const cleanup = () => {
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
+      clearAlertVariant(overlay);
+      messageEl.textContent = '';
+      okBtn.textContent = previousOkText;
+      cancelBtn.textContent = previousCancelText;
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      document.removeEventListener('keydown', onEnter);
+    };
+    const getOptionState = () => Boolean(optionInput?.checked);
+    const onOk = () => {
+      const checked = getOptionState();
+      cleanup();
+      resolve({ confirmed: true, optionChecked: checked });
+    };
+    const onCancel = () => {
+      const checked = getOptionState();
+      cleanup();
+      resolve({ confirmed: false, optionChecked: checked });
+    };
+    const onOverlay = (e) => {
+      if (e.target === overlay) onCancel();
+    };
+    const onEnter = (e) => {
+      if (e.key === 'Enter') onOk();
+    };
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+    document.addEventListener('keydown', onEnter);
+  });
+}
+
+/**
  * Налаштування emoji picker
  */
 export function setupEmojiPicker(insertAtCursor) {

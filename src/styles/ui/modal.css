@@ -1038,6 +1038,84 @@ html:not(.dark-theme) .alert-overlay.is-notice .alert-modal-inner::before {
   word-break: break-word;
 }
 
+.alert-message-text {
+  white-space: pre-wrap;
+}
+
+.alert-confirm-option {
+  margin-top: 10px;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  transition: color 0.16s ease;
+}
+
+.alert-confirm-option:hover {
+  color: var(--text-primary);
+}
+
+.alert-confirm-option:focus-within {
+  color: var(--text-primary);
+}
+
+.alert-confirm-option-input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: 0 0 18px;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background-color 0.14s ease;
+}
+
+.alert-confirm-option-input::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  transform: scale(0);
+  transition: transform 0.14s ease;
+  background: currentColor;
+  color: #ffffff;
+  clip-path: polygon(14% 53%, 0 67%, 40% 100%, 100% 26%, 86% 12%, 39% 68%);
+}
+
+.alert-confirm-option-input:checked {
+  border-color: color-mix(in srgb, var(--primary-color) 72%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 86%, #5f6e83);
+}
+
+.alert-confirm-option-input:checked::before {
+  transform: scale(1);
+}
+
+.alert-confirm-option-input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary-color) 48%, #94a3b8);
+  outline-offset: 2px;
+}
+
+.alert-confirm-option-text {
+  line-height: 1.25;
+  color: inherit;
+}
+
 .alert-actions {
   display: flex;
   gap: 8px;
@@ -2644,6 +2722,7 @@ html:not(.dark-theme) #newChatModal.modal {
 
 #newChatModal .new-chat-panel {
   padding: 14px;
+  border: none;
 }
 
 #newChatModal .group-fields.active {
@@ -2744,4 +2823,28 @@ html:not(.dark-theme) #newChatModal.modal {
   min-width: 132px;
   border-radius: 12px;
   box-shadow: none;
+}
+
+/* Match New Chat modal footer buttons with settings-buttons style */
+#newChatModal .new-chat-footer .btn,
+#newChatModal .new-chat-footer .btn-primary,
+#newChatModal .new-chat-footer .btn-secondary {
+  min-height: 42px;
+  width: auto;
+  min-width: 132px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+#newChatModal .new-chat-footer .btn:hover,
+#newChatModal .new-chat-footer .btn-primary:hover,
+#newChatModal .new-chat-footer .btn-secondary:hover {
+  border-color: color-mix(in srgb, var(--border-color) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 96%, transparent);
+  color: var(--text-primary);
 }

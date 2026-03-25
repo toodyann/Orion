@@ -2,6 +2,8 @@ import { getSettingsTemplate } from '../../ui/templates/settings-templates.js';
 import { escapeHtml } from '../../shared/helpers/ui-helpers.js';
 import { buildApiUrl, getAuthSession } from '../../shared/auth/auth-session.js';
 
+const SELF_DELETED_CHATS_STORAGE_KEY = 'orion_self_deleted_chats';
+
 export class ChatAppMessagingMethods {
   decodeJwtPayload(token) {
     const raw = String(token || '').trim();
@@ -49,6 +51,287 @@ export class ChatAppMessagingMethods {
     const userId = this.getAuthUserId();
     if (userId) headers['X-User-Id'] = userId;
     return headers;
+  }
+
+  getSelfDeletedChatsMap() {
+    if (this.selfDeletedChatsMap && typeof this.selfDeletedChatsMap === 'object') {
+      return this.selfDeletedChatsMap;
+    }
+
+    let parsed = {};
+    try {
+      const raw = localStorage.getItem(SELF_DELETED_CHATS_STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && typeof data === 'object') {
+          parsed = data;
+        }
+      }
+    } catch {
+      parsed = {};
+    }
+
+    this.selfDeletedChatsMap = parsed;
+    return this.selfDeletedChatsMap;
+  }
+
+  saveSelfDeletedChatsMap() {
+    try {
+      localStorage.setItem(
+        SELF_DELETED_CHATS_STORAGE_KEY,
+        JSON.stringify(this.getSelfDeletedChatsMap())
+      );
+    } catch {
+      // Ignore storage write errors.
+    }
+  }
+
+  getLatestLocalServerMessageMeta(chat) {
+    const messages = Array.isArray(chat?.messages) ? chat.messages : [];
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const item = messages[i];
+      const serverId = String(item?.serverId ?? '').trim();
+      const createdAt = String(item?.createdAt ?? '').trim();
+      const fallbackDate = item?.date && item?.time ? `${item.date}T${item.time}` : '';
+      const fallbackIso = String(item?.date ?? '').trim();
+      if (serverId || createdAt || fallbackDate || fallbackIso) {
+        return {
+          serverMessageId: serverId,
+          createdAt: createdAt || fallbackDate || fallbackIso || ''
+        };
+      }
+    }
+    return { serverMessageId: '', createdAt: '' };
+  }
+
+  markChatDeletedForSelf(chat) {
+    const chatServerId = this.resolveChatServerId(chat);
+    if (!chatServerId) return;
+    const latest = this.getLatestLocalServerMessageMeta(chat);
+    const map = this.getSelfDeletedChatsMap();
+    map[chatServerId] = {
+      serverMessageId: String(latest.serverMessageId || '').trim(),
+      createdAt: String(latest.createdAt || '').trim(),
+      deletedAt: Date.now()
+    };
+    this.saveSelfDeletedChatsMap();
+  }
+
+  unmarkChatDeletedForSelf(chatServerId) {
+    const safeId = String(chatServerId || '').trim();
+    if (!safeId) return;
+    const map = this.getSelfDeletedChatsMap();
+    if (!Object.prototype.hasOwnProperty.call(map, safeId)) return;
+    delete map[safeId];
+    this.saveSelfDeletedChatsMap();
+  }
+
+  getLatestServerMessageMetaFromPayload(serverMessages = []) {
+    const source = Array.isArray(serverMessages) ? serverMessages : [];
+    if (!source.length) return { serverMessageId: '', createdAt: '' };
+
+    const toMeta = (item) => ({
+      serverMessageId: String(item?.id ?? item?.messageId ?? item?._id ?? '').trim(),
+      createdAt: String(item?.createdAt ?? item?.timestamp ?? item?.date ?? '').trim()
+    });
+    const toTimestamp = (item) => {
+      const raw = item?.createdAt ?? item?.timestamp ?? item?.date ?? '';
+      if (raw == null || raw === '') return NaN;
+      if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+      const parsed = Date.parse(String(raw));
+      return Number.isFinite(parsed) ? parsed : NaN;
+    };
+
+    let latestItem = null;
+    let latestTs = Number.NEGATIVE_INFINITY;
+    for (const item of source) {
+      const ts = toTimestamp(item);
+      if (!Number.isFinite(ts)) continue;
+      if (!latestItem || ts >= latestTs) {
+        latestItem = item;
+        latestTs = ts;
+      }
+    }
+
+    if (latestItem) {
+      return toMeta(latestItem);
+    }
+
+    // Fallback when timestamps are missing/invalid.
+    return toMeta(source[0] || {});
+  }
+
+  getMessageTimestampValue(message) {
+    if (!message || typeof message !== 'object') return NaN;
+    const candidates = [
+      message.createdAt,
+      message.timestamp,
+      message.date && message.time ? `${message.date}T${message.time}` : message.date
+    ];
+    for (const raw of candidates) {
+      if (!raw) continue;
+      const parsed = Date.parse(String(raw));
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return NaN;
+  }
+
+  getLatestLocalMessageMarker(messages = []) {
+    const source = Array.isArray(messages) ? messages : [];
+    if (!source.length) {
+      return { serverMessageId: '', createdAt: '' };
+    }
+    const last = source[source.length - 1] || {};
+    return {
+      serverMessageId: String(last.serverId || '').trim(),
+      createdAt: String(last.createdAt || '').trim()
+    };
+  }
+
+  countUnreadMessagesAfterMarker(chat, messages = []) {
+    const source = Array.isArray(messages) ? messages : [];
+    if (!source.length) return 0;
+
+    const markerId = String(chat?.lastReadServerMessageId || '').trim();
+    const markerAt = String(chat?.lastReadMessageAt || '').trim();
+    let startIndex = 0;
+
+    if (markerId) {
+      let markerIndex = -1;
+      for (let i = source.length - 1; i >= 0; i -= 1) {
+        if (String(source[i]?.serverId || '').trim() === markerId) {
+          markerIndex = i;
+          break;
+        }
+      }
+      if (markerIndex >= 0) {
+        startIndex = markerIndex + 1;
+      }
+    }
+
+    if (startIndex === 0 && markerAt) {
+      const markerTs = Date.parse(markerAt);
+      if (Number.isFinite(markerTs)) {
+        const firstNewIndex = source.findIndex((item) => {
+          const ts = this.getMessageTimestampValue(item);
+          return Number.isFinite(ts) && ts > markerTs;
+        });
+        if (firstNewIndex >= 0) {
+          startIndex = firstNewIndex;
+        } else {
+          return 0;
+        }
+      }
+    }
+
+    return source.slice(startIndex).reduce((count, item) => {
+      return count + (item?.from === 'other' ? 1 : 0);
+    }, 0);
+  }
+
+  applyChatUnreadState(chat, messages = [], { markAsRead = false } = {}) {
+    if (!chat || typeof chat !== 'object') return false;
+    const latestMarker = this.getLatestLocalMessageMarker(messages);
+    const hadState = Boolean(
+      chat.readTrackingInitialized
+      || String(chat.lastReadServerMessageId || '').trim()
+      || String(chat.lastReadMessageAt || '').trim()
+      || Number(chat.unreadCount || 0) > 0
+    );
+
+    let changed = false;
+    if (markAsRead) {
+      const nextId = String(latestMarker.serverMessageId || '').trim();
+      const nextAt = String(latestMarker.createdAt || '').trim();
+      if (String(chat.lastReadServerMessageId || '').trim() !== nextId) {
+        chat.lastReadServerMessageId = nextId;
+        changed = true;
+      }
+      if (String(chat.lastReadMessageAt || '').trim() !== nextAt) {
+        chat.lastReadMessageAt = nextAt;
+        changed = true;
+      }
+      if (Number(chat.unreadCount || 0) !== 0) {
+        chat.unreadCount = 0;
+        changed = true;
+      }
+      if (!chat.readTrackingInitialized) {
+        chat.readTrackingInitialized = true;
+        changed = true;
+      }
+      return changed;
+    }
+
+    if (!hadState && !chat.readTrackingInitialized) {
+      chat.readTrackingInitialized = true;
+      changed = true;
+    }
+
+    const nextUnreadCount = this.countUnreadMessagesAfterMarker(chat, messages);
+    if (Number(chat.unreadCount || 0) !== nextUnreadCount) {
+      chat.unreadCount = nextUnreadCount;
+      changed = true;
+    }
+    return changed;
+  }
+
+  markChatAsRead(chat, { persist = false } = {}) {
+    if (!chat || typeof chat !== 'object') return false;
+    const messages = Array.isArray(chat.messages) ? chat.messages : [];
+    const changed = this.applyChatUnreadState(chat, messages, { markAsRead: true });
+    if (changed && persist) {
+      this.saveChats();
+    }
+    return changed;
+  }
+
+  async hasNewServerMessageAfterSelfDelete(chatServerId, marker = {}) {
+    const safeChatId = String(chatServerId || '').trim();
+    if (!safeChatId) return false;
+
+    try {
+      const response = await fetch(
+        buildApiUrl(`/messages?chatId=${encodeURIComponent(safeChatId)}`),
+        { headers: this.getApiHeaders() }
+      );
+      if (!response.ok) return false;
+      const data = await this.readJsonSafe(response);
+      const serverMessages = this.normalizeServerMessagesPayload(data);
+      if (!serverMessages.length) return false;
+
+      const toMeta = (item) => ({
+        serverMessageId: String(item?.id ?? item?.messageId ?? item?._id ?? '').trim(),
+        createdAt: String(item?.createdAt ?? item?.timestamp ?? item?.date ?? '').trim()
+      });
+      const latest = this.getLatestServerMessageMetaFromPayload(serverMessages);
+      const first = toMeta(serverMessages[0]);
+      const last = toMeta(serverMessages[serverMessages.length - 1]);
+
+      const markerId = String(marker?.serverMessageId || '').trim();
+      const markerCreatedAt = String(marker?.createdAt || '').trim();
+
+      const candidateIds = new Set(
+        [latest.serverMessageId, first.serverMessageId, last.serverMessageId]
+          .map((value) => String(value || '').trim())
+          .filter(Boolean)
+      );
+      if (markerId && candidateIds.size > 0) {
+        return !candidateIds.has(markerId);
+      }
+
+      const candidateTimes = new Set(
+        [latest.createdAt, first.createdAt, last.createdAt]
+          .map((value) => String(value || '').trim())
+          .filter(Boolean)
+      );
+      if (markerCreatedAt && candidateTimes.size > 0) {
+        return !candidateTimes.has(markerCreatedAt);
+      }
+
+      return Boolean(candidateIds.size > 0 || candidateTimes.size > 0);
+    } catch {
+      return false;
+    }
   }
 
   async readJsonSafe(response) {
@@ -612,6 +895,101 @@ export class ChatAppMessagingMethods {
     return data || {};
   }
 
+  async deleteChatOnServer(chat, { scope = 'all' } = {}) {
+    const userId = this.getAuthUserId();
+    if (!userId) {
+      throw new Error('Не знайдено ідентифікатор користувача для видалення чату.');
+    }
+
+    const chatServerId = this.resolveChatServerId(chat);
+    if (!chatServerId) {
+      return { skipped: true };
+    }
+
+    const safeScope = scope === 'self' ? 'self' : 'all';
+    const attempts = safeScope === 'self'
+      ? [
+          {
+            endpoint: `/chats/${encodeURIComponent(chatServerId)}/leave`,
+            method: 'POST'
+          },
+          {
+            endpoint: '/chats/leave',
+            method: 'POST',
+            payload: { chatId: chatServerId }
+          },
+          {
+            endpoint: '/chats/leave',
+            method: 'POST',
+            payload: { id: chatServerId }
+          }
+        ]
+      : [
+          {
+            endpoint: `/chats/${encodeURIComponent(chatServerId)}`,
+            method: 'DELETE'
+          },
+          {
+            endpoint: `/chats/${encodeURIComponent(chatServerId)}/delete`,
+            method: 'POST',
+            payload: { chatId: chatServerId }
+          },
+          {
+            endpoint: '/chats/delete',
+            method: 'POST',
+            payload: { chatId: chatServerId }
+          },
+          {
+            endpoint: `/chats?chatId=${encodeURIComponent(chatServerId)}`,
+            method: 'DELETE'
+          }
+        ];
+
+    let lastError = 'Не вдалося видалити чат на сервері.';
+    let bestError = '';
+
+    for (const attempt of attempts) {
+      const hasPayload = attempt.payload && typeof attempt.payload === 'object';
+      const response = await fetch(buildApiUrl(attempt.endpoint), {
+        method: attempt.method,
+        headers: this.getApiHeaders({ json: hasPayload }),
+        ...(hasPayload ? { body: JSON.stringify(attempt.payload) } : {})
+      });
+      const data = await this.readJsonSafe(response);
+
+      if (response.ok) {
+        if (safeScope === 'all') {
+          this.unmarkChatDeletedForSelf(chatServerId);
+        }
+        return data || {};
+      }
+
+      const message = this.getRequestErrorMessage(data, lastError);
+      lastError = `HTTP ${response.status}: ${message}`;
+      if (!bestError || (response.status !== 404 && response.status !== 405)) {
+        bestError = lastError;
+      }
+
+      const alreadyHandled = /already|вже|not found|не знайдено|does not exist|не існує/i.test(message);
+      if (alreadyHandled) {
+        return {};
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(bestError || lastError);
+      }
+
+      if (response.status === 404 || response.status === 405) {
+        continue;
+      }
+    }
+
+    if (safeScope === 'self') {
+      throw new Error('Сервер не підтримує видалення чату тільки для вас.');
+    }
+    throw new Error(bestError || lastError);
+  }
+
   extractServerChatId(data) {
     const payload = data?.chat && typeof data.chat === 'object' ? data.chat : data;
     const id = String(payload?.id ?? payload?.chatId ?? payload?._id ?? '').trim();
@@ -994,6 +1372,21 @@ export class ChatAppMessagingMethods {
     }
 
     const normalizedChats = this.normalizeServerChatsPayload(data);
+    const hiddenBySelfDelete = this.getSelfDeletedChatsMap();
+    const visibleChats = [];
+    for (const serverChat of normalizedChats) {
+      const marker = hiddenBySelfDelete[serverChat.serverId];
+      if (!marker) {
+        visibleChats.push(serverChat);
+        continue;
+      }
+      const shouldRestore = await this.hasNewServerMessageAfterSelfDelete(serverChat.serverId, marker);
+      if (shouldRestore) {
+        this.unmarkChatDeletedForSelf(serverChat.serverId);
+        visibleChats.push(serverChat);
+      }
+    }
+
     const previousChats = Array.isArray(this.chats) ? this.chats : [];
     const previousCurrentServerId = this.resolveChatServerId(this.currentChat);
     const previousCurrentLocalId = this.currentChat?.id;
@@ -1007,9 +1400,12 @@ export class ChatAppMessagingMethods {
       }
     });
 
+    const activeServerId = this.resolveChatServerId(this.currentChat);
+    const activeLocalId = this.currentChat?.id;
+    const hadExistingByServerId = new Map();
     let nextLocalId = Math.max(0, ...previousChats.map((chat) => Number(chat?.id) || 0)) + 1;
-    let changed = previousChats.length !== normalizedChats.length;
-    const nextChats = normalizedChats.map((serverChat) => {
+    let changed = previousChats.length !== visibleChats.length;
+    const nextChats = visibleChats.map((serverChat) => {
       let existing = byServerId.get(serverChat.serverId) || null;
       if (!existing && !serverChat.isGroup && serverChat.participantId) {
         existing = byParticipantId.get(serverChat.participantId) || null;
@@ -1085,6 +1481,7 @@ export class ChatAppMessagingMethods {
         changed = true;
       }
 
+      hadExistingByServerId.set(serverChat.serverId, Boolean(existing));
       return updatedChat;
     });
 
@@ -1111,11 +1508,58 @@ export class ChatAppMessagingMethods {
       }
     }
 
+    await Promise.all(
+      nextChats.map(async (chat) => {
+        if (!chat?.serverId) return;
+        try {
+          const serverMessages = await this.fetchChatMessagesFromServer(chat);
+          const nextMessages = this.mapServerMessagesToLocal(chat, serverMessages);
+          const prevMessageSignature = Array.isArray(chat.messages)
+            ? chat.messages.map((msg) => `${msg.serverId || msg.id}:${msg.text}:${msg.time}:${msg.edited ? 1 : 0}`).join('|')
+            : '';
+          const nextMessageSignature = nextMessages
+            .map((msg) => `${msg.serverId || msg.id}:${msg.text}:${msg.time}:${msg.edited ? 1 : 0}`)
+            .join('|');
+          if (prevMessageSignature !== nextMessageSignature) {
+            changed = true;
+          }
+          chat.messages = nextMessages;
+
+          const isActiveChat = Boolean(
+            (activeServerId && chat.serverId === activeServerId)
+            || chat.id === activeLocalId
+          );
+          const hasReadState = Boolean(
+            chat.readTrackingInitialized
+            || String(chat.lastReadServerMessageId || '').trim()
+            || String(chat.lastReadMessageAt || '').trim()
+            || Number(chat.unreadCount || 0) > 0
+          );
+          const shouldBootstrapAsRead = Boolean(hadExistingByServerId.get(chat.serverId) && !hasReadState);
+          if (this.applyChatUnreadState(chat, nextMessages, { markAsRead: isActiveChat || shouldBootstrapAsRead })) {
+            changed = true;
+          }
+        } catch {
+          // Keep chat list resilient if single chat messages endpoint fails.
+        }
+      })
+    );
+
     const previousSignature = previousChats
-      .map((chat) => `${this.resolveChatServerId(chat)}:${chat.name}:${chat.isGroup ? 1 : 0}:${chat.participantId || ''}:${this.getAvatarImage(chat.avatarImage || chat.avatarUrl)}`)
+      .map((chat) => {
+        const lastMsg = Array.isArray(chat.messages) && chat.messages.length
+          ? chat.messages[chat.messages.length - 1]
+          : null;
+        return `${this.resolveChatServerId(chat)}:${chat.name}:${chat.isGroup ? 1 : 0}:${chat.participantId || ''}:${this.getAvatarImage(chat.avatarImage || chat.avatarUrl)}:${String(lastMsg?.serverId || lastMsg?.id || '')}:${Number(chat.unreadCount || 0)}`;
+      })
       .join('|');
     const nextSignature = nextChats
-      .map((chat) => `${chat.serverId}:${chat.name}:${chat.isGroup ? 1 : 0}:${chat.participantId || ''}:${this.getAvatarImage(chat.avatarImage || chat.avatarUrl)}`)
+      .map((chat) => {
+        const lastMsg = Array.isArray(chat.messages) && chat.messages.length
+          ? chat.messages[chat.messages.length - 1]
+          : null;
+        return `${chat.serverId}:${chat.name}:${chat.isGroup ? 1 : 0}:${chat.participantId || ''}:${this.getAvatarImage(chat.avatarImage || chat.avatarUrl)}:${String(lastMsg?.serverId || lastMsg?.id || '')}:${Number(chat.unreadCount || 0)}`;
+      })
       .join('|');
     if (previousSignature !== nextSignature) {
       changed = true;
@@ -1196,6 +1640,7 @@ export class ChatAppMessagingMethods {
     if (previousSignature === nextSignature) return false;
 
     targetChat.messages = nextMessages;
+    this.applyChatUnreadState(targetChat, nextMessages, { markAsRead: true });
     if (!targetChat.isGroup) {
       const otherMessages = nextMessages.filter((msg) => msg.from === 'other');
       const otherMessage = otherMessages.length ? otherMessages[otherMessages.length - 1] : null;
