@@ -213,7 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('authLoginForm');
   const registerForm = document.getElementById('authRegisterForm');
   const panelTitle = document.getElementById('authPanelTitle');
-  const feedback = document.getElementById('authFeedback');
   const themeToggle = document.getElementById('authThemeToggle');
   const authFormsRoot = document.querySelector('.auth-forms');
   const switchToRegisterBtn = document.getElementById('switchToRegister');
@@ -221,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const passwordToggles = document.querySelectorAll('[data-toggle-password]');
   const phoneInputs = document.querySelectorAll('[data-phone-input]');
 
-  if (!loginForm || !registerForm || !panelTitle || !feedback || !themeToggle || !authFormsRoot) {
+  if (!loginForm || !registerForm || !panelTitle || !themeToggle || !authFormsRoot) {
     return;
   }
 
@@ -278,10 +277,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const setFeedback = (message, type = 'error') => {
-    feedback.textContent = message || '';
-    feedback.classList.remove('is-error', 'is-success');
-    if (!message) return;
-    feedback.classList.add(type === 'success' ? 'is-success' : 'is-error');
+    const text = safeTrim(message);
+    if (!text) return;
+    const method = type === 'success' ? 'info' : 'warn';
+    console[method](`[auth] ${text}`);
   };
 
   const setMode = (mode, { animate = true } = {}) => {

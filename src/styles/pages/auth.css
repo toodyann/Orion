@@ -5,23 +5,12 @@ body {
   min-height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  background: var(--bg-gradient);
 }
 
 body {
   font-family: "Inter", sans-serif;
   color: var(--text-primary);
-  background:
-    radial-gradient(
-      1100px 620px at 8% -10%,
-      rgba(59, 130, 246, 0.2),
-      transparent 52%
-    ),
-    radial-gradient(
-      1100px 700px at 102% 112%,
-      rgba(14, 165, 233, 0.16),
-      transparent 58%
-    ),
-    var(--bg-gradient);
 }
 
 .auth-page {
@@ -38,27 +27,29 @@ body {
   touch-action: manipulation;
 }
 
-.auth-background-glow {
+.auth-page::before {
+  content: "ORION";
   position: absolute;
-  width: min(42vw, 520px);
-  height: min(42vw, 520px);
-  border-radius: 999px;
-  filter: blur(58px);
-  opacity: 0.24;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%) scaleY(1.2);
+  font-family: "Oswald";
+  font-size: clamp(118px, 21vw, 330px);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 0.96;
+  color: color-mix(in srgb, #475569 44%, transparent);
+  opacity: 0.2;
   pointer-events: none;
-  z-index: -1;
+  user-select: none;
+  white-space: nowrap;
+  filter: blur(0.6px);
+  z-index: -2;
 }
 
-.auth-background-glow--one {
-  top: -12%;
-  left: -12%;
-  background: #31435a;
-}
-
-.auth-background-glow--two {
-  right: -11%;
-  bottom: -18%;
-  background: #31435a;
+html.dark-theme .auth-page::before {
+  color: color-mix(in srgb, #ffffff 20%, transparent);
+  opacity: 0.12;
 }
 
 .auth-shell {
@@ -76,6 +67,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  animation: authPanelAppear 0.2s ease-out;
 }
 
 .auth-theme-toggle {
@@ -117,21 +109,8 @@ html:not(.dark-theme) .auth-theme-icon--sun {
 }
 
 .auth-headline h2 {
-  margin: 0;
-  font-size: 28px;
-}
-
-.auth-feedback {
-  min-height: 21px;
-  font-size: 13px;
-}
-
-.auth-feedback.is-error {
-  color: #ef4444;
-}
-
-.auth-feedback.is-success {
-  color: #22c55e;
+  margin: 10px 0 0;
+  font-size: 34px;
 }
 
 .auth-forms {
@@ -145,21 +124,21 @@ html:not(.dark-theme) .auth-theme-icon--sun {
   display: grid;
   gap: 10px;
   opacity: 0;
-  transform: translateY(10px) translateX(10px) scale(0.992);
+  transform: translateY(6px);
   visibility: hidden;
   pointer-events: none;
   will-change: opacity, transform;
   transition:
-    opacity 0.24s ease,
-    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
-    visibility 0s linear 0.26s;
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s linear 0.18s;
 }
 
 .auth-form.is-active {
   position: relative;
   inset: auto;
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
   visibility: visible;
   pointer-events: auto;
   transition-delay: 0s, 0s, 0s;
@@ -169,26 +148,26 @@ html:not(.dark-theme) .auth-theme-icon--sun {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transform: translateY(-6px) scale(0.992);
+  transform: translateY(-2px);
   visibility: visible;
   pointer-events: none;
   transition-delay: 0s, 0s, 0s;
 }
 
 .auth-forms[data-transition="forward"] .auth-form.is-active {
-  transform: translateY(0) translateX(0) scale(1);
+  transform: translateY(0);
 }
 
 .auth-forms[data-transition="forward"] .auth-form.is-leaving {
-  transform: translateY(-6px) translateX(-14px) scale(0.992);
+  transform: translateY(-2px);
 }
 
 .auth-forms[data-transition="backward"] .auth-form.is-active {
-  transform: translateY(0) translateX(0) scale(1);
+  transform: translateY(0);
 }
 
 .auth-forms[data-transition="backward"] .auth-form.is-leaving {
-  transform: translateY(-6px) translateX(14px) scale(0.992);
+  transform: translateY(-2px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -366,6 +345,18 @@ html:not(.dark-theme) .auth-theme-icon--sun {
   }
 }
 
+@keyframes authPanelAppear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 560px) {
   .auth-page {
     padding: 12px 12px 16px;
@@ -373,5 +364,10 @@ html:not(.dark-theme) .auth-theme-icon--sun {
 
   .auth-panel {
     gap: 12px;
+  }
+
+  .auth-headline h2 {
+    margin-top: 8px;
+    font-size: 30px;
   }
 }
