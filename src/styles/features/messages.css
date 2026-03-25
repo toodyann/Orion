@@ -80,12 +80,53 @@
   }
 }
 
+@keyframes messageLiftIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+    filter: blur(1px);
+  }
+  68% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.01);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message.new-message .message-bubble {
+    animation: none;
+  }
+}
+
 .message.own {
   justify-content: flex-end;
 }
 
 .message {
   width: 100%;
+}
+
+.message.new-message .message-bubble {
+  animation: messageLiftIn 0.34s cubic-bezier(0.22, 0.8, 0.28, 1);
+  will-change: transform, opacity, filter;
+}
+
+.message.own.new-message.from-composer .message-bubble {
+  animation-duration: 0.38s;
+}
+
+.message.own.new-message .message-bubble {
+  transform-origin: right bottom;
+}
+
+.message.other.new-message .message-bubble {
+  transform-origin: left bottom;
 }
 
 .message.other {

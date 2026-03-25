@@ -1402,7 +1402,9 @@ export class ChatAppMessagingMethods {
 
     const activeServerId = this.resolveChatServerId(this.currentChat);
     const activeLocalId = this.currentChat?.id;
-    const hadExistingByServerId = new Map();
+    const bootstrapReadMarkerByServerId = new Map();
+    let activeChatMessagesChanged = false;
+    let activeChatHighlightId = null;
     let nextLocalId = Math.max(0, ...previousChats.map((chat) => Number(chat?.id) || 0)) + 1;
     let changed = previousChats.length !== visibleChats.length;
     const nextChats = visibleChats.map((serverChat) => {
@@ -1481,7 +1483,16 @@ export class ChatAppMessagingMethods {
         changed = true;
       }
 
-      hadExistingByServerId.set(serverChat.serverId, Boolean(existing));
+      const existingHasReadState = Boolean(
+        existing?.readTrackingInitialized
+        || String(existing?.lastReadServerMessageId || '').trim()
+        || String(existing?.lastReadMessageAt || '').trim()
+        || Number(existing?.unreadCount || 0) > 0
+      );
+      const existingMarker = existingHasReadState
+        ? null
+        : this.getLatestLocalMessageMarker(messages);
+      bootstrapReadMarkerByServerId.set(serverChat.serverId, existingMarker);
       return updatedChat;
     });
 
@@ -1520,23 +1531,50 @@ export class ChatAppMessagingMethods {
           const nextMessageSignature = nextMessages
             .map((msg) => `${msg.serverId || msg.id}:${msg.text}:${msg.time}:${msg.edited ? 1 : 0}`)
             .join('|');
-          if (prevMessageSignature !== nextMessageSignature) {
-            changed = true;
-          }
-          chat.messages = nextMessages;
-
           const isActiveChat = Boolean(
             (activeServerId && chat.serverId === activeServerId)
             || chat.id === activeLocalId
           );
-          const hasReadState = Boolean(
+          if (prevMessageSignature !== nextMessageSignature) {
+            changed = true;
+            if (isActiveChat) {
+              activeChatMessagesChanged = true;
+              const previousKeys = new Set(
+                (Array.isArray(chat.messages) ? chat.messages : [])
+                  .map((msg) => String(msg?.serverId || `local:${msg?.id ?? ''}`))
+                  .filter(Boolean)
+              );
+              for (let i = nextMessages.length - 1; i >= 0; i -= 1) {
+                const item = nextMessages[i];
+                const key = String(item?.serverId || `local:${item?.id ?? ''}`);
+                if (!previousKeys.has(key)) {
+                  activeChatHighlightId = item?.id ?? null;
+                  break;
+                }
+              }
+            }
+          }
+          chat.messages = nextMessages;
+
+          let hasReadState = Boolean(
             chat.readTrackingInitialized
             || String(chat.lastReadServerMessageId || '').trim()
             || String(chat.lastReadMessageAt || '').trim()
             || Number(chat.unreadCount || 0) > 0
           );
-          const shouldBootstrapAsRead = Boolean(hadExistingByServerId.get(chat.serverId) && !hasReadState);
-          if (this.applyChatUnreadState(chat, nextMessages, { markAsRead: isActiveChat || shouldBootstrapAsRead })) {
+
+          if (!isActiveChat && !hasReadState) {
+            const bootstrapMarker = bootstrapReadMarkerByServerId.get(chat.serverId);
+            if (bootstrapMarker && typeof bootstrapMarker === 'object') {
+              chat.lastReadServerMessageId = String(bootstrapMarker.serverMessageId || '').trim();
+              chat.lastReadMessageAt = String(bootstrapMarker.createdAt || '').trim();
+              chat.readTrackingInitialized = true;
+              changed = true;
+              hasReadState = true;
+            }
+          }
+
+          if (this.applyChatUnreadState(chat, nextMessages, { markAsRead: isActiveChat })) {
             changed = true;
           }
         } catch {
@@ -1584,6 +1622,9 @@ export class ChatAppMessagingMethods {
     if (renderIfChanged && changed) {
       this.renderChatsList();
       this.updateChatHeader();
+      if (activeChatMessagesChanged && this.currentChat) {
+        this.renderChatAfterSync({ forceScroll: false, highlightId: activeChatHighlightId });
+      }
     }
 
     return changed;
@@ -1602,17 +1643,17 @@ export class ChatAppMessagingMethods {
     return this.normalizeServerMessagesPayload(data);
   }
 
-  renderChatAfterSync({ forceScroll = false } = {}) {
+  renderChatAfterSync({ forceScroll = false, highlightId = null } = {}) {
     if (!this.currentChat) return;
     const container = document.getElementById('messagesContainer');
     if (!container) {
-      this.renderChat();
+      this.renderChat(highlightId);
       return;
     }
 
     const previousScrollBottomGap = container.scrollHeight - container.clientHeight - container.scrollTop;
     const shouldStickToBottom = forceScroll || previousScrollBottomGap <= 72;
-    this.renderChat();
+    this.renderChat(highlightId);
 
     if (!shouldStickToBottom) {
       window.setTimeout(() => {
@@ -1623,7 +1664,7 @@ export class ChatAppMessagingMethods {
     }
   }
 
-  async syncCurrentChatMessagesFromServer({ forceScroll = false } = {}) {
+  async syncCurrentChatMessagesFromServer({ forceScroll = false, highlightOwn = true } = {}) {
     if (!this.currentChat) return false;
     const targetChat = this.currentChat;
     const serverMessages = await this.fetchChatMessagesFromServer(targetChat);
@@ -1638,6 +1679,22 @@ export class ChatAppMessagingMethods {
       .join('|');
 
     if (previousSignature === nextSignature) return false;
+
+    const previousKeys = new Set(
+      prevMessages
+        .map((msg) => String(msg?.serverId || `local:${msg?.id ?? ''}`))
+        .filter(Boolean)
+    );
+    let newestAppendedMessageId = null;
+    for (let i = nextMessages.length - 1; i >= 0; i -= 1) {
+      const item = nextMessages[i];
+      const key = String(item?.serverId || `local:${item?.id ?? ''}`);
+      if (!previousKeys.has(key)) {
+        if (!highlightOwn && item?.from === 'own') continue;
+        newestAppendedMessageId = item?.id ?? null;
+        break;
+      }
+    }
 
     targetChat.messages = nextMessages;
     this.applyChatUnreadState(targetChat, nextMessages, { markAsRead: true });
@@ -1699,7 +1756,7 @@ export class ChatAppMessagingMethods {
     }
     this.saveChats();
     this.renderChatsList();
-    this.renderChatAfterSync({ forceScroll });
+    this.renderChatAfterSync({ forceScroll, highlightId: newestAppendedMessageId });
     return true;
   }
 
@@ -2048,22 +2105,76 @@ export class ChatAppMessagingMethods {
       return;
     }
 
+    const now = new Date();
+    const optimisticMessage = {
+      id: this.getNextMessageId(this.currentChat),
+      serverId: null,
+      text: message,
+      type: 'text',
+      from: 'own',
+      time: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+      date: now.toISOString().slice(0, 10),
+      createdAt: now.toISOString(),
+      edited: false,
+      pending: true,
+      replyTo: this.replyTarget
+        ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
+        : null
+    };
+    const restoreReplyTarget = optimisticMessage.replyTo
+      ? { ...optimisticMessage.replyTo }
+      : null;
+
+    this.currentChat.messages.push(optimisticMessage);
+    this.saveChats();
+    if (this.currentChat.messages.length === 1) {
+      this.renderChat(optimisticMessage.id);
+    } else {
+      this.appendMessage(optimisticMessage, ' new-message from-composer');
+    }
+    this.renderChatsList();
+
+    input.value = '';
+    this.resizeMessageInput(input);
+    this.clearReplyTarget();
+    if (window.innerWidth <= 900) {
+      input.focus({ preventScroll: true });
+    }
+
+    let sentToServer = false;
     try {
       if (this.currentChat && !this.currentChat.isGroup && this.currentChat.participantId) {
         await this.ensurePrivateChatParticipantJoined(this.currentChat);
       }
       await this.sendTextMessageToServer(this.currentChat, message, {
-        replyToLocalId: this.replyTarget?.id ?? null
+        replyToLocalId: restoreReplyTarget?.id ?? null
       });
-      input.value = '';
-      this.resizeMessageInput(input);
-      this.clearReplyTarget();
-      await this.syncCurrentChatMessagesFromServer({ forceScroll: true });
-      if (window.innerWidth <= 900) {
-        input.focus({ preventScroll: true });
-      }
+      sentToServer = true;
+      await this.syncCurrentChatMessagesFromServer({ forceScroll: true, highlightOwn: false });
     } catch (error) {
-      await this.showAlert(error?.message || 'Не вдалося надіслати повідомлення.');
+      if (!sentToServer) {
+        const rollbackIndex = this.currentChat.messages.findIndex((item) => {
+          return Number(item?.id) === Number(optimisticMessage.id) && !item?.serverId;
+        });
+        if (rollbackIndex !== -1) {
+          this.currentChat.messages.splice(rollbackIndex, 1);
+        }
+        this.saveChats();
+        this.renderChat();
+        this.renderChatsList();
+
+        if (input) {
+          input.value = message;
+          this.resizeMessageInput(input);
+        }
+        if (restoreReplyTarget) {
+          this.setReplyTarget(restoreReplyTarget);
+        }
+        if (window.innerWidth <= 900) {
+          input.focus({ preventScroll: true });
+        }
+        await this.showAlert(error?.message || 'Не вдалося надіслати повідомлення.');
+      }
     }
   }
 
