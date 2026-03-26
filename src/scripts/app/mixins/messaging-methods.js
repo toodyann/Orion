@@ -6,6 +6,18 @@ const SELF_DELETED_CHATS_STORAGE_KEY = 'orion_self_deleted_chats';
 const SELF_DELETED_MESSAGES_STORAGE_KEY = 'orion_self_deleted_messages';
 
 export class ChatAppMessagingMethods {
+  getSelfDeletedChatsStorageKey() {
+    const userId = this.getAuthUserId();
+    if (!userId) return SELF_DELETED_CHATS_STORAGE_KEY;
+    return `${SELF_DELETED_CHATS_STORAGE_KEY}:${userId}`;
+  }
+
+  getSelfDeletedMessagesStorageKey() {
+    const userId = this.getAuthUserId();
+    if (!userId) return SELF_DELETED_MESSAGES_STORAGE_KEY;
+    return `${SELF_DELETED_MESSAGES_STORAGE_KEY}:${userId}`;
+  }
+
   decodeJwtPayload(token) {
     const raw = String(token || '').trim();
     if (!raw) return null;
@@ -55,13 +67,18 @@ export class ChatAppMessagingMethods {
   }
 
   getSelfDeletedChatsMap() {
-    if (this.selfDeletedChatsMap && typeof this.selfDeletedChatsMap === 'object') {
+    const storageKey = this.getSelfDeletedChatsStorageKey();
+    if (this.selfDeletedChatsStorageKey === storageKey && this.selfDeletedChatsMap && typeof this.selfDeletedChatsMap === 'object') {
       return this.selfDeletedChatsMap;
+    }
+
+    if (this.selfDeletedChatsMap && typeof this.selfDeletedChatsMap === 'object') {
+      this.selfDeletedChatsMap = {};
     }
 
     let parsed = {};
     try {
-      const raw = localStorage.getItem(SELF_DELETED_CHATS_STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
         const data = JSON.parse(raw);
         if (data && typeof data === 'object') {
@@ -72,14 +89,16 @@ export class ChatAppMessagingMethods {
       parsed = {};
     }
 
+    this.selfDeletedChatsStorageKey = storageKey;
     this.selfDeletedChatsMap = parsed;
     return this.selfDeletedChatsMap;
   }
 
   saveSelfDeletedChatsMap() {
     try {
+      const storageKey = this.getSelfDeletedChatsStorageKey();
       localStorage.setItem(
-        SELF_DELETED_CHATS_STORAGE_KEY,
+        storageKey,
         JSON.stringify(this.getSelfDeletedChatsMap())
       );
     } catch {
@@ -88,13 +107,18 @@ export class ChatAppMessagingMethods {
   }
 
   getSelfDeletedMessagesMap() {
-    if (this.selfDeletedMessagesMap && typeof this.selfDeletedMessagesMap === 'object') {
+    const storageKey = this.getSelfDeletedMessagesStorageKey();
+    if (
+      this.selfDeletedMessagesStorageKey === storageKey
+      && this.selfDeletedMessagesMap
+      && typeof this.selfDeletedMessagesMap === 'object'
+    ) {
       return this.selfDeletedMessagesMap;
     }
 
     let parsed = {};
     try {
-      const raw = localStorage.getItem(SELF_DELETED_MESSAGES_STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
         const data = JSON.parse(raw);
         if (data && typeof data === 'object') {
@@ -105,14 +129,16 @@ export class ChatAppMessagingMethods {
       parsed = {};
     }
 
+    this.selfDeletedMessagesStorageKey = storageKey;
     this.selfDeletedMessagesMap = parsed;
     return this.selfDeletedMessagesMap;
   }
 
   saveSelfDeletedMessagesMap() {
     try {
+      const storageKey = this.getSelfDeletedMessagesStorageKey();
       localStorage.setItem(
-        SELF_DELETED_MESSAGES_STORAGE_KEY,
+        storageKey,
         JSON.stringify(this.getSelfDeletedMessagesMap())
       );
     } catch {
@@ -403,6 +429,7 @@ export class ChatAppMessagingMethods {
 
       const markerId = String(marker?.serverMessageId || '').trim();
       const markerCreatedAt = String(marker?.createdAt || '').trim();
+      const markerDeletedAt = Number(marker?.deletedAt || 0);
 
       const candidateIds = new Set(
         [latest.serverMessageId, first.serverMessageId, last.serverMessageId]
@@ -422,7 +449,16 @@ export class ChatAppMessagingMethods {
         return !candidateTimes.has(markerCreatedAt);
       }
 
-      return Boolean(candidateIds.size > 0 || candidateTimes.size > 0);
+      if (markerDeletedAt > 0) {
+        const latestTimestamp = Date.parse(String(latest.createdAt || ''));
+        if (Number.isFinite(latestTimestamp) && latestTimestamp > markerDeletedAt) {
+          return true;
+        }
+      }
+
+      // If marker doesn't have message id/time, keep chat hidden until we can
+      // confidently detect that new messages appeared after deletion.
+      return false;
     } catch {
       return false;
     }
@@ -1267,10 +1303,45 @@ export class ChatAppMessagingMethods {
     return fallback;
   }
 
+  isOwnOnlineVisibilityEnabled() {
+    return this.settings?.showOnlineStatus !== false;
+  }
+
+  isOwnTypingVisibilityEnabled() {
+    return this.settings?.showTypingIndicator !== false;
+  }
+
+  updateRealtimePrivacyState() {
+    const onlineVisible = this.isOwnOnlineVisibilityEnabled();
+    const typingVisible = this.isOwnTypingVisibilityEnabled();
+
+    if (!onlineVisible) {
+      this.stopRealtimeTyping({ emit: true });
+      if (this.realtimeSocket) {
+        try {
+          this.realtimeSocket.removeAllListeners();
+          this.realtimeSocket.disconnect();
+        } catch {
+          // Ignore transient websocket shutdown failures.
+        }
+      }
+      this.realtimeSocket = null;
+      this.realtimeSocketConnected = false;
+      this.realtimeJoinedChatId = '';
+      return;
+    }
+
+    if (!typingVisible) {
+      this.stopRealtimeTyping({ emit: true });
+    }
+
+    this.connectRealtimeSocket();
+  }
+
   initializeRealtimeSocket() {
     if (this.realtimeSocketInitialized) return;
     this.realtimeSocketInitialized = true;
-    this.connectRealtimeSocket();
+    this.updateRealtimePrivacyState();
 
     if (this.realtimeVisibilityHandler) {
       document.removeEventListener('visibilitychange', this.realtimeVisibilityHandler);
@@ -1278,7 +1349,7 @@ export class ChatAppMessagingMethods {
     this.realtimeVisibilityHandler = () => {
       if (document.visibilityState !== 'visible') return;
       if (!this.realtimeSocketConnected) {
-        this.connectRealtimeSocket();
+        this.updateRealtimePrivacyState();
       }
     };
     document.addEventListener('visibilitychange', this.realtimeVisibilityHandler);
@@ -1303,7 +1374,7 @@ export class ChatAppMessagingMethods {
     const ioFactory = this.getSocketIoFactory();
     const userId = this.getAuthUserId();
     const socketUrl = this.getRealtimeSocketUrl();
-    if (!ioFactory || !userId || !socketUrl) return;
+    if (!this.isOwnOnlineVisibilityEnabled() || !ioFactory || !userId || !socketUrl) return;
 
     if (this.realtimeSocket && (this.realtimeSocket.connected || this.realtimeSocket.active)) {
       return;
@@ -1474,8 +1545,7 @@ export class ChatAppMessagingMethods {
 
   getChatPreviewText(chat, lastMessage) {
     if (!chat) return this.getMessagePreviewText(lastMessage);
-    const typingEnabled = this.settings?.showTypingIndicator !== false;
-    if (typingEnabled && this.isChatTypingActive(chat)) {
+    if (this.isChatTypingActive(chat)) {
       return 'Друкує...';
     }
     return this.getMessagePreviewText(lastMessage);
@@ -1507,6 +1577,7 @@ export class ChatAppMessagingMethods {
   }
 
   emitRealtimeTypingState(isTyping) {
+    if (!this.isOwnTypingVisibilityEnabled()) return;
     const socket = this.realtimeSocket;
     const chatServerId = this.resolveChatServerId(this.currentChat);
     if (!socket || !this.realtimeSocketConnected || !chatServerId) return;
@@ -1523,6 +1594,11 @@ export class ChatAppMessagingMethods {
   }
 
   handleRealtimeComposerInput(textValue = '') {
+    if (!this.isOwnOnlineVisibilityEnabled() || !this.isOwnTypingVisibilityEnabled()) {
+      this.stopRealtimeTyping({ emit: true });
+      return;
+    }
+
     const hasText = Boolean(String(textValue || '').trim().length);
     if (!this.currentChat || !hasText) {
       this.stopRealtimeTyping({ emit: true });
@@ -1592,7 +1668,7 @@ export class ChatAppMessagingMethods {
     this.serverChatSyncInFlight = true;
     try {
       await this.syncChatsFromServer({ preserveSelection: true, renderIfChanged: true });
-      await this.syncCurrentChatMessagesFromServer({ forceScroll });
+      await this.syncCurrentChatMessagesFromServer({ forceScroll, highlightOwn: false });
     } catch {
       // Keep UI responsive if backend is temporarily unavailable.
     } finally {
@@ -1867,18 +1943,150 @@ export class ChatAppMessagingMethods {
     return deduped;
   }
 
+  getComparableMessageKey(message) {
+    if (!message || typeof message !== 'object') return '';
+    const type = String(message.type || 'text');
+    const text = String(message.text || '').trim();
+    const imageUrl = String(message.imageUrl || '').trim();
+    const audioUrl = String(message.audioUrl || '').trim();
+    return [type, text, imageUrl, audioUrl].join('|');
+  }
+
+  getMessagesVisualSignature(messages = []) {
+    const source = Array.isArray(messages) ? messages : [];
+    return source
+      .map((msg) => {
+        const from = String(msg?.from || '');
+        const includeTime = from !== 'own';
+        return [
+          from,
+          String(msg?.type || 'text'),
+          String(msg?.text || ''),
+          includeTime ? String(msg?.time || '') : '',
+          includeTime ? String(msg?.date || '') : '',
+          msg?.edited ? '1' : '0',
+          String(msg?.imageUrl || ''),
+          String(msg?.audioUrl || ''),
+          String(msg?.replyTo?.from || ''),
+          String(msg?.replyTo?.text || '')
+        ].join(':');
+      })
+      .join('|');
+  }
+
+  mergeRecentPendingOwnMessages(baseMessages = [], liveMessages = [], { ttlMs = 45000 } = {}) {
+    const safeBase = Array.isArray(baseMessages) ? baseMessages : [];
+    const safeLive = Array.isArray(liveMessages) ? liveMessages : [];
+    if (!safeLive.length) return safeBase;
+
+    const nowTs = Date.now();
+    const safeTtl = Number.isFinite(Number(ttlMs)) ? Math.max(1000, Number(ttlMs)) : 45000;
+
+    const merged = [...safeBase];
+    const serverOwnPool = [];
+    const usedServerIds = new Set();
+    const usedLocalIds = new Set();
+
+    merged.forEach((message) => {
+      const serverId = String(message?.serverId || '').trim();
+      if (serverId) usedServerIds.add(serverId);
+      const localId = Number(message?.id);
+      if (Number.isFinite(localId) && localId > 0) usedLocalIds.add(localId);
+      if (message?.from !== 'own') return;
+      const key = this.getComparableMessageKey(message);
+      serverOwnPool.push({
+        key,
+        ts: this.getMessageTimestampValue(message)
+      });
+    });
+
+    let nextLocalId = Math.max(0, ...Array.from(usedLocalIds)) + 1;
+
+    safeLive.forEach((liveMessage) => {
+      if (!liveMessage || liveMessage.from !== 'own' || liveMessage.pending !== true) return;
+
+      const liveServerId = String(liveMessage.serverId || '').trim();
+      if (liveServerId && usedServerIds.has(liveServerId)) return;
+
+      const key = this.getComparableMessageKey(liveMessage);
+      const liveTs = this.getMessageTimestampValue(liveMessage);
+      let matchedServerIndex = -1;
+      let bestDelta = Number.POSITIVE_INFINITY;
+
+      for (let i = 0; i < serverOwnPool.length; i += 1) {
+        const candidate = serverOwnPool[i];
+        if (!candidate || candidate.key !== key) continue;
+        if (!Number.isFinite(liveTs) || !Number.isFinite(candidate.ts)) {
+          matchedServerIndex = i;
+          break;
+        }
+        const delta = Math.abs(candidate.ts - liveTs);
+        if (delta <= 45000 && delta < bestDelta) {
+          bestDelta = delta;
+          matchedServerIndex = i;
+        }
+      }
+
+      if (matchedServerIndex >= 0) {
+        serverOwnPool.splice(matchedServerIndex, 1);
+        return;
+      }
+
+      if (!Number.isFinite(liveTs) || nowTs - liveTs > safeTtl) return;
+
+      let localId = Number(liveMessage.id);
+      if (Number.isFinite(localId) && localId > 0 && usedLocalIds.has(localId)) {
+        // This optimistic message has already been replaced by a server-mapped
+        // message with the same local id, so do not append a duplicate.
+        return;
+      }
+      if (!Number.isFinite(localId) || localId <= 0) {
+        localId = nextLocalId;
+        nextLocalId += 1;
+      }
+      usedLocalIds.add(localId);
+      if (liveServerId) usedServerIds.add(liveServerId);
+
+      merged.push({
+        ...liveMessage,
+        id: localId,
+        pending: true
+      });
+    });
+
+    return merged
+      .map((message, index) => ({
+        message,
+        index,
+        ts: this.getMessageTimestampValue(message)
+      }))
+      .sort((a, b) => {
+        const aTs = Number.isFinite(a.ts) ? a.ts : Number.MAX_SAFE_INTEGER;
+        const bTs = Number.isFinite(b.ts) ? b.ts : Number.MAX_SAFE_INTEGER;
+        if (aTs !== bTs) return aTs - bTs;
+        return a.index - b.index;
+      })
+      .map((entry) => entry.message);
+  }
+
   mapServerMessagesToLocal(chat, serverMessages = []) {
     const selfId = this.getAuthUserId();
     const visibleServerMessages = this.filterSelfDeletedServerMessages(chat, serverMessages);
     const existingMessages = Array.isArray(chat?.messages) ? chat.messages : [];
     const existingByServerId = new Map();
     const existingMessageByServerId = new Map();
+    const existingMessageByLocalId = new Map();
+    const existingLocalOrderById = new Map();
     const existingLocalIds = [];
     const usedIds = new Set();
 
-    existingMessages.forEach((msg) => {
+    existingMessages.forEach((msg, existingIndex) => {
       const localId = Number(msg?.id);
-      if (Number.isFinite(localId) && localId > 0) existingLocalIds.push(localId);
+      if (Number.isFinite(localId) && localId > 0) {
+        existingLocalIds.push(localId);
+        existingMessageByLocalId.set(localId, msg);
+        existingLocalOrderById.set(localId, existingIndex);
+      }
       const serverId = String(msg?.serverId ?? '').trim();
       if (serverId && Number.isFinite(localId) && localId > 0) {
         existingByServerId.set(serverId, localId);
@@ -1886,8 +2094,30 @@ export class ChatAppMessagingMethods {
       }
     });
 
+    const pendingOwnCandidatesByKey = new Map();
+    existingMessages.forEach((msg) => {
+      if (!msg || msg.from !== 'own' || msg.pending !== true) return;
+      const serverId = String(msg.serverId ?? '').trim();
+      if (serverId) return;
+      const localId = Number(msg.id);
+      if (!Number.isFinite(localId) || localId <= 0) return;
+      const key = this.getComparableMessageKey(msg);
+      if (!key) return;
+      const candidate = {
+        localId,
+        ts: this.getMessageTimestampValue(msg),
+        used: false
+      };
+      if (!pendingOwnCandidatesByKey.has(key)) {
+        pendingOwnCandidatesByKey.set(key, [candidate]);
+      } else {
+        pendingOwnCandidatesByKey.get(key).push(candidate);
+      }
+    });
+
     let nextLocalId = Math.max(0, ...existingLocalIds) + 1;
-    const nextMessages = visibleServerMessages
+
+    const serverMappedMessages = visibleServerMessages
       .map((item, index) => {
         const serverId = String(item.id ?? item.messageId ?? item._id ?? '').trim();
         let localId = serverId ? existingByServerId.get(serverId) : null;
@@ -1896,9 +2126,9 @@ export class ChatAppMessagingMethods {
           localId = nextLocalId;
           nextLocalId += 1;
         }
-        usedIds.add(localId);
 
         const createdAt = item.createdAt ?? item.timestamp ?? item.date ?? new Date().toISOString();
+        const createdAtTs = new Date(createdAt).getTime();
         const { date, time } = this.formatLocalMessageDateParts(createdAt);
         // Some APIs use `userId` as "current viewer id" in response mapping.
         // Prefer explicit sender/author keys first.
@@ -1933,6 +2163,9 @@ export class ChatAppMessagingMethods {
           const ownFlags = new Set(['own', 'me', 'self', 'mine']);
           from = ownFlags.has(fromFlag) ? 'own' : 'other';
         }
+        if (existingLocalMessage?.from === 'own') {
+          from = 'own';
+        }
 
         const content = item.content ?? item.text ?? item.message ?? '';
         const text = String(content ?? '');
@@ -1941,14 +2174,9 @@ export class ChatAppMessagingMethods {
         const audioUrl = String(item.audioUrl ?? '').trim();
         const attachmentMime = String(item.attachmentMimeType ?? item.mimeType ?? '').toLowerCase();
         let type = String(item.type ?? '').trim();
-        const serverEdited = Boolean(
-          item.edited
-            ?? (item.updatedAt && item.createdAt && item.updatedAt !== item.createdAt)
-        );
+        const explicitEditedFlag = item.edited ?? item.isEdited ?? item.wasEdited;
+        const serverEdited = explicitEditedFlag === true || explicitEditedFlag === 1 || explicitEditedFlag === 'true';
         const localEdited = Boolean(existingLocalMessage?.edited);
-        const textChangedComparedToLocal = Boolean(
-          existingLocalMessage && String(existingLocalMessage.text ?? '') !== text
-        );
         if (!type) {
           if (audioUrl || attachmentMime.startsWith('audio/')) {
             type = 'voice';
@@ -1958,6 +2186,57 @@ export class ChatAppMessagingMethods {
             type = 'text';
           }
         }
+
+        if (!existingLocalMessage && from === 'own' && serverId) {
+          const comparableKey = this.getComparableMessageKey({
+            type,
+            text,
+            imageUrl: type === 'image' ? imageUrl : '',
+            audioUrl: type === 'voice' ? audioUrl : ''
+          });
+          const candidates = pendingOwnCandidatesByKey.get(comparableKey) || [];
+          let matchedCandidate = null;
+          let bestDelta = Number.POSITIVE_INFINITY;
+          for (const candidate of candidates) {
+            if (!candidate || candidate.used || usedIds.has(candidate.localId)) continue;
+            if (!Number.isFinite(createdAtTs) || !Number.isFinite(candidate.ts)) {
+              matchedCandidate = candidate;
+              break;
+            }
+            const delta = Math.abs(createdAtTs - candidate.ts);
+            if (delta <= 45000 && delta < bestDelta) {
+              bestDelta = delta;
+              matchedCandidate = candidate;
+            }
+          }
+          if (matchedCandidate && Number.isFinite(matchedCandidate.localId)) {
+            localId = matchedCandidate.localId;
+            matchedCandidate.used = true;
+            from = 'own';
+          }
+        }
+
+        if (!Number.isFinite(localId) || localId <= 0 || usedIds.has(localId)) {
+          localId = nextLocalId;
+          nextLocalId += 1;
+        }
+        usedIds.add(localId);
+
+        const matchedLocalMessage = existingMessageByLocalId.get(localId) || null;
+        const preserveOwnVisual = Boolean(from === 'own' && matchedLocalMessage);
+        const preservedTime = preserveOwnVisual ? String(matchedLocalMessage.time || '') : '';
+        const preservedDate = preserveOwnVisual ? String(matchedLocalMessage.date || '') : '';
+        const preservedReplyTo = preserveOwnVisual && matchedLocalMessage.replyTo
+          ? { ...matchedLocalMessage.replyTo }
+          : null;
+        const finalTime = preservedTime || time;
+        const finalDate = preservedDate || date;
+        const localSortValue = this.getMessageTimestampValue(matchedLocalMessage);
+        const sortValue = Number.isFinite(localSortValue)
+          ? localSortValue
+          : (createdAtTs || index);
+        const stableOrder = Number(existingLocalOrderById.get(localId));
+        const hasStableOrder = Number.isFinite(stableOrder) && stableOrder >= 0;
 
         return {
           id: localId,
@@ -1969,20 +2248,47 @@ export class ChatAppMessagingMethods {
           senderAvatarImage: senderAvatarImage || '',
           senderAvatarColor: senderAvatarColor || '',
           type,
-          time,
-          date,
+          time: finalTime,
+          date: finalDate,
+          createdAt: String(item.createdAt ?? item.timestamp ?? item.date ?? matchedLocalMessage?.createdAt ?? '').trim(),
           imageUrl: type === 'image' ? imageUrl : '',
           audioUrl: type === 'voice' ? audioUrl : '',
           audioDuration: Number(item.audioDuration ?? item.duration ?? 0) || 0,
-          edited: serverEdited || localEdited || textChangedComparedToLocal,
-          replyTo: null,
-          _sortValue: new Date(createdAt).getTime() || index
+          edited: serverEdited || localEdited,
+          replyTo: preservedReplyTo,
+          pending: false,
+          _sortValue: sortValue,
+          _stableOrder: hasStableOrder ? stableOrder : null,
+          _sourceIndex: index
         };
       })
-      .sort((a, b) => a._sortValue - b._sortValue)
-      .map(({ _sortValue, ...message }) => message);
+      .sort((a, b) => {
+        const aStable = Number(a?._stableOrder);
+        const bStable = Number(b?._stableOrder);
+        const aHasStable = Number.isFinite(aStable) && aStable >= 0;
+        const bHasStable = Number.isFinite(bStable) && bStable >= 0;
 
-    return nextMessages;
+        if (aHasStable && bHasStable) {
+          if (aStable !== bStable) return aStable - bStable;
+        } else if (aHasStable !== bHasStable) {
+          // Keep previously rendered messages fixed; append unmatched server items around them later.
+          return aHasStable ? -1 : 1;
+        }
+
+        const aSort = Number(a?._sortValue);
+        const bSort = Number(b?._sortValue);
+        if (aSort !== bSort) return aSort - bSort;
+
+        const aSource = Number(a?._sourceIndex);
+        const bSource = Number(b?._sourceIndex);
+        return (Number.isFinite(aSource) ? aSource : 0) - (Number.isFinite(bSource) ? bSource : 0);
+      });
+    const normalizedServerMessages = serverMappedMessages
+      .map(({ _sortValue, _stableOrder, _sourceIndex, ...message }) => message);
+
+    return this.mergeRecentPendingOwnMessages(normalizedServerMessages, existingMessages, {
+      ttlMs: 45000
+    });
   }
 
   async syncChatsFromServer({ preserveSelection = true, renderIfChanged = true } = {}) {
@@ -2030,8 +2336,6 @@ export class ChatAppMessagingMethods {
     const activeServerId = this.resolveChatServerId(this.currentChat);
     const activeLocalId = this.currentChat?.id;
     const bootstrapReadMarkerByServerId = new Map();
-    let activeChatMessagesChanged = false;
-    let activeChatHighlightId = null;
     let nextLocalId = Math.max(0, ...previousChats.map((chat) => Number(chat?.id) || 0)) + 1;
     let changed = previousChats.length !== deduplicatedVisibleChats.length;
     const nextChats = deduplicatedVisibleChats.map((serverChat) => {
@@ -2164,7 +2468,13 @@ export class ChatAppMessagingMethods {
         if (!chat?.serverId) return;
         try {
           const serverMessages = await this.fetchChatMessagesFromServer(chat);
-          const nextMessages = this.mapServerMessagesToLocal(chat, serverMessages);
+          let nextMessages = this.mapServerMessagesToLocal(chat, serverMessages);
+          const liveChat = this.findChatByServerId(chat.serverId);
+          if (liveChat && liveChat !== chat) {
+            nextMessages = this.mergeRecentPendingOwnMessages(nextMessages, liveChat.messages, {
+              ttlMs: 45000
+            });
+          }
           const prevMessageSignature = Array.isArray(chat.messages)
             ? chat.messages.map((msg) => `${msg.serverId || msg.id}:${msg.text}:${msg.time}:${msg.edited ? 1 : 0}`).join('|')
             : '';
@@ -2177,24 +2487,10 @@ export class ChatAppMessagingMethods {
           );
           if (prevMessageSignature !== nextMessageSignature) {
             changed = true;
-            if (isActiveChat) {
-              activeChatMessagesChanged = true;
-              const previousKeys = new Set(
-                (Array.isArray(chat.messages) ? chat.messages : [])
-                  .map((msg) => String(msg?.serverId || `local:${msg?.id ?? ''}`))
-                  .filter(Boolean)
-              );
-              for (let i = nextMessages.length - 1; i >= 0; i -= 1) {
-                const item = nextMessages[i];
-                const key = String(item?.serverId || `local:${item?.id ?? ''}`);
-                if (!previousKeys.has(key)) {
-                  activeChatHighlightId = item?.id ?? null;
-                  break;
-                }
-              }
-            }
           }
-          chat.messages = nextMessages;
+          if (!isActiveChat) {
+            chat.messages = nextMessages;
+          }
 
           let hasReadState = Boolean(
             chat.readTrackingInitialized
@@ -2268,9 +2564,6 @@ export class ChatAppMessagingMethods {
     if (renderIfChanged && changed) {
       this.renderChatsList();
       this.updateChatHeader();
-      if (activeChatMessagesChanged && this.currentChat) {
-        this.renderChatAfterSync({ forceScroll: false, highlightId: activeChatHighlightId });
-      }
     }
 
     return changed;
@@ -2297,17 +2590,54 @@ export class ChatAppMessagingMethods {
       return;
     }
 
-    const previousScrollBottomGap = container.scrollHeight - container.clientHeight - container.scrollTop;
+    const previousScrollTop = container.scrollTop;
+    const previousScrollBottomGap = container.scrollHeight - container.clientHeight - previousScrollTop;
     const shouldStickToBottom = forceScroll || previousScrollBottomGap <= 72;
+    let anchorMessageId = '';
+    let anchorOffsetTop = 0;
+    if (!shouldStickToBottom) {
+      const containerRect = container.getBoundingClientRect();
+      const messageNodes = Array.from(container.querySelectorAll('.message'));
+      const firstVisibleMessage = messageNodes.find((node) => {
+        const rect = node.getBoundingClientRect();
+        return rect.bottom > containerRect.top + 1;
+      }) || null;
+      if (firstVisibleMessage) {
+        anchorMessageId = String(firstVisibleMessage.dataset.id || '');
+        anchorOffsetTop = firstVisibleMessage.getBoundingClientRect().top - containerRect.top;
+      }
+    }
+
+    this.skipNextRenderChatAutoScroll = true;
     this.renderChat(highlightId);
 
-    if (!shouldStickToBottom) {
-      window.setTimeout(() => {
-        const nextGap = Math.max(0, previousScrollBottomGap);
-        container.scrollTop = Math.max(0, container.scrollHeight - container.clientHeight - nextGap);
-        this.updateMessagesScrollBottomButtonVisibility();
-      }, 24);
+    if (shouldStickToBottom) {
+      container.scrollTop = container.scrollHeight;
+      this.updateMessagesScrollBottomButtonVisibility();
+      return;
     }
+
+    let restoredByAnchor = false;
+    if (anchorMessageId) {
+      const containerRect = container.getBoundingClientRect();
+      const nextAnchor = Array.from(container.querySelectorAll('.message'))
+        .find((node) => String(node.dataset.id || '') === anchorMessageId);
+      if (nextAnchor) {
+        const nextOffsetTop = nextAnchor.getBoundingClientRect().top - containerRect.top;
+        const delta = nextOffsetTop - anchorOffsetTop;
+        if (Math.abs(delta) > 0.25) {
+          container.scrollTop += delta;
+        }
+        restoredByAnchor = true;
+      }
+    }
+
+    if (!restoredByAnchor) {
+      const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      container.scrollTop = Math.max(0, Math.min(previousScrollTop, maxTop));
+    }
+
+    this.updateMessagesScrollBottomButtonVisibility();
   }
 
   async syncCurrentChatMessagesFromServer({ forceScroll = false, highlightOwn = true } = {}) {
@@ -2323,6 +2653,8 @@ export class ChatAppMessagingMethods {
     const nextSignature = nextMessages
       .map((msg) => `${msg.serverId || msg.id}:${msg.text}:${msg.time}:${msg.edited ? 1 : 0}`)
       .join('|');
+    const previousVisualSignature = this.getMessagesVisualSignature(prevMessages);
+    const nextVisualSignature = this.getMessagesVisualSignature(nextMessages);
 
     if (previousSignature === nextSignature) return false;
 
@@ -2344,6 +2676,7 @@ export class ChatAppMessagingMethods {
 
     targetChat.messages = nextMessages;
     this.applyChatUnreadState(targetChat, nextMessages, { markAsRead: true });
+    let chatMetaChanged = false;
     if (!targetChat.isGroup) {
       const otherMessages = nextMessages.filter((msg) => msg.from === 'other');
       const otherMessage = otherMessages.length ? otherMessages[otherMessages.length - 1] : null;
@@ -2351,7 +2684,6 @@ export class ChatAppMessagingMethods {
       const otherSenderName = String(otherMessage?.senderName || '').trim();
       const otherSenderAvatarImage = this.getAvatarImage(otherMessage?.senderAvatarImage || '');
       const otherSenderAvatarColor = String(otherMessage?.senderAvatarColor || '').trim();
-      let chatMetaChanged = false;
 
       if (otherSenderId && (!targetChat.participantId || targetChat.participantId !== otherSenderId)) {
         targetChat.participantId = otherSenderId;
@@ -2395,14 +2727,20 @@ export class ChatAppMessagingMethods {
         targetChat.avatarColor = resolvedAvatarColor;
         chatMetaChanged = true;
       }
-      if (chatMetaChanged) {
-        // Keep list/header updated if we just resolved proper counterpart identity.
-        this.updateChatHeader();
-      }
     }
     this.saveChats();
     this.renderChatsList();
-    this.renderChatAfterSync({ forceScroll, highlightId: newestAppendedMessageId });
+    const visualChanged = previousVisualSignature !== nextVisualSignature;
+    if (visualChanged) {
+      this.renderChatAfterSync({ forceScroll, highlightId: newestAppendedMessageId });
+      return true;
+    }
+
+    if (chatMetaChanged) {
+      this.updateChatHeader();
+    } else {
+      this.updateMessagesScrollBottomButtonVisibility();
+    }
     return true;
   }
 
@@ -2412,6 +2750,34 @@ export class ChatAppMessagingMethods {
       ? chat.messages.find((item) => Number(item?.id) === Number(localId))
       : null;
     return String(message?.serverId ?? '').trim();
+  }
+
+  extractServerMessageIdFromPayload(payload) {
+    if (!payload || typeof payload !== 'object') return '';
+    const directId = String(payload.id ?? payload.messageId ?? payload._id ?? '').trim();
+    if (directId) return directId;
+
+    const nestedMessage = payload.message && typeof payload.message === 'object'
+      ? payload.message
+      : null;
+    if (nestedMessage) {
+      const nestedId = String(
+        nestedMessage.id ?? nestedMessage.messageId ?? nestedMessage._id ?? ''
+      ).trim();
+      if (nestedId) return nestedId;
+    }
+
+    const nestedData = payload.data && typeof payload.data === 'object'
+      ? payload.data
+      : null;
+    if (nestedData) {
+      const nestedDataId = String(
+        nestedData.id ?? nestedData.messageId ?? nestedData._id ?? ''
+      ).trim();
+      if (nestedDataId) return nestedDataId;
+    }
+
+    return '';
   }
 
   async sendTextMessageToServer(chat, text, { replyToLocalId = null } = {}) {
@@ -2629,7 +2995,19 @@ export class ChatAppMessagingMethods {
     messagesContainer.classList.add('has-content');
 
     const messageEl = document.createElement('div');
-    messageEl.className = `message ${msg.from}${highlightClass}`;
+    const highlightTokens = String(highlightClass || '')
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter(Boolean);
+    const hasNewMessageHighlight = highlightTokens.includes('new-message');
+    const shouldAnimate = !hasNewMessageHighlight || this.shouldAnimateMessageInsertion(msg);
+    const normalizedHighlightTokens = shouldAnimate
+      ? highlightTokens
+      : highlightTokens.filter((token) => token !== 'new-message');
+    const normalizedHighlightClass = normalizedHighlightTokens.length
+      ? ` ${normalizedHighlightTokens.join(' ')}`
+      : '';
+    messageEl.className = `message ${msg.from}${normalizedHighlightClass}`;
     messageEl.dataset.id = msg.id;
     messageEl.dataset.from = msg.from;
     messageEl.dataset.type = msg.type || 'text';
@@ -2679,6 +3057,68 @@ export class ChatAppMessagingMethods {
     this.initMessageImageTransitions(messageEl);
     this.initVoiceMessageElements(messageEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  getMessageAnimationIdentity(msg) {
+    if (!msg || typeof msg !== 'object') {
+      return { primaryKey: '', fallbackKey: '' };
+    }
+
+    const serverId = String(msg.serverId || '').trim();
+    const localId = Number.isFinite(Number(msg.id)) ? String(Number(msg.id)) : '';
+    const primaryKey = serverId
+      ? `server:${serverId}`
+      : (localId ? `local:${localId}` : '');
+
+    const from = String(msg.from || '');
+    const type = String(msg.type || 'text');
+    const senderId = String(msg.senderId || '');
+    const text = String(msg.text || '').trim().slice(0, 160);
+    const date = String(msg.date || '');
+    const time = String(msg.time || '');
+    const imageUrl = String(msg.imageUrl || '').trim();
+    const audioUrl = String(msg.audioUrl || '').trim();
+    const replyText = String(msg.replyTo?.text || '').trim().slice(0, 80);
+    const fallbackKey = [
+      'fp',
+      from,
+      type,
+      senderId,
+      text,
+      date,
+      time,
+      imageUrl,
+      audioUrl,
+      replyText
+    ].join('|');
+
+    return { primaryKey, fallbackKey };
+  }
+
+  shouldAnimateMessageInsertion(msg, ttlMs = 4500) {
+    const safeTtl = Number.isFinite(Number(ttlMs)) ? Math.max(600, Number(ttlMs)) : 4500;
+    if (!(this.recentAnimatedMessageKeys instanceof Map)) {
+      this.recentAnimatedMessageKeys = new Map();
+    }
+
+    const now = Date.now();
+    for (const [key, at] of this.recentAnimatedMessageKeys.entries()) {
+      if (!key || !Number.isFinite(at) || now - at > safeTtl) {
+        this.recentAnimatedMessageKeys.delete(key);
+      }
+    }
+
+    const { primaryKey, fallbackKey } = this.getMessageAnimationIdentity(msg);
+    const keys = [primaryKey, fallbackKey].filter(Boolean);
+    if (!keys.length) return true;
+
+    const alreadyAnimated = keys.some((key) => this.recentAnimatedMessageKeys.has(key));
+    if (alreadyAnimated) {
+      return false;
+    }
+
+    keys.forEach((key) => this.recentAnimatedMessageKeys.set(key, now));
+    return true;
   }
 
   getMessagePreviewText(msg) {
@@ -2883,6 +3323,9 @@ export class ChatAppMessagingMethods {
     const message = input?.value.trim() || '';
 
     if (!message || !this.currentChat) return;
+    const nowTs = Date.now();
+    if (nowTs - Number(this.lastSendDispatchAt || 0) < 180) return;
+    this.lastSendDispatchAt = nowTs;
     this.stopRealtimeTyping({ emit: true });
 
     if (this.editingMessageId) {
@@ -2961,11 +3404,33 @@ export class ChatAppMessagingMethods {
       if (this.currentChat && !this.currentChat.isGroup && this.currentChat.participantId) {
         await this.ensurePrivateChatParticipantJoined(this.currentChat);
       }
-      await this.sendTextMessageToServer(this.currentChat, message, {
+      const sendResponse = await this.sendTextMessageToServer(this.currentChat, message, {
         replyToLocalId: restoreReplyTarget?.id ?? null
       });
       sentToServer = true;
-      await this.syncCurrentChatMessagesFromServer({ forceScroll: true, highlightOwn: false });
+
+      const optimisticCurrent = this.currentChat.messages.find((item) => {
+        return Number(item?.id) === Number(optimisticMessage.id);
+      });
+      if (optimisticCurrent) {
+        const serverMessageId = this.extractServerMessageIdFromPayload(sendResponse);
+        if (serverMessageId) {
+          optimisticCurrent.serverId = serverMessageId;
+        }
+        // Keep optimistic message visible until server list confirms it.
+        // This prevents a brief "disappear -> reappear" flicker on eventual-consistent backends.
+        optimisticCurrent.pending = true;
+      }
+      this.saveChats();
+      this.renderChatsList();
+
+      const activeChatServerId = this.resolveChatServerId(this.currentChat);
+      window.setTimeout(() => {
+        if (!this.currentChat) return;
+        const currentServerId = this.resolveChatServerId(this.currentChat);
+        if (activeChatServerId && currentServerId !== activeChatServerId) return;
+        this.syncCurrentChatMessagesFromServer({ forceScroll: false, highlightOwn: false }).catch(() => {});
+      }, 900);
     } catch (error) {
       if (!sentToServer) {
         const rollbackIndex = this.currentChat.messages.findIndex((item) => {

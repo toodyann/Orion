@@ -53,6 +53,7 @@ export class ChatApp {
     this.attachSheetTouchStartY = 0;
     this.attachSheetTouchCurrentY = 0;
     this.attachSheetTouchDragging = false;
+    this.eventListenersBound = false;
     this.mobileScrollLockY = 0;
     this.mobileScrollLocked = false;
     this.mobileTouchMoveLockHandler = null;
@@ -70,6 +71,8 @@ export class ChatApp {
     this.realtimeTypingEmitTimer = null;
     this.realtimeTypingActiveChatId = '';
     this.realtimeTypingInputDebounceMs = 1400;
+    this.lastSendDispatchAt = 0;
+    this.lastSendTriggerSource = '';
     this.loadTheme();
     this.profileMenuPlaceholder = null;
     this.init();

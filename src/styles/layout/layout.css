@@ -925,6 +925,8 @@ html.dark-theme .app-chat-typing {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-gutter: stable;
+  overflow-anchor: none;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -935,15 +937,7 @@ html.dark-theme .app-chat-typing {
 }
 
 .messages-container::before {
-  content: "";
-  flex: 1 0 8px;
-}
-
-.messages-container.has-content::before {
-  flex-grow: 1;
-}
-
-.messages-container.no-content::before {
+  content: none;
   display: none;
 }
 

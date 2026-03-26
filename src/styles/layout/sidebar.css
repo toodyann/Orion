@@ -112,6 +112,16 @@
     flex: 0 0 40px;
   }
 
+  .sidebar.compact
+    .desktop-secondary-menu.active
+    .desktop-secondary-chat-avatar.is-image
+    .avatar-activity-indicator {
+    width: 10px;
+    height: 10px;
+    right: -1px;
+    bottom: -1px;
+  }
+
   .sidebar.compact .desktop-secondary-menu.active .desktop-secondary-chat-info,
   .sidebar.compact .desktop-secondary-menu.active .desktop-secondary-chat-meta,
   .sidebar.compact .desktop-secondary-menu.active .desktop-secondary-chat-time {
@@ -1553,6 +1563,26 @@ html.dark-theme .bottom-nav-indicator {
     font-weight: 700;
     font-size: 16px;
     flex: 0 0 42px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .desktop-secondary-chat-avatar.is-image .avatar-activity-indicator {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--success-color);
+    border: 2px solid color-mix(in srgb, var(--bg-color) 88%, transparent);
+    box-shadow: 0 0 0 1px rgba(10, 14, 24, 0.34);
+    pointer-events: none;
+  }
+
+  html:not(.dark-theme) .desktop-secondary-chat-avatar.is-image .avatar-activity-indicator {
+    border-color: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 0 0 1px rgba(15, 19, 32, 0.14);
   }
 
   .desktop-secondary-chat-info {

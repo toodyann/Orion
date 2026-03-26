@@ -526,6 +526,9 @@ export class ChatAppInteractionMethods {
   }
 
   setupEventListeners() {
+    if (this.eventListenersBound) return;
+    this.eventListenersBound = true;
+
     document.getElementById('newChatBtn').addEventListener('click', () => this.openNewChatModal());
     const desktopSecondaryMenuNewChat = document.getElementById('desktopSecondaryMenuNewChat');
     const desktopSecondaryMenuBack = document.getElementById('desktopSecondaryMenuBack');
@@ -681,8 +684,13 @@ export class ChatAppInteractionMethods {
       const triggerPrimaryAction = (e) => {
         e.preventDefault();
         const now = Date.now();
+        const source = String(e?.type || 'click');
+        if (source === 'click' && this.lastSendTriggerSource === 'touchend' && now - this.lastSendTriggerAt < 800) {
+          return;
+        }
         if (now - this.lastSendTriggerAt < 220) return;
         this.lastSendTriggerAt = now;
+        this.lastSendTriggerSource = source;
         this.handleSendButtonAction();
       };
       sendBtn.addEventListener('mousedown', keepComposerFocus);
@@ -697,7 +705,7 @@ export class ChatAppInteractionMethods {
         if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
         if (this.settings?.enterToSend === false) return;
         e.preventDefault();
-        this.sendMessage();
+        this.handleSendButtonAction();
       });
     }
     this.setupMessagesScrollBottomButton();
@@ -2228,8 +2236,22 @@ export class ChatAppInteractionMethods {
         await this.deleteChatOnServer(chat, { scope: deleteScope });
       }
     } catch (error) {
-      await this.showAlert(error?.message || 'Не вдалося видалити чат на сервері.');
-      return;
+      const errorMessage = String(error?.message || '').toLowerCase();
+      const canFallbackToSelfDelete = deleteScope === 'all'
+        && (
+          errorMessage.includes('creator')
+          || errorMessage.includes('owner')
+          || errorMessage.includes('forbidden')
+          || errorMessage.includes('403')
+          || errorMessage.includes('тільки')
+          || errorMessage.includes('власник')
+        );
+      if (canFallbackToSelfDelete && typeof this.markChatDeletedForSelf === 'function') {
+        this.markChatDeletedForSelf(chat);
+      } else {
+        await this.showAlert(error?.message || 'Не вдалося видалити чат на сервері.');
+        return;
+      }
     }
 
     this.chats.splice(idx, 1);
@@ -2331,7 +2353,17 @@ export class ChatAppInteractionMethods {
       }
 
       const messageEl = document.createElement('div');
-      const highlightClass = highlightId && msg.id === highlightId ? ' new-message' : '';
+      const shouldHighlight = Boolean(
+        highlightId
+        && msg.id === highlightId
+        && (
+          typeof this.shouldAnimateMessageInsertion !== 'function'
+          || this.shouldAnimateMessageInsertion(msg)
+        )
+      );
+      const highlightClass = shouldHighlight
+        ? (msg.from === 'own' ? ' new-message from-composer' : ' new-message')
+        : '';
       messageEl.className = `message ${msg.from}${highlightClass}`;
       messageEl.dataset.id = msg.id;
       messageEl.dataset.from = msg.from;
@@ -2386,11 +2418,19 @@ export class ChatAppInteractionMethods {
     this.initVoiceMessageElements(messagesContainer);
     this.syncDateSeparatorToChatInfo(messagesContainer);
 
-    // Auto-scroll to bottom
-    setTimeout(() => {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      this.updateMessagesScrollBottomButtonVisibility();
-    }, 0);
+    const shouldAutoScroll = this.skipNextRenderChatAutoScroll !== true;
+    this.skipNextRenderChatAutoScroll = false;
+
+    if (shouldAutoScroll) {
+      // Auto-scroll to bottom
+      setTimeout(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        this.updateMessagesScrollBottomButtonVisibility();
+      }, 0);
+      return;
+    }
+
+    this.updateMessagesScrollBottomButtonVisibility();
   }
 
   bindMessageContextMenu() {
@@ -2651,10 +2691,8 @@ export class ChatAppInteractionMethods {
     const statusEl = document.getElementById('contactProfileStatus');
     if (!statusEl) return;
 
-    const showTypingIndicator = this.settings?.showTypingIndicator !== false;
     const isTyping = Boolean(
-      showTypingIndicator
-      && typeof this.isChatTypingActive === 'function'
+      typeof this.isChatTypingActive === 'function'
       && this.isChatTypingActive(this.currentChat)
     );
     if (isTyping) {
@@ -3190,11 +3228,8 @@ export class ChatAppInteractionMethods {
     headerTargets.forEach(({ contactName, contactStatus, contactTyping, avatar, contactDetails }) => {
       if (this.currentChat && contactName && contactStatus) {
         contactName.textContent = this.currentChat.name;
-        const showOnlineStatus = this.settings?.showOnlineStatus !== false;
-        const showTypingIndicator = this.settings?.showTypingIndicator !== false;
         const isTyping = Boolean(
           !this.currentChat.isGroup
-          && showTypingIndicator
           && typeof this.isChatTypingActive === 'function'
           && this.isChatTypingActive(this.currentChat)
         );
@@ -3209,7 +3244,7 @@ export class ChatAppInteractionMethods {
           contactTyping.classList.remove('active');
         }
 
-        if (!this.currentChat.isGroup && showOnlineStatus) {
+        if (!this.currentChat.isGroup) {
           const isOnline = (this.currentChat.status || 'offline') !== 'offline';
           contactStatus.classList.toggle('online', isOnline);
           contactStatus.classList.toggle('offline', !isOnline);

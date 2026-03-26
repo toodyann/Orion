@@ -567,9 +567,21 @@ export class ChatAppCoreMethods {
 
   getChatAvatarHtml(chat = null, className = 'message-avatar') {
     const { avatarImage, avatarColor, initials } = this.getChatAvatarMeta(chat);
+    const isDesktopSecondaryAvatar = String(className || '').includes('desktop-secondary-chat-avatar');
+    const chatStatus = String(chat?.status || '').trim().toLowerCase();
+    const showActivityIndicator = Boolean(
+      isDesktopSecondaryAvatar
+      && avatarImage
+      && !chat?.isGroup
+      && chatStatus
+      && chatStatus !== 'offline'
+    );
+    const activityIndicatorHtml = showActivityIndicator
+      ? '<span class="avatar-activity-indicator online" aria-hidden="true"></span>'
+      : '';
     if (avatarImage) {
       const safeUrl = this.escapeAttr(avatarImage);
-      return `<div class="${className} is-image" style="background-image: url(&quot;${safeUrl}&quot;); background-color: transparent;"></div>`;
+      return `<div class="${className} is-image" style="background-image: url(&quot;${safeUrl}&quot;); background-color: transparent;">${activityIndicatorHtml}</div>`;
     }
     const safeInitials = typeof this.escapeHtml === 'function' ? this.escapeHtml(initials) : initials;
     return `<div class="${className}" style="background: ${avatarColor}">${safeInitials}</div>`;
@@ -767,6 +779,9 @@ export class ChatAppCoreMethods {
     root.classList.toggle('compact-mode', settings.compactMode === true);
     root.classList.toggle('no-message-preview', settings.messagePreview === false);
     root.setAttribute('lang', settings.language === 'en' ? 'en' : 'uk');
+    if (typeof this.updateRealtimePrivacyState === 'function') {
+      this.updateRealtimePrivacyState();
+    }
     this.updateProfileDisplay();
   }
 
@@ -856,12 +871,6 @@ export class ChatAppCoreMethods {
     const stored = this.readJsonStorage(primaryKey, null);
     if (Array.isArray(stored)) {
       return stored;
-    }
-    if (primaryKey !== 'orion_chats') {
-      const legacyStored = this.readJsonStorage('orion_chats', null);
-      if (Array.isArray(legacyStored)) {
-        return legacyStored;
-      }
     }
     return [];
   }
