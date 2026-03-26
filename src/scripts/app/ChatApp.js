@@ -71,6 +71,7 @@ export class ChatApp {
     this.realtimeTypingEmitTimer = null;
     this.realtimeTypingActiveChatId = '';
     this.realtimeTypingInputDebounceMs = 1400;
+    this.serverMissingChatCyclesById = new Map();
     this.lastSendDispatchAt = 0;
     this.lastSendTriggerSource = '';
     this.loadTheme();

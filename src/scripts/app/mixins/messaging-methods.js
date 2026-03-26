@@ -2337,7 +2337,7 @@ export class ChatAppMessagingMethods {
     const activeLocalId = this.currentChat?.id;
     const bootstrapReadMarkerByServerId = new Map();
     let nextLocalId = Math.max(0, ...previousChats.map((chat) => Number(chat?.id) || 0)) + 1;
-    let changed = previousChats.length !== deduplicatedVisibleChats.length;
+    let changed = false;
     const nextChats = deduplicatedVisibleChats.map((serverChat) => {
       let existing = byServerId.get(serverChat.serverId) || null;
       if (!existing && !serverChat.isGroup && serverChat.participantId) {
@@ -2438,6 +2438,68 @@ export class ChatAppMessagingMethods {
         : this.getLatestLocalMessageMarker(messages);
       bootstrapReadMarkerByServerId.set(serverChat.serverId, existingMarker);
       return updatedChat;
+    });
+
+    const missingCyclesById = this.serverMissingChatCyclesById instanceof Map
+      ? this.serverMissingChatCyclesById
+      : new Map();
+    this.serverMissingChatCyclesById = missingCyclesById;
+
+    const presentServerIds = new Set(
+      nextChats
+        .map((chat) => String(chat?.serverId || '').trim())
+        .filter(Boolean)
+    );
+    const presentDirectParticipantIds = new Set(
+      nextChats
+        .filter((chat) => chat && !chat.isGroup)
+        .map((chat) => String(chat?.participantId || '').trim())
+        .filter(Boolean)
+    );
+
+    for (const presentId of presentServerIds) {
+      missingCyclesById.delete(presentId);
+    }
+
+    previousChats.forEach((prevChat) => {
+      if (!prevChat) return;
+      const prevServerId = this.resolveChatServerId(prevChat);
+      if (!prevServerId || presentServerIds.has(prevServerId)) return;
+
+      const nextMissingCycles = Number(missingCyclesById.get(prevServerId) || 0) + 1;
+      missingCyclesById.set(prevServerId, nextMissingCycles);
+
+      const isPreviouslyActive = Boolean(
+        (previousCurrentServerId && prevServerId === previousCurrentServerId)
+        || (previousCurrentLocalId != null && prevChat.id === previousCurrentLocalId)
+      );
+      const hasLocalMessages = Array.isArray(prevChat.messages) && prevChat.messages.length > 0;
+      const hasPendingLocalMessages = hasLocalMessages
+        && prevChat.messages.some((item) => item?.from === 'own' && item?.pending === true);
+
+      const directParticipantId = String(prevChat.participantId || '').trim();
+      const wouldDuplicateDirectByParticipant = Boolean(
+        !prevChat.isGroup
+        && directParticipantId
+        && presentDirectParticipantIds.has(directParticipantId)
+      );
+
+      const shouldKeepTransiently = nextMissingCycles <= 3
+        && !wouldDuplicateDirectByParticipant
+        && (isPreviouslyActive || hasLocalMessages || hasPendingLocalMessages);
+
+      if (!shouldKeepTransiently) {
+        return;
+      }
+
+      nextChats.push({
+        ...prevChat,
+        messages: Array.isArray(prevChat.messages) ? [...prevChat.messages] : []
+      });
+      presentServerIds.add(prevServerId);
+      if (!prevChat.isGroup && directParticipantId) {
+        presentDirectParticipantIds.add(directParticipantId);
+      }
     });
 
     const unresolvedDirectChats = nextChats.filter((chat) => {
@@ -3034,7 +3096,9 @@ export class ChatAppMessagingMethods {
     const editedClass = msg.edited ? ' edited' : '';
     const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
     const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
-    const inlineMetaClass = this.shouldInlineMessageMeta(msg) ? ' inline-meta' : '';
+    const hasInlineMeta = this.shouldInlineMessageMeta(msg);
+    const inlineMetaClass = hasInlineMeta ? ' inline-meta' : '';
+    const tailClass = hasInlineMeta ? ' with-tail' : '';
     const replyHtml = msg.replyTo
       ? `<div class="message-reply">
           <div class="message-reply-name">${msg.replyTo.from === 'own' ? this.user.name : this.currentChat.name}</div>
@@ -3046,7 +3110,7 @@ export class ChatAppMessagingMethods {
       ${avatarHtml}
       <div class="message-bubble">
         ${senderNameHtml}
-        <div class="message-content${editedClass}${imageClass}${voiceClass}${inlineMetaClass}">
+        <div class="message-content${editedClass}${imageClass}${voiceClass}${inlineMetaClass}${tailClass}">
           ${replyHtml}
           ${this.buildMessageBodyHtml(msg)}
           <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>

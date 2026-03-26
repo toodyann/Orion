@@ -929,11 +929,15 @@ html.dark-theme .app-chat-typing {
   overflow-anchor: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   min-height: 0;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   justify-content: flex-start;
+}
+
+.messages-container.has-content > :first-child {
+  margin-top: auto;
 }
 
 .messages-container::before {

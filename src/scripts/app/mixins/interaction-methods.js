@@ -2391,7 +2391,9 @@ export class ChatAppInteractionMethods {
       const editedClass = msg.edited ? ' edited' : '';
       const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
       const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
-      const inlineMetaClass = this.shouldInlineMessageMeta(msg) ? ' inline-meta' : '';
+      const hasInlineMeta = this.shouldInlineMessageMeta(msg);
+      const inlineMetaClass = hasInlineMeta ? ' inline-meta' : '';
+      const tailClass = hasInlineMeta ? ' with-tail' : '';
       const replyHtml = msg.replyTo
         ? `<div class="message-reply">
             <div class="message-reply-name">${msg.replyTo.from === 'own' ? this.user.name : this.currentChat.name}</div>
@@ -2403,7 +2405,7 @@ export class ChatAppInteractionMethods {
         ${avatarHtml}
         <div class="message-bubble">
           ${senderNameHtml}
-          <div class="message-content${editedClass}${imageClass}${voiceClass}${inlineMetaClass}">
+          <div class="message-content${editedClass}${imageClass}${voiceClass}${inlineMetaClass}${tailClass}">
             ${replyHtml}
             ${this.buildMessageBodyHtml(msg)}
             <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>
