@@ -1804,6 +1804,61 @@ export class ChatAppMessagingMethods {
     return source.filter((item) => item && typeof item === 'object');
   }
 
+  getServerMessageUniqueKey(item) {
+    if (!item || typeof item !== 'object') return '';
+    const directId = String(item.id ?? item.messageId ?? item._id ?? '').trim();
+    if (directId) return `id:${directId}`;
+    const createdAt = String(item.createdAt ?? item.timestamp ?? item.date ?? '').trim();
+    const senderId = String(
+      item.senderId
+      ?? item.fromUserId
+      ?? item.authorId
+      ?? item.userId
+      ?? item.user?.id
+      ?? ''
+    ).trim();
+    const type = String(item.type ?? '').trim();
+    const content = String(item.content ?? item.text ?? item.message ?? '').trim();
+    const attachment = String(item.attachmentUrl ?? item.imageUrl ?? item.audioUrl ?? '').trim();
+    return `fp:${createdAt}|${senderId}|${type}|${content}|${attachment}`;
+  }
+
+  dedupeServerMessages(messages = []) {
+    const source = Array.isArray(messages) ? messages : [];
+    if (source.length <= 1) return source;
+    const seen = new Set();
+    const deduped = [];
+    source.forEach((item) => {
+      const key = this.getServerMessageUniqueKey(item);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      deduped.push(item);
+    });
+    return deduped;
+  }
+
+  async fetchServerMessagesBatch(chatServerId, query = {}) {
+    const params = new URLSearchParams({ chatId: String(chatServerId) });
+    Object.entries(query || {}).forEach(([key, value]) => {
+      if (value == null) return;
+      const safeValue = String(value).trim();
+      if (!safeValue) return;
+      params.set(key, safeValue);
+    });
+
+    const response = await fetch(buildApiUrl(`/messages?${params.toString()}`), {
+      headers: this.getApiHeaders()
+    });
+    const data = await this.readJsonSafe(response);
+    if (!response.ok) {
+      throw new Error(this.getRequestErrorMessage(data, 'Не вдалося завантажити повідомлення.'));
+    }
+    return {
+      data,
+      messages: this.normalizeServerMessagesPayload(data)
+    };
+  }
+
   getChatActivityTimestampValue(chat) {
     if (!chat || typeof chat !== 'object') return 0;
     const parseCandidate = (value) => {
@@ -1974,6 +2029,86 @@ export class ChatAppMessagingMethods {
       .join('|');
   }
 
+  getMessageMergeKey(message) {
+    if (!message || typeof message !== 'object') return '';
+    const serverId = String(message.serverId || '').trim();
+    if (serverId) return `server:${serverId}`;
+
+    const localId = Number(message.id);
+    if (Number.isFinite(localId) && localId > 0) return `local:${localId}`;
+
+    const from = String(message.from || '').trim();
+    const type = String(message.type || 'text').trim();
+    const text = String(message.text || '').trim();
+    const createdAt = String(message.createdAt || message.timestamp || '').trim();
+    const date = String(message.date || '').trim();
+    const time = String(message.time || '').trim();
+    const imageUrl = String(message.imageUrl || '').trim();
+    const audioUrl = String(message.audioUrl || '').trim();
+    return `fp:${from}|${type}|${text}|${createdAt}|${date}|${time}|${imageUrl}|${audioUrl}`;
+  }
+
+  mergeServerMessagesWithLocalHistory(serverMessages = [], localMessages = []) {
+    const incoming = Array.isArray(serverMessages) ? serverMessages : [];
+    const existing = Array.isArray(localMessages) ? localMessages : [];
+    if (!existing.length) return incoming;
+    if (!incoming.length) return existing;
+
+    const map = new Map();
+    const order = [];
+
+    const pushBase = (message, index) => {
+      const key = this.getMessageMergeKey(message);
+      if (!key) return;
+      if (!map.has(key)) order.push(key);
+      map.set(key, { ...message, _mergeOrder: index });
+    };
+
+    existing.forEach((message, index) => pushBase(message, index));
+
+    incoming.forEach((message, index) => {
+      const key = this.getMessageMergeKey(message);
+      if (!key) return;
+      const prev = map.get(key);
+      if (!prev) {
+        order.push(key);
+        map.set(key, { ...message, _mergeOrder: existing.length + index });
+        return;
+      }
+
+      map.set(key, {
+        ...prev,
+        ...message,
+        // Preserve local echo marker while we are within reconciliation window.
+        clientEcho: Boolean(prev.clientEcho || message.clientEcho),
+        pending: Boolean(message.pending)
+      });
+    });
+
+    return order
+      .map((key, index) => {
+        const item = map.get(key);
+        return {
+          item,
+          index,
+          ts: this.getMessageTimestampValue(item),
+          mergeOrder: Number(item?._mergeOrder)
+        };
+      })
+      .sort((a, b) => {
+        const aTs = Number.isFinite(a.ts) ? a.ts : Number.NaN;
+        const bTs = Number.isFinite(b.ts) ? b.ts : Number.NaN;
+        if (Number.isFinite(aTs) && Number.isFinite(bTs) && aTs !== bTs) return aTs - bTs;
+        const aOrder = Number.isFinite(a.mergeOrder) ? a.mergeOrder : a.index;
+        const bOrder = Number.isFinite(b.mergeOrder) ? b.mergeOrder : b.index;
+        return aOrder - bOrder;
+      })
+      .map(({ item }) => {
+        const { _mergeOrder, ...clean } = item || {};
+        return clean;
+      });
+  }
+
   mergeRecentPendingOwnMessages(baseMessages = [], liveMessages = [], { ttlMs = 45000 } = {}) {
     const safeBase = Array.isArray(baseMessages) ? baseMessages : [];
     const safeLive = Array.isArray(liveMessages) ? liveMessages : [];
@@ -2003,13 +2138,17 @@ export class ChatAppMessagingMethods {
     let nextLocalId = Math.max(0, ...Array.from(usedLocalIds)) + 1;
 
     safeLive.forEach((liveMessage) => {
-      if (!liveMessage || liveMessage.from !== 'own' || liveMessage.pending !== true) return;
+      if (!liveMessage || liveMessage.from !== 'own') return;
 
       const liveServerId = String(liveMessage.serverId || '').trim();
+      const liveTs = this.getMessageTimestampValue(liveMessage);
+      const withinTtl = Number.isFinite(liveTs) && (nowTs - liveTs <= safeTtl);
+      const keepAsEcho = liveMessage.pending === true || (liveMessage.clientEcho === true && withinTtl);
+      if (!keepAsEcho) return;
+
       if (liveServerId && usedServerIds.has(liveServerId)) return;
 
       const key = this.getComparableMessageKey(liveMessage);
-      const liveTs = this.getMessageTimestampValue(liveMessage);
       let matchedServerIndex = -1;
       let bestDelta = Number.POSITIVE_INFINITY;
 
@@ -2032,7 +2171,7 @@ export class ChatAppMessagingMethods {
         return;
       }
 
-      if (!Number.isFinite(liveTs) || nowTs - liveTs > safeTtl) return;
+      if (!withinTtl) return;
 
       let localId = Number(liveMessage.id);
       if (Number.isFinite(localId) && localId > 0 && usedLocalIds.has(localId)) {
@@ -2050,7 +2189,7 @@ export class ChatAppMessagingMethods {
       merged.push({
         ...liveMessage,
         id: localId,
-        pending: true
+        pending: liveMessage.pending === true
       });
     });
 
@@ -2187,7 +2326,7 @@ export class ChatAppMessagingMethods {
           }
         }
 
-        if (!existingLocalMessage && from === 'own' && serverId) {
+        if (!existingLocalMessage && (from === 'own' || !senderId)) {
           const comparableKey = this.getComparableMessageKey({
             type,
             text,
@@ -2257,6 +2396,7 @@ export class ChatAppMessagingMethods {
           edited: serverEdited || localEdited,
           replyTo: preservedReplyTo,
           pending: false,
+          clientEcho: Boolean(matchedLocalMessage?.clientEcho),
           _sortValue: sortValue,
           _stableOrder: hasStableOrder ? stableOrder : null,
           _sourceIndex: index
@@ -2531,6 +2671,7 @@ export class ChatAppMessagingMethods {
         try {
           const serverMessages = await this.fetchChatMessagesFromServer(chat);
           let nextMessages = this.mapServerMessagesToLocal(chat, serverMessages);
+          nextMessages = this.mergeServerMessagesWithLocalHistory(nextMessages, chat.messages);
           const liveChat = this.findChatByServerId(chat.serverId);
           if (liveChat && liveChat !== chat) {
             nextMessages = this.mergeRecentPendingOwnMessages(nextMessages, liveChat.messages, {
@@ -2635,14 +2776,81 @@ export class ChatAppMessagingMethods {
   async fetchChatMessagesFromServer(chat) {
     const chatServerId = this.resolveChatServerId(chat);
     if (!chatServerId) return [];
-    const response = await fetch(buildApiUrl(`/messages?chatId=${encodeURIComponent(chatServerId)}`), {
-      headers: this.getApiHeaders()
-    });
-    const data = await this.readJsonSafe(response);
-    if (!response.ok) {
-      throw new Error(this.getRequestErrorMessage(data, 'Не вдалося завантажити повідомлення.'));
+    const pageSize = 100;
+    const maxPages = 30;
+
+    // 1) Base fetch (and try to raise limit if backend supports it).
+    const first = await this.fetchServerMessagesBatch(chatServerId, { limit: pageSize });
+    let allMessages = this.dedupeServerMessages(first.messages);
+    if (!allMessages.length) {
+      return [];
     }
-    return this.normalizeServerMessagesPayload(data);
+
+    const appendUnique = (batch = []) => {
+      const combined = this.dedupeServerMessages([...allMessages, ...(Array.isArray(batch) ? batch : [])]);
+      const grew = combined.length > allMessages.length;
+      allMessages = combined;
+      return grew;
+    };
+
+    // 2) Offset pagination: /messages?chatId=...&limit=...&offset=...
+    try {
+      for (let i = 1; i < maxPages; i += 1) {
+        const batch = await this.fetchServerMessagesBatch(chatServerId, {
+          limit: pageSize,
+          offset: i * pageSize
+        });
+        const items = this.dedupeServerMessages(batch.messages);
+        if (!items.length) break;
+        const grew = appendUnique(items);
+        if (!grew || items.length < pageSize) break;
+      }
+    } catch {
+      // Backend may not support offset pagination.
+    }
+
+    // 3) Page pagination: /messages?chatId=...&limit=...&page=...
+    try {
+      for (let page = 2; page <= maxPages; page += 1) {
+        const batch = await this.fetchServerMessagesBatch(chatServerId, {
+          limit: pageSize,
+          page
+        });
+        const items = this.dedupeServerMessages(batch.messages);
+        if (!items.length) break;
+        const grew = appendUnique(items);
+        if (!grew || items.length < pageSize) break;
+      }
+    } catch {
+      // Backend may not support page pagination.
+    }
+
+    // 4) Cursor-like by oldest message id: /messages?chatId=...&beforeId=...
+    try {
+      for (let i = 0; i < maxPages; i += 1) {
+        const oldest = allMessages.reduce((acc, item) => {
+          const ts = this.getMessageTimestampValue(item);
+          if (!acc) return { item, ts };
+          if (!Number.isFinite(ts)) return acc;
+          if (!Number.isFinite(acc.ts) || ts < acc.ts) return { item, ts };
+          return acc;
+        }, null)?.item || null;
+        const oldestId = String(oldest?.id ?? oldest?.messageId ?? oldest?._id ?? '').trim();
+        if (!oldestId) break;
+        const batch = await this.fetchServerMessagesBatch(chatServerId, {
+          limit: pageSize,
+          beforeId: oldestId
+        });
+        const items = this.dedupeServerMessages(batch.messages);
+        if (!items.length) break;
+        const grew = appendUnique(items);
+        if (!grew || items.length < pageSize) break;
+      }
+    } catch {
+      // Backend may not support beforeId cursor.
+    }
+
+    return this.dedupeServerMessages(allMessages);
   }
 
   renderChatAfterSync({ forceScroll = false, highlightId = null } = {}) {
@@ -2707,8 +2915,9 @@ export class ChatAppMessagingMethods {
     if (!this.currentChat) return false;
     const targetChat = this.currentChat;
     const serverMessages = await this.fetchChatMessagesFromServer(targetChat);
-    const nextMessages = this.mapServerMessagesToLocal(targetChat, serverMessages);
     const prevMessages = Array.isArray(targetChat.messages) ? targetChat.messages : [];
+    let nextMessages = this.mapServerMessagesToLocal(targetChat, serverMessages);
+    nextMessages = this.mergeServerMessagesWithLocalHistory(nextMessages, prevMessages);
 
     const previousSignature = prevMessages
       .map((msg) => `${msg.serverId || msg.id}:${msg.text}:${msg.time}:${msg.edited ? 1 : 0}`)
@@ -3437,6 +3646,7 @@ export class ChatAppMessagingMethods {
       createdAt: now.toISOString(),
       edited: false,
       pending: true,
+      clientEcho: true,
       replyTo: this.replyTarget
         ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
         : null
