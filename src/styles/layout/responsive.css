@@ -1439,6 +1439,10 @@
     order: 2 !important;
   }
 
+  #settingsContainerMobile #mini-games .mini-games-list [data-mini-game-select="tapper"] {
+    display: none !important;
+  }
+
   #settingsContainerMobile #mini-games .mini-game-select {
     padding: 11px 12px !important;
     gap: 10px !important;
@@ -1470,10 +1474,12 @@
     gap: 20px !important;
     padding-top: 18px !important;
     padding-right: 14px !important;
-    padding-bottom: 14px !important;
+    padding-bottom: 8px !important;
     padding-left: 14px !important;
     border-radius: 14px !important;
     order: 1 !important;
+    min-height: auto !important;
+    height: auto !important;
   }
 
   #settingsContainerMobile #mini-games .coin-level-island {
@@ -1514,6 +1520,25 @@
     display: none !important;
   }
 
+  .orion-app.mobile-game-fullscreen .profile-menu-wrapper,
+  .orion-app.mobile-game-fullscreen .nav-reveal-handle,
+  .orion-app.mobile-game-fullscreen .nav-hide-handle {
+    display: none !important;
+  }
+
+  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 92 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--bg-color) !important;
+    overflow: hidden !important;
+  }
+
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-games-content {
     gap: 0 !important;
     padding: 0 !important;
@@ -1528,18 +1553,36 @@
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-panel.active {
-    display: flex !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    gap: 0 !important;
     flex: 1 !important;
     min-height: 0 !important;
     width: 100% !important;
     max-width: none !important;
     align-self: stretch !important;
     border-radius: 0 !important;
-    padding: 10px 10px calc(var(--bottom-nav-height, 72px) + 14px) !important;
+    background: var(--bg-color) !important;
+    padding: calc(env(safe-area-inset-top) + 6px) 0
+      calc(env(safe-area-inset-bottom) + 6px) !important;
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-mobile-back {
     display: inline-flex !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-soft) 92%, transparent) !important;
+    color: var(--text-primary) !important;
+  }
+
+  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-mobile-back svg {
+    width: 16px !important;
+    height: 16px !important;
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-view-header {
@@ -1547,35 +1590,241 @@
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    box-shadow: none !important;
+    background: color-mix(in srgb, var(--bg-color) 96%, transparent) !important;
+    padding: 6px 12px 10px !important;
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-view-title {
-    font-size: 16px !important;
+    font-size: 24px !important;
+    line-height: 1.08 !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-view-score {
     margin-left: auto !important;
+    font-size: 12px !important;
+    padding: 7px 10px !important;
+    border-radius: 12px !important;
+    background: color-mix(in srgb, var(--surface-soft) 90%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent) !important;
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-stage {
     flex: 1 !important;
+    height: 100% !important;
     min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    padding: 0 10px 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-score-current {
+    align-self: stretch !important;
+    justify-content: center !important;
+    text-align: center !important;
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+    border-radius: 999px !important;
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent) !important;
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-canvas {
     flex: 1 !important;
-    min-height: 280px !important;
-    height: auto !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    border-radius: 14px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28) !important;
+    overflow: hidden !important;
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-controls {
     margin-top: 0 !important;
+    border-radius: 14px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent) !important;
+    padding: 8px 10px 10px !important;
+    background: color-mix(in srgb, var(--surface-soft) 90%, transparent) !important;
+  }
+
+  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-btn {
+    width: 100% !important;
+    min-height: 42px !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+
+  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-hint {
+    font-size: 15px !important;
+    line-height: 1.35 !important;
+    text-align: center !important;
+    color: var(--text-secondary) !important;
+  }
+
+  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .flappy-orion-status {
+    left: 10px !important;
+    right: 10px !important;
+    top: 10px !important;
+    border-radius: 10px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    background: color-mix(in srgb, var(--bg-color) 86%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent) !important;
   }
 
   #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-panel[data-mini-game-panel="drift"].active {
     padding: 0 !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"] {
+    background:
+      radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.7), transparent 40%),
+      radial-gradient(circle at 88% 94%, rgba(233, 221, 201, 0.52), transparent 42%),
+      linear-gradient(180deg, #faf8ef 0%, #f3efe6 100%) !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-panel[data-mini-game-panel="grid2048"].active {
+    padding: calc(env(safe-area-inset-top) + 4px) 8px
+      calc(env(safe-area-inset-bottom) + 8px) !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-view-header {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 4px 6px 8px !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-mobile-back {
+    border-color: rgba(119, 110, 101, 0.28) !important;
+    background: rgba(238, 228, 218, 0.72) !important;
+    color: #776e65 !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-view-title {
+    color: #776e65 !important;
+    text-shadow: none !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-view-score {
+    color: #f9f6f2 !important;
+    background: #bbada0 !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-view-score strong {
+    color: #ffffff !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-stage {
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    padding: 0 0 4px !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-score-current {
+    color: #f9f6f2 !important;
+    background: #8f7a66 !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    #grid2048Canvas {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: min(100%, calc(100dvh - 260px)) !important;
+    max-width: calc(100vw - 16px) !important;
+    aspect-ratio: 1 / 1 !important;
+    height: auto !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    #grid2048Board.grid-2048 {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 10px !important;
+    gap: 8px !important;
+    border-radius: 16px !important;
+    background: #bbada0 !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 16px 28px rgba(119, 110, 101, 0.28) !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .grid-2048
+    .tile {
+    border-radius: 10px !important;
+    font-size: clamp(16px, 5vw, 28px) !important;
+    color: #776e65 !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-controls {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    gap: 8px !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    #grid2048Restart {
+    min-height: 44px !important;
+    border-radius: 12px !important;
+    border: none !important;
+    color: #f9f6f2 !important;
+    background: #8f7a66 !important;
+    box-shadow: 0 8px 18px rgba(119, 110, 101, 0.28) !important;
+  }
+
+  #settingsContainerMobile
+    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
+    .mini-game-hint {
+    color: #8f7a66 !important;
+    font-size: 13px !important;
+    opacity: 0.94 !important;
   }
 
   #settingsContainerMobile .settings-header h2 {
@@ -1671,6 +1920,23 @@
   .chats-list .chat-item .chat-time,
   .chats-list .chat-item .chat-preview {
     display: block;
+  }
+
+  .chats-list .chat-item .chat-item-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    color: var(--text-secondary);
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: 0.82;
+  }
+
+  .chats-list .chat-item.active .chat-item-arrow {
+    color: var(--text-primary);
+    opacity: 1;
   }
 
   .chat-area {

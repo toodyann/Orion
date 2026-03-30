@@ -1443,6 +1443,11 @@ to {
   background: linear-gradient(135deg, #007aff, #0051d5);
 }
 
+.settings-icon-wallet {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #ffffff;
+}
+
 .settings-icon-appearance {
   background: linear-gradient(135deg, #af52de, #9933cc);
 }
@@ -4450,15 +4455,17 @@ html.dark-theme .profile-settings-card.profile-settings-menu-card {
 .mini-game-mobile-back {
   display: none;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 0;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--bg-color) 86%, transparent);
   color: var(--text-primary);
-  min-height: 32px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 600;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
   line-height: 1;
 }
 

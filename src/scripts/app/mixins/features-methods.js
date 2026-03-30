@@ -3579,8 +3579,16 @@ export class ChatAppFeaturesMethods {
         const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
         if (isMobileViewport) {
           miniGamesSection.dataset.mobileMiniGameFullscreen = safeView === 'tapper' ? 'false' : 'true';
+          const appEl = document.querySelector('.orion-app');
+          if (appEl) {
+            appEl.classList.toggle('mobile-game-fullscreen', safeView !== 'tapper');
+          }
         } else {
           delete miniGamesSection.dataset.mobileMiniGameFullscreen;
+          const appEl = document.querySelector('.orion-app');
+          if (appEl) {
+            appEl.classList.remove('mobile-game-fullscreen');
+          }
         }
       }
 
@@ -3637,9 +3645,8 @@ export class ChatAppFeaturesMethods {
         backBtn.setAttribute('aria-label', 'Повернутись в ігровий центр');
         backBtn.innerHTML = `
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-            <path d="M165.66,202.34a8,8,0,0,1-11.32,0l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L99.31,124H224a8,8,0,0,1,0,16H99.31l66.35,66.34A8,8,0,0,1,165.66,202.34Z"></path>
+            <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
           </svg>
-          <span>Ігровий центр</span>
         `;
         backBtn.addEventListener('click', () => setMiniGameView('tapper'));
         headerEl.prepend(backBtn);
@@ -4546,6 +4553,11 @@ export class ChatAppFeaturesMethods {
   }
 
   async showSettings(sectionName) {
+    const appRootEl = document.querySelector('.orion-app');
+    if (appRootEl && sectionName !== 'mini-games') {
+      appRootEl.classList.remove('mobile-game-fullscreen');
+    }
+
     // На мобільному використовуємо settingsContainerMobile, на ПК - settingsContainer
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {

@@ -460,6 +460,30 @@ html.dark-theme .search-box .btn-new-chat {
   font-size: 18px;
   line-height: 1;
   flex-shrink: 0;
+  position: relative;
+  overflow: visible;
+}
+
+.chat-avatar .avatar-activity-indicator {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--success-color);
+  border: 2px solid color-mix(in srgb, var(--bg-color) 88%, transparent);
+  box-shadow: 0 0 0 1px rgba(10, 14, 24, 0.34);
+  pointer-events: none;
+}
+
+html:not(.dark-theme) .chat-avatar .avatar-activity-indicator {
+  border-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0 0 1px rgba(15, 19, 32, 0.14);
+}
+
+.chat-item-arrow {
+  display: none;
 }
 
 .chat-info {

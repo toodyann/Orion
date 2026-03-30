@@ -1003,13 +1003,15 @@ export class ChatAppCoreMethods {
   getChatAvatarHtml(chat = null, className = 'message-avatar') {
     const { avatarImage, avatarColor, initials } = this.getChatAvatarMeta(chat);
     const isDesktopSecondaryAvatar = String(className || '').includes('desktop-secondary-chat-avatar');
+    const isChatListAvatar = String(className || '').includes('chat-avatar');
     const chatStatus = String(chat?.status || '').trim().toLowerCase();
+    const normalizedStatus = typeof this.normalizePresenceStatus === 'function'
+      ? this.normalizePresenceStatus(chat?.status || chatStatus)
+      : chatStatus;
     const showActivityIndicator = Boolean(
-      isDesktopSecondaryAvatar
-      && avatarImage
+      (isDesktopSecondaryAvatar || isChatListAvatar)
       && !chat?.isGroup
-      && chatStatus
-      && chatStatus !== 'offline'
+      && normalizedStatus === 'online'
     );
     const activityIndicatorHtml = showActivityIndicator
       ? '<span class="avatar-activity-indicator online" aria-hidden="true"></span>'
@@ -1019,7 +1021,7 @@ export class ChatAppCoreMethods {
       return `<div class="${className} is-image" style="background-image: url(&quot;${safeUrl}&quot;); background-color: transparent;">${activityIndicatorHtml}</div>`;
     }
     const safeInitials = typeof this.escapeHtml === 'function' ? this.escapeHtml(initials) : initials;
-    return `<div class="${className}" style="background: ${avatarColor}">${safeInitials}</div>`;
+    return `<div class="${className}" style="background: ${avatarColor}">${safeInitials}${activityIndicatorHtml}</div>`;
   }
 
   applyUserAvatarToElement(avatarEl, name = '') {
