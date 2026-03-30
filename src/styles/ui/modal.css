@@ -517,7 +517,7 @@ html:not(.dark-theme) #newChatModal .contact-input {
   gap: 12px;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  border: none;
   background: color-mix(in srgb, var(--bg-secondary) 52%, transparent);
 }
 
@@ -2993,7 +2993,7 @@ html:not(.dark-theme) #newChatModal.modal {
 
 #newChatModal .new-chat-mode {
   border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border: none;
   background: var(--bg-elevated);
 }
 
@@ -3098,7 +3098,7 @@ html:not(.dark-theme) #newChatModal.modal {
   width: 100%;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border: none;
   background: var(--bg-elevated);
   color: var(--text-primary);
   cursor: pointer;

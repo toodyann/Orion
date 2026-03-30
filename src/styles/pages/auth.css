@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Erica+One&display=swap");
+
 html,
 body {
   margin: 0;
@@ -10,21 +12,11 @@ body {
 body {
   font-family: "Inter", sans-serif;
   color: var(--text-primary);
-  background:
-    radial-gradient(
-      1100px 620px at 8% -10%,
-      rgba(59, 130, 246, 0.2),
-      transparent 52%
-    ),
-    radial-gradient(
-      1100px 700px at 102% 112%,
-      rgba(14, 165, 233, 0.16),
-      transparent 58%
-    ),
-    var(--bg-gradient);
+  background: var(--bg-gradient);
 }
 
 .auth-page {
+  --auth-orion-tone: color-mix(in srgb, var(--primary-color) 70%, #7c8ea2);
   position: relative;
   min-height: 100dvh;
   display: flex;
@@ -38,32 +30,38 @@ body {
   touch-action: manipulation;
 }
 
+html.dark-theme .auth-page {
+  --auth-orion-tone: color-mix(in srgb, var(--primary-color) 78%, #aebfd6);
+}
+
 .auth-page::before {
   content: "ORION";
   position: absolute;
   left: 50%;
-  top: 52%;
-  transform: translate(-50%, -50%) scaleY(1.2);
-  font-family: "Oswald";
-  font-size: clamp(118px, 21vw, 330px);
+  top: 25%;
+  transform: translate(-50%, -50%) scaleX(0.5) scaleY(0.4);
+  font-family: "Erica One", sans-serif;
+  font-size: clamp(100px, 21vw, 330px);
   font-weight: 800;
   letter-spacing: 0;
   line-height: 0.96;
-  color: color-mix(in srgb, #475569 44%, transparent);
-  opacity: 0.2;
+  color: var(--auth-orion-tone);
+  opacity: 1;
   pointer-events: none;
   user-select: none;
   white-space: nowrap;
-  filter: blur(0.6px);
   z-index: -2;
 }
 
 html.dark-theme .auth-page::before {
-  color: color-mix(in srgb, #ffffff 20%, transparent);
-  opacity: 0.12;
+  color: var(--auth-orion-tone);
+  opacity: 0.46;
+  text-shadow: 0 0 22px
+    color-mix(in srgb, var(--auth-orion-tone) 42%, transparent);
 }
 
 .auth-background-glow {
+  display: none;
   position: absolute;
   width: min(42vw, 520px);
   height: min(42vw, 520px);
@@ -255,6 +253,26 @@ html:not(.dark-theme) .auth-theme-icon--sun {
     color-mix(in srgb, var(--primary-color) 20%, transparent);
 }
 
+.auth-form input:-webkit-autofill,
+.auth-form input:-webkit-autofill:hover,
+.auth-form input:-webkit-autofill:focus,
+.auth-form input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary);
+  caret-color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  -webkit-box-shadow: 0 0 0 1000px
+    color-mix(in srgb, var(--bg-color) 74%, transparent) inset;
+  box-shadow: 0 0 0 1000px color-mix(in srgb, var(--bg-color) 74%, transparent)
+    inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.auth-form input:-moz-autofill {
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1000px color-mix(in srgb, var(--bg-color) 74%, transparent)
+    inset;
+}
+
 .auth-password-toggle {
   position: absolute;
   top: 50%;
@@ -308,12 +326,8 @@ html:not(.dark-theme) .auth-theme-icon--sun {
   margin-top: 4px;
   height: 47px;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--primary-color) 62%, #9ca3af);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary-color) 70%, #7c8ea2) 0%,
-    color-mix(in srgb, var(--primary-color) 48%, #4f5f72) 100%
-  );
+  border: 1px solid color-mix(in srgb, var(--auth-orion-tone) 72%, #9ca3af);
+  background: var(--auth-orion-tone);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
@@ -392,8 +406,22 @@ html:not(.dark-theme) .auth-theme-icon--sun {
 }
 
 @media (max-width: 560px) {
+  .auth-page::before {
+    top: 12%;
+    font-size: clamp(118px, 40vw, 172px);
+    transform: translate(-50%, -50%) scaleX(0.54) scaleY(0.5);
+  }
+
   .auth-page {
+    align-items: flex-start;
     padding: 12px 12px 16px;
+    padding-top: 168px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .auth-shell {
+    width: min(420px, 100%);
   }
 
   .auth-panel {

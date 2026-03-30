@@ -912,6 +912,7 @@ export class ChatAppInteractionMethods {
     if (chatMenuBtn && chatMenu) {
       chatMenuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.updateGroupInfoMenuVisibility();
         chatMenu.classList.toggle('active');
         chatMenuBtn.setAttribute('aria-expanded', chatMenu.classList.contains('active') ? 'true' : 'false');
       });
@@ -966,6 +967,7 @@ export class ChatAppInteractionMethods {
     if (chatModalMenuBtn && chatModalMenu) {
       chatModalMenuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.updateGroupInfoMenuVisibility();
         chatModalMenu.classList.toggle('active');
         chatModalMenuBtn.setAttribute('aria-expanded', chatModalMenu.classList.contains('active') ? 'true' : 'false');
       });
@@ -3773,6 +3775,22 @@ export class ChatAppInteractionMethods {
     return `${dateText.charAt(0).toUpperCase() + dateText.slice(1)}${timeText}`;
   }
 
+  updateGroupInfoMenuVisibility() {
+    const isGroupChat = Boolean(this.currentChat && this.currentChat.isGroup);
+    const menus = [
+      document.getElementById('chatMenu'),
+      document.getElementById('chatModalMenu')
+    ];
+
+    menus.forEach((menu) => {
+      if (!menu) return;
+      const groupInfoItem = menu.querySelector('.chat-menu-item[data-action="group-info"]');
+      if (!groupInfoItem) return;
+      groupInfoItem.hidden = !isGroupChat;
+      groupInfoItem.setAttribute('aria-hidden', (!isGroupChat).toString());
+    });
+  }
+
   updateChatHeader() {
     const headerTargets = [
       {
@@ -3854,6 +3872,7 @@ export class ChatAppInteractionMethods {
         this.enforcePlainChatModalHeader();
         }
     });
+    this.updateGroupInfoMenuVisibility();
     this.updateCurrentContactProfileStatusLabel();
   }
 

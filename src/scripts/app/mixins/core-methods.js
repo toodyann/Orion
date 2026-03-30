@@ -1,5 +1,6 @@
 import { setupMobileSwipeBack } from '../../shared/gestures/swipe-handlers.js';
 import { getContactColor } from '../../shared/helpers/ui-helpers.js';
+import { buildApiUrl } from '../../shared/auth/auth-session.js';
 
 export class ChatAppCoreMethods {
   readJsonStorage(key, fallback) {
@@ -19,7 +20,9 @@ export class ChatAppCoreMethods {
     const data = this.readJsonStorage('orion_user', null);
     if (data && typeof data === 'object') {
       const avatarImage = String(data.avatarImage || data.avatarUrl || '').trim();
+      const userId = String(data.id || data.userId || data._id || '').trim();
       return {
+        id: userId,
         name: data.name || 'Користувач Orion',
         email: data.email || 'user@example.com',
         status: data.status || 'online',
@@ -38,6 +41,7 @@ export class ChatAppCoreMethods {
       };
     }
     return {
+      id: '',
       name: 'Користувач Orion',
       email: 'user@example.com',
       status: 'online',
@@ -60,6 +64,7 @@ export class ChatAppCoreMethods {
     const avatarImage = this.getAvatarImage(userData?.avatarImage || userData?.avatarUrl);
     const nextUserData = {
       ...userData,
+      id: String(userData?.id || userData?.userId || userData?._id || this.user?.id || '').trim(),
       avatarImage,
       avatarUrl: avatarImage
     };
@@ -79,6 +84,263 @@ export class ChatAppCoreMethods {
 
   formatShopIslandBalance(value) {
     return this.formatCoinBalance(value, 1);
+  }
+
+  getWalletCurrencyCode() {
+    return 'COIN';
+  }
+
+  getWalletApiHeaders({ json = false } = {}) {
+    if (typeof this.getApiHeaders === 'function') {
+      const headers = this.getApiHeaders({ json });
+      if (headers && typeof headers === 'object') {
+        const normalized = { ...headers };
+        if (!String(normalized['X-User-Id'] || '').trim()) {
+          const fallbackUserId = String(this.user?.id || this.user?.userId || this.user?._id || '').trim();
+          if (fallbackUserId) normalized['X-User-Id'] = fallbackUserId;
+        }
+        return normalized;
+      }
+    }
+    const fallback = {};
+    if (json) fallback['Content-Type'] = 'application/json';
+    const fallbackUserId = String(this.user?.id || this.user?.userId || this.user?._id || '').trim();
+    if (fallbackUserId) fallback['X-User-Id'] = fallbackUserId;
+    return fallback;
+  }
+
+  getWalletAmountMinorUnits(value) {
+    if (value == null) return NaN;
+    if (typeof value === 'object') {
+      const nestedCandidates = [
+        value.amountMinor,
+        value.balanceMinor,
+        value.amount,
+        value.balance,
+        value.value
+      ];
+      for (const candidate of nestedCandidates) {
+        const nested = this.getWalletAmountMinorUnits(candidate);
+        if (Number.isFinite(nested)) return nested;
+      }
+      return NaN;
+    }
+    const parsed = Number.parseInt(String(value), 10);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  extractWalletBalanceMinorUnits(payload) {
+    const root = payload && typeof payload === 'object' ? payload : {};
+    const candidates = [
+      root?.balanceMinor,
+      root?.balanceAmount,
+      root?.balance,
+      root?.amount,
+      root?.wallet,
+      root?.data,
+      root?.data?.wallet,
+      root?.result,
+      root?.result?.wallet
+    ];
+
+    for (const candidate of candidates) {
+      const parsed = this.getWalletAmountMinorUnits(candidate);
+      if (!Number.isFinite(parsed)) continue;
+      return Math.max(0, parsed);
+    }
+    return null;
+  }
+
+  normalizeWalletTransactionsPayload(payload) {
+    const root = payload && typeof payload === 'object' ? payload : {};
+    const sources = [
+      root,
+      root?.data,
+      root?.result,
+      root?.wallet,
+      root?.wallet?.history
+    ];
+
+    let rawList = null;
+    for (const source of sources) {
+      if (!source) continue;
+      if (Array.isArray(source)) {
+        rawList = source;
+        break;
+      }
+      if (typeof source !== 'object') continue;
+      const candidate = source.transactions || source.items || source.history || source.results;
+      if (Array.isArray(candidate)) {
+        rawList = candidate;
+        break;
+      }
+    }
+
+    if (!Array.isArray(rawList)) return [];
+
+    const typeDirectionMap = {
+      purchase: -1,
+      buy: -1,
+      debit: -1,
+      expense: -1,
+      transfer_out: -1,
+      transfer: -1,
+      earn: 1,
+      reward: 1,
+      credit: 1,
+      income: 1,
+      topup: 1,
+      transfer_in: 1
+    };
+
+    return rawList
+      .map((entry, index) => {
+        if (!entry || typeof entry !== 'object') return null;
+        const amountRaw = this.getWalletAmountMinorUnits(
+          entry.amountMinor
+          ?? entry.amount
+          ?? entry.delta
+          ?? entry.value
+          ?? entry.change
+          ?? entry.priceAmount
+        );
+        if (!Number.isFinite(amountRaw) || amountRaw === 0) return null;
+
+        const directionRaw = String(entry.direction || entry.flow || '').trim().toLowerCase();
+        const typeRaw = String(entry.type || entry.kind || entry.category || '').trim().toLowerCase();
+        let signedAmount = amountRaw;
+
+        if (signedAmount > 0) {
+          if (['debit', 'expense', 'out', 'withdraw'].includes(directionRaw)) {
+            signedAmount = -signedAmount;
+          } else if (typeDirectionMap[typeRaw] === -1) {
+            signedAmount = -signedAmount;
+          }
+        } else if (signedAmount < 0) {
+          if (['credit', 'income', 'in', 'deposit'].includes(directionRaw)) {
+            signedAmount = Math.abs(signedAmount);
+          } else if (typeDirectionMap[typeRaw] === 1) {
+            signedAmount = Math.abs(signedAmount);
+          }
+        }
+
+        const createdAt = String(
+          entry.createdAt
+          || entry.timestamp
+          || entry.date
+          || new Date().toISOString()
+        ).trim();
+        const fallbackTitle = typeRaw ? typeRaw.replace(/[_-]+/g, ' ') : 'Транзакція';
+        const title = String(entry.title || entry.description || fallbackTitle || 'Транзакція').trim() || 'Транзакція';
+        const category = String(typeRaw || entry.category || 'general').trim() || 'general';
+        const id = String(entry.id || entry.txId || entry.transactionId || `${createdAt}-${index}`).trim();
+
+        return {
+          id,
+          amountCents: Math.trunc(signedAmount),
+          createdAt,
+          title,
+          category
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 200);
+  }
+
+  async refreshCoinWalletFromBackend({ includeTransactions = false, silent = true } = {}) {
+    const headers = this.getWalletApiHeaders();
+    if (!String(headers?.['X-User-Id'] || '').trim()) return null;
+
+    const currency = this.getWalletCurrencyCode();
+    const encodedCurrency = encodeURIComponent(currency);
+
+    try {
+      const walletResponse = await fetch(buildApiUrl(`/wallet/me?currency=${encodedCurrency}`), {
+        headers
+      });
+      if (!walletResponse.ok) {
+        if (!silent) {
+          console.warn(`[wallet] GET /wallet/me failed with status ${walletResponse.status}`);
+        }
+        return null;
+      }
+
+      const walletPayload = await walletResponse.json().catch(() => ({}));
+      const nextBalance = this.extractWalletBalanceMinorUnits(walletPayload);
+      if (Number.isFinite(nextBalance)) {
+        this.setTapBalanceCents(nextBalance, { syncBackend: false });
+      }
+
+      if (includeTransactions) {
+        const txResponse = await fetch(buildApiUrl(`/wallet/me/transactions?currency=${encodedCurrency}`), {
+          headers
+        });
+        if (txResponse.ok) {
+          const txPayload = await txResponse.json().catch(() => ({}));
+          const normalized = this.normalizeWalletTransactionsPayload(txPayload);
+          this.saveCoinTransactionHistory(normalized);
+        } else if (!silent) {
+          console.warn(`[wallet] GET /wallet/me/transactions failed with status ${txResponse.status}`);
+        }
+      }
+
+      return {
+        balance: this.getTapBalanceCents(),
+        currency
+      };
+    } catch (error) {
+      if (!silent) {
+        console.warn('[wallet] Failed to refresh wallet from backend:', error);
+      }
+      return null;
+    }
+  }
+
+  async syncCoinBalanceToBackend(balanceCents, { silent = true } = {}) {
+    const headers = this.getWalletApiHeaders({ json: true });
+    if (!String(headers?.['X-User-Id'] || '').trim()) return false;
+
+    const safeBalance = Number.isFinite(balanceCents) ? Math.max(0, Math.floor(balanceCents)) : 0;
+    try {
+      const response = await fetch(buildApiUrl('/wallet/me/set-balance'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          currency: this.getWalletCurrencyCode(),
+          balance: safeBalance
+        })
+      });
+      if (!response.ok) {
+        if (!silent) {
+          console.warn(`[wallet] POST /wallet/me/set-balance failed with status ${response.status}`);
+        }
+        return false;
+      }
+      return true;
+    } catch (error) {
+      if (!silent) {
+        console.warn('[wallet] Failed to sync balance to backend:', error);
+      }
+      return false;
+    }
+  }
+
+  scheduleCoinBalanceBackendSync() {
+    const headers = this.getWalletApiHeaders();
+    if (!String(headers?.['X-User-Id'] || '').trim()) return;
+
+    const nextBalance = this.getTapBalanceCents();
+    this.pendingCoinBalanceSyncValue = nextBalance;
+    if (this.coinBalanceSyncTimer) {
+      window.clearTimeout(this.coinBalanceSyncTimer);
+    }
+    this.coinBalanceSyncTimer = window.setTimeout(() => {
+      const valueToSync = Number(this.pendingCoinBalanceSyncValue);
+      this.pendingCoinBalanceSyncValue = null;
+      this.coinBalanceSyncTimer = null;
+      if (!Number.isFinite(valueToSync)) return;
+      this.syncCoinBalanceToBackend(valueToSync, { silent: true }).catch(() => {});
+    }, 450);
   }
 
   getTapLevelThreshold(level = 1) {
@@ -142,21 +404,30 @@ export class ChatAppCoreMethods {
     }
   }
 
-  setTapBalanceCents(value) {
+  setTapBalanceCents(value, options = {}) {
+    const shouldSyncBackend = options?.syncBackend !== false;
     const safeValue = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+    const previousValue = Number.isFinite(this.tapBalanceCents)
+      ? Math.max(0, Math.floor(this.tapBalanceCents))
+      : this.getTapBalanceCents();
+    const hasChanged = safeValue !== previousValue;
     this.tapBalanceCents = safeValue;
     try {
       window.localStorage.setItem('orionTapBalanceCents', String(safeValue));
     } catch {
       // Ignore storage failures and keep the in-memory value.
     }
-    const balanceTargets = document.querySelectorAll('#coinTapBalance, #shopBalanceValue');
+    const balanceTargets = document.querySelectorAll('#coinTapBalance, #shopBalanceValue, #walletBalanceValue');
     balanceTargets.forEach(el => {
       el.textContent = this.formatCoinBalance(safeValue);
     });
     document.querySelectorAll('#shopIslandBalance').forEach(el => {
       el.textContent = this.formatShopIslandBalance(safeValue);
     });
+
+    if (shouldSyncBackend && hasChanged) {
+      this.scheduleCoinBalanceBackendSync();
+    }
   }
 
   getCoinTransactionHistory() {
@@ -228,13 +499,28 @@ export class ChatAppCoreMethods {
     const appliedDelta = nextBalance - currentBalance;
     if (!appliedDelta) return false;
 
-    this.setTapBalanceCents(nextBalance);
+    this.setTapBalanceCents(nextBalance, { syncBackend: false });
     if (options.record !== false) {
       this.addCoinTransaction({
         amountCents: appliedDelta,
         title,
         category: options.category || 'general'
       });
+    }
+
+    const headers = this.getWalletApiHeaders();
+    if (String(headers?.['X-User-Id'] || '').trim()) {
+      this.syncCoinBalanceToBackend(nextBalance, { silent: true })
+        .then((ok) => {
+          if (!ok) {
+            this.scheduleCoinBalanceBackendSync();
+          }
+        })
+        .catch(() => {
+          this.scheduleCoinBalanceBackendSync();
+        });
+    } else {
+      this.scheduleCoinBalanceBackendSync();
     }
     return true;
   }
@@ -1003,6 +1289,8 @@ export class ChatAppCoreMethods {
     if (typeof this.initializeServerChatSync === 'function') {
       this.initializeServerChatSync();
     }
+
+    this.refreshCoinWalletFromBackend({ includeTransactions: false, silent: true }).catch(() => {});
 
   }
 

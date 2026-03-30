@@ -170,6 +170,9 @@
 }
 
 .chat-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   text-align: left;
   padding: 8px 12px;
@@ -183,6 +186,21 @@
   transition: all 0.2s ease;
 }
 
+.chat-menu-item-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.chat-menu-item-label {
+  flex: 1;
+}
+
 .chat-menu-item:hover {
   background-color: var(--bg-secondary);
+}
+
+.chat-menu-item:hover .chat-menu-item-icon {
+  color: var(--text-primary);
 }

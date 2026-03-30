@@ -682,6 +682,12 @@ export class ChatAppFeaturesMethods {
       filterCloseEl.addEventListener('touchend', closeFilterPanel, { passive: false });
     }
 
+    this.refreshCoinWalletFromBackend({ includeTransactions: false, silent: true })
+      .then(() => {
+        renderShop();
+      })
+      .catch(() => {});
+
     if (gridEl.dataset.bound === 'true') return;
     gridEl.dataset.bound = 'true';
 
@@ -4288,6 +4294,11 @@ export class ChatAppFeaturesMethods {
     };
 
     render();
+    this.refreshCoinWalletFromBackend({ includeTransactions: true, silent: true })
+      .then(() => {
+        render();
+      })
+      .catch(() => {});
   }
 
   showSettingsSubsection(subsectionName, settingsContainerId, sourceSection = null) {
