@@ -1666,14 +1666,14 @@ html.dark-theme .bottom-nav-indicator {
   }
 
   .desktop-secondary-chat-status .message-status-check {
-    width: 11px;
-    height: 11px;
+    width: 12px;
+    height: 12px;
     display: block;
     fill: currentColor;
   }
 
   .desktop-secondary-chat-status.read .message-status-check + .message-status-check {
-    margin-left: -4px;
+    margin-left: -8px;
   }
 
   .desktop-secondary-chat-meta {

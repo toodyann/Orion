@@ -3193,6 +3193,8 @@ export class ChatAppMessagingMethods {
     const activeServerId = this.resolveChatServerId(this.currentChat);
     const activeLocalId = this.currentChat?.id;
     const bootstrapReadMarkerByServerId = new Map();
+    let activeChatVisualChanged = false;
+    let activeChatNewestAppendedMessageId = null;
     let nextLocalId = Math.max(0, ...previousChats.map((chat) => Number(chat?.id) || 0)) + 1;
     let changed = false;
     const nextChats = deduplicatedVisibleChats.map((serverChat) => {
@@ -3443,6 +3445,26 @@ export class ChatAppMessagingMethods {
             (activeServerId && chat.serverId === activeServerId)
             || chat.id === activeLocalId
           );
+          if (isActiveChat) {
+            const prevVisualSignature = this.getMessagesVisualSignature(chat.messages);
+            const nextVisualSignature = this.getMessagesVisualSignature(nextMessages);
+            if (prevVisualSignature !== nextVisualSignature) {
+              activeChatVisualChanged = true;
+              const previousKeys = new Set(
+                (Array.isArray(chat.messages) ? chat.messages : [])
+                  .map((msg) => String(msg?.serverId || `local:${msg?.id ?? ''}`))
+                  .filter(Boolean)
+              );
+              for (let i = nextMessages.length - 1; i >= 0; i -= 1) {
+                const item = nextMessages[i];
+                const key = String(item?.serverId || `local:${item?.id ?? ''}`);
+                if (!previousKeys.has(key)) {
+                  activeChatNewestAppendedMessageId = item?.id ?? null;
+                  break;
+                }
+              }
+            }
+          }
           if (prevMessageSignature !== nextMessageSignature) {
             changed = true;
           }
@@ -3526,6 +3548,12 @@ export class ChatAppMessagingMethods {
     if (renderIfChanged && changed) {
       this.renderChatsList();
       this.updateChatHeader();
+      if (activeChatVisualChanged && this.currentChat) {
+        this.renderChatAfterSync({
+          forceScroll: false,
+          highlightId: activeChatNewestAppendedMessageId
+        });
+      }
     }
 
     return changed;
