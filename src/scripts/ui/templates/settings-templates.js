@@ -131,6 +131,17 @@ export const settingsTemplates = {
           </span>
           <span class="settings-menu-arrow">›</span>
         </button>
+        <button type="button" class="settings-menu-item" data-section="wallet">
+          <span class="settings-menu-icon settings-icon-wallet">
+            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M216,64H56a8,8,0,0,1,0-16H192a8,8,0,0,0,0-16H56A24,24,0,0,0,32,56V184a24,24,0,0,0,24,24H216a16,16,0,0,0,16-16V80A16,16,0,0,0,216,64Zm0,128H56a8,8,0,0,1-8-8V78.63A23.84,23.84,0,0,0,56,80H216Zm-48-60a12,12,0,1,1,12,12A12,12,0,0,1,168,132Z"></path>
+            </svg>
+          </span>
+          <span class="settings-menu-label">
+            <span>Гаманець</span>
+          </span>
+          <span class="settings-menu-arrow">›</span>
+        </button>
         <button type="button" class="settings-menu-item" data-section="appearance">
           <span class="settings-menu-icon settings-icon-appearance">
             <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
@@ -284,6 +295,73 @@ export const settingsTemplates = {
     </div>
 
     <div class="profile-items-grid" id="profileItemsGrid"></div>
+  </div>
+</div>
+  `.trim(),
+
+  'settings-home': `
+<div class="settings-section" id="settings-home">
+  <div class="settings-header">
+    <button class="btn-back-settings" type="button" aria-label="Назад">
+      <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+        <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+      </svg>
+    </button>
+    <h2>Налаштування</h2>
+  </div>
+
+  <div class="settings-content">
+    <div class="settings-menu-list">
+      <button type="button" class="settings-menu-item" data-section="notifications">
+        <span class="settings-menu-icon settings-icon-notifications">
+          <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,0,0-160,0c0,35.35-8.25,62.4-13.8,71.95A16,16,0,0,0,48,200H96.1a32,32,0,0,0,63.8,0H208a16,16,0,0,0,13.8-24.06ZM128,216a16,16,0,0,1-15.16-10.67h30.32A16,16,0,0,1,128,216ZM48,184c7.9-13.65,16-43.94,16-80a64,64,0,0,1,128,0c0,36.05,8.1,66.35,16,80Z"></path>
+          </svg>
+        </span>
+        <span class="settings-menu-label"><span>Сповіщення</span></span>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+
+      <button type="button" class="settings-menu-item" data-section="privacy">
+        <span class="settings-menu-icon settings-icon-privacy">
+          <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M208,40H48A16,16,0,0,0,32,56v56c0,52.72,25.52,84.67,46.93,102.19,23.06,18.86,46,25.27,47,25.53a8,8,0,0,0,4.2,0c1-.26,23.91-6.67,47-25.53C198.48,196.67,224,164.72,224,112V56A16,16,0,0,0,208,40Zm0,72c0,37.07-13.66,67.16-40.6,89.42A129.3,129.3,0,0,1,128,223.62a128.25,128.25,0,0,1-38.92-21.81C61.82,179.51,48,149.3,48,112V56H208Z"></path>
+          </svg>
+        </span>
+        <span class="settings-menu-label"><span>Конфіденційність</span></span>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+
+      <button type="button" class="settings-menu-item" data-section="messages">
+        <span class="settings-menu-icon settings-icon-messages">
+          <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M216,40H40A16,16,0,0,0,24,56V192a16,16,0,0,0,16,16H82.34l23,23a8,8,0,0,0,11.32,0l23-23H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,152H136a8,8,0,0,0-5.66,2.34L111,213.66,91.66,194.34A8,8,0,0,0,86,192H40V56H216Z"></path>
+          </svg>
+        </span>
+        <span class="settings-menu-label"><span>Повідомлення</span></span>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+
+      <button type="button" class="settings-menu-item" data-section="appearance">
+        <span class="settings-menu-icon settings-icon-appearance">
+          <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H216V96H40Zm0,56H96v88H40Zm176,88H112V112H216v88Z"></path>
+          </svg>
+        </span>
+        <span class="settings-menu-label"><span>Інтерфейс</span></span>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+
+      <button type="button" class="settings-menu-item" data-section="language">
+        <span class="settings-menu-icon settings-icon-language">
+          <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M128,24a104,104,0,1,0,104,104A104.11,104.11,0,0,0,128,24Zm79.21,96h-32.8a158.6,158.6,0,0,0-13.36-52.7A88.2,88.2,0,0,1,207.21,120ZM128,40c10.87,0,27.7,16.87,37.36,45.18A142.13,142.13,0,0,1,171.86,120H128Zm0,96h43.86a142.13,142.13,0,0,1-6.5,34.82C155.7,199.13,138.87,216,128,216Zm0-16V85.18C137.66,56.87,154.49,40,165.36,40ZM94.95,67.3A158.6,158.6,0,0,0,81.59,120H48.79A88.2,88.2,0,0,1,94.95,67.3ZM48.79,136h32.8a158.6,158.6,0,0,0,13.36,52.7A88.2,88.2,0,0,1,48.79,136ZM120,216c-10.87,0-27.7-16.87-37.36-45.18A142.13,142.13,0,0,1,76.14,136H120Zm0-96H76.14a142.13,142.13,0,0,1,6.5-34.82C92.3,56.87,109.13,40,120,40Zm41.05,68.7A158.6,158.6,0,0,0,174.41,136h32.8A88.2,88.2,0,0,1,161.05,188.7Z"></path>
+          </svg>
+        </span>
+        <span class="settings-menu-label"><span>Мова</span></span>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+    </div>
   </div>
 </div>
   `.trim(),
@@ -752,6 +830,69 @@ export const settingsTemplates = {
   'mini-games': `
 <div class="settings-section" id="mini-games">
   <div class="settings-content mini-games-content">
+    <div class="mini-games-list" aria-label="Ігровий центр">
+      <button type="button" class="mini-game-select active" data-mini-game-select="tapper" aria-pressed="true">
+        <span class="mini-game-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+            <path d="M56,76a60,60,0,0,1,120,0,8,8,0,0,1-16,0,44,44,0,0,0-88,0,8,8,0,1,1-16,0Zm140,44a27.9,27.9,0,0,0-13.36,3.39A28,28,0,0,0,144,106.7V76a28,28,0,0,0-56,0v80l-3.82-6.13a28,28,0,0,0-48.41,28.17l29.32,50A8,8,0,1,0,78.89,220L49.6,170a12,12,0,1,1,20.78-12l.14.23,18.68,30A8,8,0,0,0,104,184V76a12,12,0,0,1,24,0v68a8,8,0,1,0,16,0V132a12,12,0,0,1,24,0v20a8,8,0,0,0,16,0v-4a12,12,0,0,1,24,0v36c0,21.61-7.1,36.3-7.16,36.42a8,8,0,0,0,3.58,10.73A7.9,7.9,0,0,0,208,232a8,8,0,0,0,7.16-4.42c.37-.73,8.85-18,8.85-43.58V148A28,28,0,0,0,196,120Z"></path>
+          </svg>
+        </span>
+        <span>
+          <span class="mini-game-title">Клікер</span>
+          <span class="mini-game-sub">Тапай і збирай Orion Value</span>
+        </span>
+      </button>
+
+      <button type="button" class="mini-game-select" data-mini-game-select="signal" aria-pressed="false">
+        <span class="mini-game-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+            <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"></path>
+          </svg>
+        </span>
+        <span>
+          <span class="mini-game-title">Полювання на сигнал</span>
+          <span class="mini-game-sub">Лови цілі на швидкість</span>
+        </span>
+      </button>
+
+      <button type="button" class="mini-game-select" data-mini-game-select="grid2048" aria-pressed="false">
+        <span class="mini-game-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="2"/>
+            <path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        <span>
+          <span class="mini-game-title">Orion 2048</span>
+          <span class="mini-game-sub">Обʼєднуй плитки та заробляй</span>
+        </span>
+      </button>
+
+      <button type="button" class="mini-game-select" data-mini-game-select="flappy" aria-pressed="false">
+        <span class="mini-game-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+            <path d="M176,68a12,12,0,1,1-12-12A12,12,0,0,1,176,68Zm64,12a8,8,0,0,1-3.56,6.66L216,100.28V120A104.11,104.11,0,0,1,112,224H24a16,16,0,0,1-12.49-26l.1-.12L96,96.63V76.89C96,43.47,122.79,16.16,155.71,16H156a60,60,0,0,1,57.21,41.86l23.23,15.48A8,8,0,0,1,240,80Zm-22.42,0L201.9,69.54a8,8,0,0,1-3.31-4.64A44,44,0,0,0,156,32h-.22C131.64,32.12,112,52.25,112,76.89V99.52a8,8,0,0,1-1.85,5.13L24,208h26.9l70.94-85.12a8,8,0,1,1,12.29,10.24L71.75,208H112a88.1,88.1,0,0,0,88-88V96a8,8,0,0,1,3.56-6.66Z"></path>
+          </svg>
+        </span>
+        <span>
+          <span class="mini-game-title">Flappy Orion</span>
+          <span class="mini-game-sub">Пролітай перешкоди</span>
+        </span>
+      </button>
+
+      <button type="button" class="mini-game-select" data-mini-game-select="drift" aria-pressed="false">
+        <span class="mini-game-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+            <path d="M149.26,159.26C155.09,173.82,163.5,176,168,176s12.91-2.18,18.74-16.74c3.39-8.48,5.26-19.58,5.26-31.26s-1.87-22.78-5.26-31.26C180.91,82.18,172.5,80,168,80s-12.91,2.18-18.74,16.74C145.87,105.22,144,116.32,144,128S145.87,150.78,149.26,159.26ZM168,96.2c2.62,2.06,8,13,8,31.8s-5.38,29.74-8,31.8c-2.62-2.06-8-13-8-31.8S165.38,98.26,168,96.2ZM232,216H196.41C213.12,197.73,224,165.47,224,128c0-58.32-26.35-104-60-104H92C58.35,24,32,69.68,32,128S58.35,232,92,232H232a8,8,0,0,0,0-16ZM193.74,63.93C202.93,80.91,208,103.67,208,128s-5.07,47.09-14.26,64.07C185.38,207.5,174.82,216,164,216s-21.38-8.5-29.74-23.93C125.07,175.09,120,152.33,120,128s5.07-47.09,14.26-64.07C142.62,48.5,153.18,40,164,40S185.38,48.5,193.74,63.93ZM48,128c0-2.5.07-5,.17-7.44L80,97.83l24.43,17.45c-.28,4.16-.43,8.41-.43,12.72a179.89,179.89,0,0,0,3.07,33.5l-22.42-16a8,8,0,0,0-9.3,0l-23.74,17A161,161,0,0,1,48,128ZM62.26,63.93C70.62,48.5,81.18,40,92,40h39.59c-11.9,13-20.84,33.12-25,57.16L84.65,81.49a8,8,0,0,0-9.3,0L50.49,99.25C52.85,86,56.83,74,62.26,63.93Zm0,128.14a100.08,100.08,0,0,1-5.94-13.32L80,161.83l33.94,24.24c4.6,12,10.6,22.22,17.65,29.93H92C81.18,216,70.62,207.5,62.26,192.07Z"></path>
+          </svg>
+        </span>
+        <span>
+          <span class="mini-game-title">Orion Drive</span>
+          <span class="mini-game-sub">Дрифт і збір монет</span>
+        </span>
+      </button>
+    </div>
+
     <section class="mini-game-panel coin-tapper-content active" data-mini-game-panel="tapper">
       <div class="coin-level-island" aria-label="Рівень гравця">
         <div class="coin-level-island-body">

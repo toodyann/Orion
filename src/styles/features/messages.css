@@ -109,8 +109,19 @@
 }
 
 .message {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
   width: 100%;
   margin-bottom: 0;
+}
+
+.message.own .message-bubble {
+  margin-left: auto;
+}
+
+.message.other .message-bubble {
+  margin-right: auto;
 }
 
 .message.new-message .message-bubble {

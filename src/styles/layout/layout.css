@@ -1219,7 +1219,7 @@ html.dark-theme .welcome-screen {
   background-color: var(--bg-secondary);
 }
 
-@media (max-width: 900px) {
+@media (min-width: 769px) and (max-width: 900px) {
   .profile-menu-wrapper {
     width: min(420px, calc(100vw - 16px)) !important;
     left: calc((100% + var(--sidebar-panel-width, 370px)) / 2) !important;

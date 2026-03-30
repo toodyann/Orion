@@ -217,6 +217,47 @@ export class ChatAppInteractionMethods {
     if (chatsListHeader) chatsListHeader.style.display = 'none';
   }
 
+  animateDesktopSecondaryMenuOpen(menuRoot, triggerButton = null) {
+    if (!(menuRoot instanceof HTMLElement)) return;
+    if (window.innerWidth <= 768 || window.innerWidth > 900) return;
+
+    const prefersReducedMotion = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (this.desktopSecondaryMenuOpenAnimationFrame) {
+      window.cancelAnimationFrame(this.desktopSecondaryMenuOpenAnimationFrame);
+      this.desktopSecondaryMenuOpenAnimationFrame = null;
+    }
+    if (this.desktopSecondaryMenuOpenAnimationTimer) {
+      window.clearTimeout(this.desktopSecondaryMenuOpenAnimationTimer);
+      this.desktopSecondaryMenuOpenAnimationTimer = null;
+    }
+
+    menuRoot.classList.remove('is-opening');
+
+    if (triggerButton instanceof HTMLElement) {
+      triggerButton.classList.remove('is-activating');
+      if (!prefersReducedMotion) {
+        void triggerButton.offsetWidth;
+        triggerButton.classList.add('is-activating');
+        window.setTimeout(() => {
+          triggerButton.classList.remove('is-activating');
+        }, 180);
+      }
+    }
+
+    if (prefersReducedMotion) return;
+
+    void menuRoot.offsetWidth;
+    this.desktopSecondaryMenuOpenAnimationFrame = window.requestAnimationFrame(() => {
+      menuRoot.classList.add('is-opening');
+      this.desktopSecondaryMenuOpenAnimationTimer = window.setTimeout(() => {
+        menuRoot.classList.remove('is-opening');
+        this.desktopSecondaryMenuOpenAnimationTimer = null;
+      }, 340);
+    });
+  }
+
   renderDesktopSecondaryChatsList(listEl, targetNavId = 'navChats') {
     if (!listEl) return;
     listEl.innerHTML = '';
@@ -393,7 +434,7 @@ export class ChatAppInteractionMethods {
     if (item.section) this.showSettings(item.section);
   }
 
-  openDesktopSecondaryMenu(targetNavId, { activateFirst = true } = {}) {
+  openDesktopSecondaryMenu(targetNavId, { activateFirst = true, triggerButton = null } = {}) {
     if (window.innerWidth <= 768) return;
     const menuRoot = document.getElementById('desktopSecondaryMenu');
     const titleEl = document.getElementById('desktopSecondaryMenuTitle');
@@ -414,6 +455,7 @@ export class ChatAppInteractionMethods {
       this.renderDesktopSecondaryChatsList(listEl, targetNavId);
       menuRoot.classList.add('active');
       this.hideDesktopChatsPane();
+      this.animateDesktopSecondaryMenuOpen(menuRoot, triggerButton);
       return;
     }
 
@@ -472,6 +514,7 @@ export class ChatAppInteractionMethods {
 
     menuRoot.classList.add('active');
     this.hideDesktopChatsPane();
+    this.animateDesktopSecondaryMenuOpen(menuRoot, triggerButton);
 
     if (activateFirst && firstButton && firstItem) {
       this.handleDesktopSecondaryMenuSelect(firstButton, firstItem, targetNavId);
@@ -579,6 +622,8 @@ export class ChatAppInteractionMethods {
     
     const navProfile = document.getElementById('navProfile');
     const navSettings = document.getElementById('navSettings');
+    const navShop = document.getElementById('navShop');
+    const navWallet = document.getElementById('navWallet');
     const navCalls = document.getElementById('navCalls');
     const navChats = document.getElementById('navChats');
     const navGames = document.getElementById('navGames');
@@ -604,7 +649,7 @@ export class ChatAppInteractionMethods {
           const targetId = item.dataset.navTarget;
           if (!targetId) return;
           if (window.innerWidth > 768) {
-            this.openDesktopSecondaryMenu(targetId, { activateFirst: true });
+            this.openDesktopSecondaryMenu(targetId, { activateFirst: true, triggerButton: item });
             return;
           }
           const targetButton = document.getElementById(targetId);
@@ -655,11 +700,29 @@ export class ChatAppInteractionMethods {
       });
     }
     
+    if (navShop) {
+      navShop.addEventListener('click', () => {
+        if (navShop.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
+        this.setActiveNavButton(navShop);
+        this.settingsParentSection = 'messenger-settings';
+        this.showSettings('messenger-settings');
+      });
+    }
+
+    if (navWallet) {
+      navWallet.addEventListener('click', () => {
+        if (navWallet.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
+        this.setActiveNavButton(navWallet);
+        this.showSettings('wallet');
+      });
+    }
+
     if (navSettings) {
       navSettings.addEventListener('click', () => {
         if (navSettings.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navSettings);
-        this.showSettings('messenger-settings');
+        this.settingsParentSection = 'settings-home';
+        this.showSettings('settings-home');
       });
     }
 

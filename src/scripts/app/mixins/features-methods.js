@@ -742,6 +742,7 @@ export class ChatAppFeaturesMethods {
   initMiniGames(settingsContainer) {
     const miniGamesSection = settingsContainer.querySelector('#mini-games');
     const tapperContentEl = settingsContainer.querySelector('[data-mini-game-panel="tapper"]');
+    const miniGamesListEl = settingsContainer.querySelector('.mini-games-list');
     const balanceEl = settingsContainer.querySelector('#coinTapBalance');
     const tapBtn = settingsContainer.querySelector('#coinTapBtn');
     const levelIslandEl = settingsContainer.querySelector('.coin-level-island');
@@ -752,6 +753,14 @@ export class ChatAppFeaturesMethods {
 
     const gameSelectButtons = settingsContainer.querySelectorAll('[data-mini-game-select]');
     const gamePanels = settingsContainer.querySelectorAll('[data-mini-game-panel]');
+
+    if (miniGamesListEl && tapperContentEl && window.matchMedia('(max-width: 768px)').matches) {
+      const miniGamesContentEl = tapperContentEl.parentElement;
+      if (miniGamesContentEl && miniGamesListEl.parentElement === miniGamesContentEl) {
+        miniGamesContentEl.insertBefore(miniGamesListEl, tapperContentEl.nextSibling);
+      }
+    }
+
     const MINI_GAME_VIEW_KEY = 'orionMiniGameView';
     const normalizeMiniGameView = (value) => {
       if (value === 'signal') return 'signal';
@@ -3567,6 +3576,12 @@ export class ChatAppFeaturesMethods {
       currentMiniGameView = safeView;
       if (miniGamesSection) {
         miniGamesSection.dataset.activeMiniGame = safeView;
+        const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
+        if (isMobileViewport) {
+          miniGamesSection.dataset.mobileMiniGameFullscreen = safeView === 'tapper' ? 'false' : 'true';
+        } else {
+          delete miniGamesSection.dataset.mobileMiniGameFullscreen;
+        }
       }
 
       gameSelectButtons.forEach((buttonEl) => {
@@ -3607,6 +3622,31 @@ export class ChatAppFeaturesMethods {
         // Ignore storage failures.
       }
     };
+
+    const addMobileGameCenterBackButtons = () => {
+      const panelsWithHeader = settingsContainer.querySelectorAll('.mini-game-panel.mini-game-view[data-mini-game-panel]');
+      panelsWithHeader.forEach((panelEl) => {
+        const panelName = panelEl.dataset.miniGamePanel;
+        if (!panelName || panelName === 'tapper') return;
+        const headerEl = panelEl.querySelector('.mini-game-view-header');
+        if (!headerEl || headerEl.querySelector('[data-mini-game-mobile-back]')) return;
+        const backBtn = document.createElement('button');
+        backBtn.type = 'button';
+        backBtn.className = 'mini-game-mobile-back';
+        backBtn.setAttribute('data-mini-game-mobile-back', 'true');
+        backBtn.setAttribute('aria-label', 'Повернутись в ігровий центр');
+        backBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M165.66,202.34a8,8,0,0,1-11.32,0l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L99.31,124H224a8,8,0,0,1,0,16H99.31l66.35,66.34A8,8,0,0,1,165.66,202.34Z"></path>
+          </svg>
+          <span>Ігровий центр</span>
+        `;
+        backBtn.addEventListener('click', () => setMiniGameView('tapper'));
+        headerEl.prepend(backBtn);
+      });
+    };
+
+    addMobileGameCenterBackButtons();
 
     gameSelectButtons.forEach((buttonEl) => {
       if (buttonEl.dataset.bound === 'true') return;
@@ -4308,6 +4348,7 @@ export class ChatAppFeaturesMethods {
       'messages': 'messages-settings',
       'appearance': 'appearance-settings',
       'language': 'language-settings',
+      'wallet': 'wallet',
       'profile-items': 'profile-items'
     };
     
@@ -4762,6 +4803,19 @@ export class ChatAppFeaturesMethods {
         });
       }
 
+      if (sectionName === 'settings-home') {
+        this.settingsParentSection = 'settings-home';
+        const menuItems = settingsContainer.querySelectorAll('.settings-menu-item');
+        menuItems.forEach(item => {
+          item.addEventListener('click', () => {
+            const subsection = item.getAttribute('data-section');
+            if (subsection) {
+              this.showSettingsSubsection(subsection, settingsContainerId, 'settings-home');
+            }
+          });
+        });
+      }
+
       if (sectionName === 'mini-games') {
         this.settingsParentSection = 'mini-games';
         this.initMiniGames(settingsContainer);
@@ -4955,7 +5009,12 @@ export class ChatAppFeaturesMethods {
       }
       
       // Додаємо свайп для повернення назад в підрозділах
-      if (sectionName !== 'messenger-settings' && sectionName !== 'profile' && sectionName !== 'calls' && sectionName !== 'mini-games') {
+      if (sectionName !== 'messenger-settings'
+        && sectionName !== 'profile'
+        && sectionName !== 'calls'
+        && sectionName !== 'mini-games'
+        && sectionName !== 'wallet'
+        && sectionName !== 'settings-home') {
         this.setupSettingsSwipeBack(settingsContainer);
       }
       
