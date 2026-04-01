@@ -246,6 +246,21 @@ function setTheme(isDark) {
   }
 }
 
+function redirectToAppHomeNow() {
+  if (typeof window === 'undefined') return;
+  const targetHref = getAppHomeHref();
+  try {
+    window.location.replace(targetHref);
+  } catch {
+    window.location.assign(targetHref);
+  }
+  window.setTimeout(() => {
+    if (window.location.href !== targetHref) {
+      window.location.assign(targetHref);
+    }
+  }, 120);
+}
+
 function readInitialTheme() {
   try {
     const saved = localStorage.getItem('orion_theme');
@@ -575,18 +590,19 @@ document.addEventListener('DOMContentLoaded', () => {
       setAuthSession(auth);
       syncLegacyUserProfile(auth.user);
       clearCachedSignupNickname(phone);
-      window.location.assign(getAppHomeHref());
+      redirectToAppHomeNow();
     } catch (error) {
-      if (isBackendUnavailableError(error)) {
-        const offlineAuth = tryOfflineLogin(phone, password);
-        if (offlineAuth) {
-          setAuthSession(offlineAuth);
-          syncLegacyUserProfile(offlineAuth.user);
-          clearCachedSignupNickname(phone);
-          setFeedback('Бекенд недоступний. Виконано локальний вхід.', 'success');
-          window.location.assign(getAppHomeHref());
-          return;
-        }
+      const offlineAuth = tryOfflineLogin(phone, password);
+      if (offlineAuth) {
+        setAuthSession(offlineAuth);
+        syncLegacyUserProfile(offlineAuth.user);
+        clearCachedSignupNickname(phone);
+        const fallbackMessage = isBackendUnavailableError(error)
+          ? 'Бекенд недоступний. Виконано локальний вхід.'
+          : 'Виконано локальний вхід (demo mode).';
+        setFeedback(fallbackMessage, 'success');
+        redirectToAppHomeNow();
+        return;
       }
       setFeedback(error?.message || 'Не вдалося виконати вхід.');
     } finally {
@@ -673,7 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setAuthSession(authPayload);
         syncLegacyUserProfile(authPayload.user);
         clearCachedSignupNickname(phone);
-        window.location.assign(getAppHomeHref());
+        redirectToAppHomeNow();
         return;
       }
 
@@ -689,7 +705,7 @@ document.addEventListener('DOMContentLoaded', () => {
           syncLegacyUserProfile(offlineAuthPayload.user);
           clearCachedSignupNickname(phone);
           setFeedback('Бекенд недоступний. Акаунт створено локально.', 'success');
-          window.location.assign(getAppHomeHref());
+          redirectToAppHomeNow();
           return;
         } catch (offlineError) {
           setFeedback(offlineError?.message || 'Не вдалося створити локальний акаунт.');
