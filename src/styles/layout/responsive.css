@@ -1453,6 +1453,10 @@
     .settings-header
     .settings-subsection-title,
   #settingsContainerMobile #profile-settings .settings-header h2 {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
     font-size: 16px !important;
     border: none !important;
     background: transparent !important;
@@ -1472,14 +1476,6 @@
     .settings-subsection-title
     svg,
   #settingsContainerMobile #profile-settings .settings-header h2 svg {
-    display: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-header h2 {
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-header h2 svg {
     display: inline-flex !important;
     width: 18px !important;
     height: 18px !important;

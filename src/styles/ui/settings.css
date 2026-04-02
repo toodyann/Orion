@@ -58,6 +58,10 @@ html.dark-theme .orion-app #settingsContainerMobile .settings-section.active {
 
 .settings-header h2 {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-size: 22px;
   font-weight: 600;
   color: var(--text-primary);
@@ -66,6 +70,14 @@ html.dark-theme .orion-app #settingsContainerMobile .settings-section.active {
   left: 50%;
   transform: translateX(-50%);
   pointer-events: none;
+}
+
+.settings-header h2 svg {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: inherit;
 }
 
 .settings-header button {
@@ -326,7 +338,9 @@ html.dark-theme #messenger-settings .shop-balance-island {
 #calls .calls-header h2 svg,
 #profile-items .profile-items-header h2 svg,
 #wallet .calls-header h2 svg {
-  display: none;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
@@ -451,7 +465,7 @@ html.dark-theme #profile-items .profile-items-back-island {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 8px;
   min-height: 0;
   margin: 0 auto;
   padding: 0;
@@ -469,7 +483,9 @@ html.dark-theme #profile-items .profile-items-back-island {
 }
 
 .settings-subsection .settings-header .settings-subsection-title svg {
-  display: none;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
@@ -5893,7 +5909,10 @@ html:not(.dark-theme) .mini-game-canvas {
   left: auto !important;
   right: auto !important;
   transform: none !important;
-  display: block !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
   width: 100% !important;
   max-width: none !important;
   margin: 0 auto !important;
@@ -5905,7 +5924,10 @@ html:not(.dark-theme) .mini-game-canvas {
   left: auto;
   right: auto;
   transform: none;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
   min-height: 0;
   margin: 0;
