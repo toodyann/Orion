@@ -2776,6 +2776,9 @@ export class ChatAppMessagingMethods {
     if (!this.currentChat) return;
     const container = document.getElementById('messagesContainer');
     if (!container) {
+      if (typeof this.primeRecentChatImageUrls === 'function') {
+        this.primeRecentChatImageUrls(this.currentChat);
+      }
       this.renderChat(highlightId);
       return;
     }
@@ -2799,6 +2802,12 @@ export class ChatAppMessagingMethods {
     }
 
     this.skipNextRenderChatAutoScroll = true;
+    if (typeof this.primeRecentChatImageUrls === 'function') {
+      this.primeRecentChatImageUrls(this.currentChat);
+    }
+    if (shouldStickToBottom && typeof this.enableMessagesMediaAutoScroll === 'function') {
+      this.enableMessagesMediaAutoScroll(container);
+    }
     this.renderChat(highlightId);
 
     if (shouldStickToBottom) {
@@ -4651,12 +4660,56 @@ export class ChatAppMessagingMethods {
     return normalized.length > 0 && normalized.length <= 36;
   }
 
+  getPriorityChatImageUrls(chat = this.currentChat, limit = 4) {
+    const messages = Array.isArray(chat?.messages) ? chat.messages : [];
+    const urls = [];
+    for (let index = messages.length - 1; index >= 0 && urls.length < limit; index -= 1) {
+      const message = messages[index];
+      const imageUrl = this.normalizeAttachmentUrl(message?.imageUrl || '');
+      if (!imageUrl) continue;
+      urls.push(imageUrl);
+    }
+    return urls;
+  }
+
+  primeRecentChatImageUrls(chat = this.currentChat, limit = 4) {
+    const urls = this.getPriorityChatImageUrls(chat, limit);
+    this.priorityCurrentChatImageUrls = new Set(urls);
+    if (!urls.length) return urls;
+
+    if (!(this.preloadedChatImageUrls instanceof Set)) {
+      this.preloadedChatImageUrls = new Set();
+    }
+
+    urls.forEach((url, index) => {
+      if (!url || this.preloadedChatImageUrls.has(url)) return;
+      this.preloadedChatImageUrls.add(url);
+      const preloadImage = new Image();
+      try {
+        preloadImage.decoding = 'async';
+      } catch (_) {
+      }
+      try {
+        preloadImage.fetchPriority = index === 0 ? 'high' : 'auto';
+      } catch (_) {
+      }
+      preloadImage.src = url;
+    });
+
+    return urls;
+  }
+
   buildMessageBodyHtml(msg) {
     if (msg?.type === 'image' && msg.imageUrl) {
-      const safeUrl = this.escapeAttr(msg.imageUrl);
+      const normalizedUrl = this.normalizeAttachmentUrl(msg.imageUrl);
+      const safeUrl = this.escapeAttr(normalizedUrl);
+      const isPriorityImage = this.priorityCurrentChatImageUrls instanceof Set
+        && this.priorityCurrentChatImageUrls.has(normalizedUrl);
+      const loadingMode = isPriorityImage ? 'eager' : 'lazy';
+      const fetchPriority = isPriorityImage ? 'high' : 'auto';
       const caption = (msg.text || '').trim();
       const captionHtml = caption ? `<div class="message-image-caption">${this.formatMessageText(caption)}</div>` : '';
-      return `<img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="lazy" />${captionHtml}`;
+      return `<img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="async" />${captionHtml}`;
     }
     if (msg?.type === 'voice' && msg.audioUrl) {
       const safeUrl = this.escapeAttr(msg.audioUrl);

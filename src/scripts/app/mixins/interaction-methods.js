@@ -2293,6 +2293,9 @@ export class ChatAppInteractionMethods {
       this.stopActiveVoicePlayback();
     }
     this.currentChat = this.chats.find(c => c.id === chatId);
+    if (this.currentChat && typeof this.primeRecentChatImageUrls === 'function') {
+      this.primeRecentChatImageUrls(this.currentChat);
+    }
     if (this.currentChat && typeof this.markChatAsRead === 'function') {
       this.markChatAsRead(this.currentChat, { persist: true });
     }
