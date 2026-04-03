@@ -2830,7 +2830,7 @@ export class ChatAppMessagingMethods {
 
     const previousScrollTop = container.scrollTop;
     const previousScrollBottomGap = container.scrollHeight - container.clientHeight - previousScrollTop;
-    const shouldStickToBottom = forceScroll || previousScrollBottomGap <= 72;
+    const shouldStickToBottom = forceScroll || previousScrollBottomGap <= 140;
     let anchorMessageId = '';
     let anchorOffsetTop = 0;
     if (!shouldStickToBottom) {
@@ -3593,7 +3593,7 @@ export class ChatAppMessagingMethods {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer || !Array.isArray(appendedMessages) || !appendedMessages.length) return false;
 
-    const shouldStickToBottom = forceScroll || this.isMessagesNearBottom(messagesContainer, 72);
+    const shouldStickToBottom = forceScroll || this.isMessagesNearBottom(messagesContainer, 140);
     let previousMessage = Array.isArray(previousMessages) && previousMessages.length
       ? previousMessages[previousMessages.length - 1]
       : null;
