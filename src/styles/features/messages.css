@@ -337,6 +337,63 @@ html.dark-theme .message.other .message-content {
   min-width: 240px;
 }
 
+.message-content.has-file {
+  padding: 8px 10px;
+  min-width: min(240px, 100%);
+}
+
+.message-file {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.message-file:hover {
+  text-decoration: none;
+}
+
+.message-file:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary-color) 58%, #ffffff);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.message-file-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, #ffffff 16%, transparent);
+  color: currentColor;
+}
+
+.message.other .message-file-icon {
+  background: color-mix(in srgb, #000000 5%, #ffffff 52%);
+}
+
+.message-file-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.message-file-name {
+  display: block;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .message-voice {
   display: flex;
   align-items: center;

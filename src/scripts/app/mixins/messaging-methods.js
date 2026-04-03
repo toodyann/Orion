@@ -68,6 +68,17 @@ export class ChatAppMessagingMethods {
     return headers;
   }
 
+  normalizeAttachmentUrl(value = '') {
+    const normalized = String(value || '').trim();
+    if (!normalized) return '';
+    if (/^(?:https?:|data:|blob:)/i.test(normalized)) return normalized;
+    if (/^\/?(?:storage|upload|uploads)\//i.test(normalized)) {
+      const path = normalized.startsWith('/') ? normalized : `/${normalized}`;
+      return buildApiUrl(path);
+    }
+    return normalized;
+  }
+
   getSelfDeletedChatsMap() {
     const storageKey = this.getSelfDeletedChatsStorageKey();
     if (this.selfDeletedChatsStorageKey === storageKey && this.selfDeletedChatsMap && typeof this.selfDeletedChatsMap === 'object') {
@@ -2071,7 +2082,8 @@ export class ChatAppMessagingMethods {
     const text = String(message.text || '').trim();
     const imageUrl = String(message.imageUrl || '').trim();
     const audioUrl = String(message.audioUrl || '').trim();
-    return [type, text, imageUrl, audioUrl].join('|');
+    const fileUrl = String(message.fileUrl || message.attachmentUrl || '').trim();
+    return [type, text, imageUrl, audioUrl, fileUrl].join('|');
   }
 
   getMessagesVisualSignature(messages = []) {
@@ -2089,6 +2101,7 @@ export class ChatAppMessagingMethods {
           msg?.edited ? '1' : '0',
           String(msg?.imageUrl || ''),
           String(msg?.audioUrl || ''),
+          String(msg?.fileUrl || msg?.attachmentUrl || ''),
           String(msg?.replyTo?.from || ''),
           String(msg?.replyTo?.text || '')
         ].join(':');
@@ -2291,10 +2304,21 @@ export class ChatAppMessagingMethods {
 
         const content = item.content ?? item.text ?? item.message ?? '';
         const text = String(content ?? '');
-        const attachmentUrl = String(item.attachmentUrl ?? item.fileUrl ?? '').trim();
-        const imageUrl = String(item.imageUrl ?? '').trim() || attachmentUrl;
-        const audioUrl = String(item.audioUrl ?? '').trim();
+        const attachmentUrl = this.normalizeAttachmentUrl(item.attachmentUrl ?? item.fileUrl ?? '');
+        const rawImageUrl = this.normalizeAttachmentUrl(item.imageUrl ?? '');
+        const rawAudioUrl = this.normalizeAttachmentUrl(item.audioUrl ?? '');
         const attachmentMime = String(item.attachmentMimeType ?? item.mimeType ?? '').toLowerCase();
+        const fileName = String(item.fileName ?? item.filename ?? item.originalName ?? item.name ?? '').trim();
+        const imageUrl = rawImageUrl || (
+          attachmentMime.startsWith('image/')
+            ? attachmentUrl
+            : ''
+        );
+        const audioUrl = rawAudioUrl || (
+          attachmentMime.startsWith('audio/')
+            ? attachmentUrl
+            : ''
+        );
         let type = String(item.type ?? '').trim();
         const explicitEditedFlag = item.edited ?? item.isEdited ?? item.wasEdited;
         const serverEdited = explicitEditedFlag === true || explicitEditedFlag === 1 || explicitEditedFlag === 'true';
@@ -2304,6 +2328,8 @@ export class ChatAppMessagingMethods {
             type = 'voice';
           } else if (imageUrl && (attachmentMime.startsWith('image/') || /\.(png|jpe?g|gif|webp|avif|bmp|svg)$/i.test(imageUrl))) {
             type = 'image';
+          } else if (attachmentUrl) {
+            type = 'file';
           } else {
             type = 'text';
           }
@@ -2314,7 +2340,8 @@ export class ChatAppMessagingMethods {
             type,
             text,
             imageUrl: type === 'image' ? imageUrl : '',
-            audioUrl: type === 'voice' ? audioUrl : ''
+            audioUrl: type === 'voice' ? audioUrl : '',
+            fileUrl: type === 'file' ? attachmentUrl : ''
           });
           const candidates = pendingOwnCandidatesByKey.get(comparableKey) || [];
           let matchedCandidate = null;
@@ -2375,6 +2402,10 @@ export class ChatAppMessagingMethods {
           createdAt: String(item.createdAt ?? item.timestamp ?? item.date ?? matchedLocalMessage?.createdAt ?? '').trim(),
           imageUrl: type === 'image' ? imageUrl : '',
           audioUrl: type === 'voice' ? audioUrl : '',
+          fileUrl: type === 'file' ? attachmentUrl : '',
+          attachmentUrl,
+          fileName,
+          attachmentMimeType: attachmentMime,
           audioDuration: Number(item.audioDuration ?? item.duration ?? 0) || 0,
           edited: serverEdited || localEdited,
           replyTo: preservedReplyTo,
@@ -2995,6 +3026,219 @@ export class ChatAppMessagingMethods {
     throw new Error(bestError || lastError);
   }
 
+  extractUploadedAttachmentMeta(payload) {
+    const queue = [payload];
+    const visited = new Set();
+
+    while (queue.length) {
+      const current = queue.shift();
+      if (!current || typeof current !== 'object') continue;
+      if (visited.has(current)) continue;
+      visited.add(current);
+
+      const url = this.normalizeAttachmentUrl(
+        current.url
+        ?? current.fileUrl
+        ?? current.attachmentUrl
+        ?? current.imageUrl
+        ?? current.audioUrl
+        ?? current.path
+        ?? current.location
+        ?? ''
+      );
+      const fileName = String(
+        current.fileName
+        ?? current.filename
+        ?? current.originalName
+        ?? current.name
+        ?? ''
+      ).trim();
+      const mimeType = String(
+        current.mimeType
+        ?? current.attachmentMimeType
+        ?? current.contentType
+        ?? current.type
+        ?? ''
+      ).trim();
+      const size = Number(current.size ?? current.fileSize ?? current.bytes ?? 0) || 0;
+      if (url) {
+        return { url, fileName, mimeType, size };
+      }
+
+      const nested = [
+        current.data,
+        current.file,
+        current.upload,
+        current.result,
+        current.attachment
+      ];
+      nested.forEach((item) => {
+        if (item && typeof item === 'object') queue.push(item);
+      });
+    }
+
+    return { url: '', fileName: '', mimeType: '', size: 0 };
+  }
+
+  async uploadMessageAttachmentToServer(file, {
+    kind = 'file',
+    chat = null,
+    content = '',
+    replyToLocalId = null
+  } = {}) {
+    const uploadFile = file instanceof File
+      ? file
+      : new File([file], `attachment-${Date.now()}`, { type: file?.type || 'application/octet-stream' });
+    const chatServerId = this.resolveChatServerId(chat);
+    const replyToServerId = chat
+      ? this.getServerMessageIdByLocalId(chat, replyToLocalId)
+      : '';
+    const errorMessages = [];
+
+    if (chatServerId) {
+      try {
+        const formData = new FormData();
+        formData.append('file', uploadFile, uploadFile.name);
+        formData.append('chatId', chatServerId);
+        if (typeof content === 'string' && content.trim()) {
+          formData.append('content', content.trim());
+        }
+        if (replyToServerId) {
+          formData.append('replyToId', replyToServerId);
+        }
+
+        const response = await fetch(buildApiUrl('/messages/upload'), {
+          method: 'POST',
+          headers: this.getApiHeaders(),
+          body: formData
+        });
+        const data = await this.readJsonSafe(response);
+        if (response.ok) {
+          const meta = this.extractUploadedAttachmentMeta(data);
+          return {
+            ...meta,
+            fileName: meta.fileName || uploadFile.name,
+            mimeType: meta.mimeType || uploadFile.type || '',
+            createdMessage: data || {}
+          };
+        }
+        errorMessages.push(`/messages/upload [file]: ${this.getRequestErrorMessage(data, 'Не вдалося завантажити файл.')}`);
+      } catch (error) {
+        errorMessages.push(`/messages/upload [file]: ${String(error?.message || 'upload failed')}`);
+      }
+    }
+
+    if (kind === 'image') {
+      try {
+        const formData = new FormData();
+        formData.append('file', uploadFile, uploadFile.name);
+        formData.append('kind', 'message');
+        const response = await fetch(buildApiUrl('/storage/upload'), {
+          method: 'POST',
+          headers: this.getApiHeaders(),
+          body: formData
+        });
+        const data = await this.readJsonSafe(response);
+        if (response.ok) {
+          const meta = this.extractUploadedAttachmentMeta(data);
+          if (meta.url) {
+            return {
+              ...meta,
+              fileName: meta.fileName || uploadFile.name,
+              mimeType: meta.mimeType || uploadFile.type || ''
+            };
+          }
+        }
+        errorMessages.push(`/storage/upload [file]: ${this.getRequestErrorMessage(data, 'Не вдалося завантажити зображення.')}`);
+      } catch (error) {
+        errorMessages.push(`/storage/upload [file]: ${String(error?.message || 'upload failed')}`);
+      }
+    }
+
+    const preferredError = errorMessages.find((message) => !/unexpected field/i.test(message))
+      || errorMessages[0]
+      || 'Не вдалося завантажити файл.';
+    throw new Error(preferredError);
+  }
+
+  async sendAttachmentMessageToServer(chat, attachment, { replyToLocalId = null } = {}) {
+    const userId = this.getAuthUserId();
+    if (!userId) {
+      throw new Error('Не знайдено X-User-Id у сесії. Увійдіть у акаунт ще раз.');
+    }
+
+    const chatServerId = this.resolveChatServerId(chat);
+    if (!chatServerId) {
+      throw new Error('Не вдалося визначити чат для надсилання вкладення.');
+    }
+
+    const attachmentUrl = this.normalizeAttachmentUrl(attachment?.url || attachment?.attachmentUrl || attachment?.fileUrl);
+    if (!attachmentUrl) {
+      throw new Error('Сервер не повернув URL завантаженого файла.');
+    }
+
+    const type = String(attachment?.type || 'file').trim() || 'file';
+    const mimeType = String(attachment?.mimeType || '').trim();
+    const fileName = String(attachment?.fileName || attachment?.name || '').trim();
+    const duration = Number(attachment?.audioDuration || 0) || 0;
+    const basePayload = { chatId: chatServerId };
+    const replyToServerId = this.getServerMessageIdByLocalId(chat, replyToLocalId);
+    if (replyToServerId) {
+      basePayload.replyToId = replyToServerId;
+    }
+
+    const attempts = [];
+    if (type === 'image') {
+      attempts.push(
+        { endpoint: '/messages', payload: { ...basePayload, type: 'image', imageUrl: attachmentUrl, attachmentUrl, mimeType, fileName, content: '' } },
+        { endpoint: '/messages', payload: { ...basePayload, imageUrl: attachmentUrl, mimeType, fileName, text: '' } },
+        { endpoint: '/messages', payload: { ...basePayload, attachmentUrl, attachmentMimeType: mimeType, fileName, type: 'image' } }
+      );
+    } else if (type === 'voice') {
+      attempts.push(
+        { endpoint: '/messages', payload: { ...basePayload, type: 'voice', audioUrl: attachmentUrl, attachmentUrl, mimeType, fileName, audioDuration: duration, content: '' } },
+        { endpoint: '/messages', payload: { ...basePayload, audioUrl: attachmentUrl, mimeType, fileName, duration, text: '' } },
+        { endpoint: '/messages', payload: { ...basePayload, attachmentUrl, attachmentMimeType: mimeType, fileName, type: 'voice', audioDuration: duration } }
+      );
+    } else {
+      attempts.push(
+        { endpoint: '/messages', payload: { ...basePayload, type: 'file', attachmentUrl, fileUrl: attachmentUrl, mimeType, attachmentMimeType: mimeType, fileName, text: fileName } },
+        { endpoint: '/messages', payload: { ...basePayload, fileUrl: attachmentUrl, mimeType, fileName, content: fileName } },
+        { endpoint: '/messages', payload: { ...basePayload, attachmentUrl, attachmentMimeType: mimeType, fileName, message: fileName } }
+      );
+    }
+
+    let lastError = 'Не вдалося надіслати вкладення.';
+    let bestError = '';
+
+    for (const attempt of attempts) {
+      const response = await fetch(buildApiUrl(attempt.endpoint), {
+        method: 'POST',
+        headers: this.getApiHeaders({ json: true }),
+        body: JSON.stringify(attempt.payload)
+      });
+      const data = await this.readJsonSafe(response);
+
+      if (response.ok) {
+        return data || {};
+      }
+
+      const message = this.getRequestErrorMessage(data, lastError);
+      lastError = `HTTP ${response.status}: ${message}`;
+      if (!bestError || (response.status !== 404 && response.status !== 405)) {
+        bestError = lastError;
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(bestError || lastError);
+      }
+      if (response.status === 404 || response.status === 405) {
+        continue;
+      }
+    }
+
+    throw new Error(bestError || lastError);
+  }
+
   async updateMessageOnServer(chat, message, text) {
     const chatServerId = this.resolveChatServerId(chat);
     const messageServerId = String(message?.serverId ?? '').trim();
@@ -3152,6 +3396,9 @@ export class ChatAppMessagingMethods {
     if (!messagesContainer || !this.currentChat) return;
     messagesContainer.classList.remove('no-content');
     messagesContainer.classList.add('has-content');
+    if (typeof this.enableMessagesMediaAutoScroll === 'function') {
+      this.enableMessagesMediaAutoScroll(messagesContainer);
+    }
 
     const messageEl = document.createElement('div');
     const highlightTokens = String(highlightClass || '')
@@ -3191,8 +3438,9 @@ export class ChatAppMessagingMethods {
     
     const editedLabel = msg.edited ? '<span class="message-edited">редаговано</span>' : '';
     const editedClass = msg.edited ? ' edited' : '';
-    const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
-    const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
+      const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
+      const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
+      const fileClass = msg.type === 'file' && (msg.fileUrl || msg.attachmentUrl || msg.documentUrl || msg.fileName) ? ' has-file' : '';
     const hasInlineMeta = this.shouldInlineMessageMeta(msg);
     const inlineMetaClass = hasInlineMeta ? ' inline-meta' : '';
     const tailClass = hasInlineMeta ? ' with-tail' : '';
@@ -3207,7 +3455,7 @@ export class ChatAppMessagingMethods {
       ${avatarHtml}
       <div class="message-bubble">
         ${senderNameHtml}
-        <div class="message-content${editedClass}${imageClass}${voiceClass}${inlineMetaClass}${tailClass}">
+          <div class="message-content${editedClass}${imageClass}${voiceClass}${fileClass}${inlineMetaClass}${tailClass}">
           ${replyHtml}
           ${this.buildMessageBodyHtml(msg)}
           <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}</span>
@@ -3218,6 +3466,40 @@ export class ChatAppMessagingMethods {
     this.initMessageImageTransitions(messageEl);
     this.initVoiceMessageElements(messageEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  enableMessagesMediaAutoScroll(messagesContainer, ttlMs = 1600) {
+    if (!messagesContainer) return;
+    messagesContainer.dataset.mediaAutoScroll = 'true';
+    if (this.messagesMediaAutoScrollTimer) {
+      clearTimeout(this.messagesMediaAutoScrollTimer);
+    }
+    this.messagesMediaAutoScrollTimer = window.setTimeout(() => {
+      const currentContainer = document.getElementById('messagesContainer');
+      if (currentContainer) {
+        delete currentContainer.dataset.mediaAutoScroll;
+      }
+      this.messagesMediaAutoScrollTimer = null;
+    }, Math.max(600, Number(ttlMs) || 1600));
+  }
+
+  syncMessagesContainerToBottom(messagesContainer, { smooth = false } = {}) {
+    if (!messagesContainer) return;
+    const applyScroll = () => {
+      if (smooth && typeof messagesContainer.scrollTo === 'function') {
+        messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: 'smooth' });
+      } else {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    };
+
+    applyScroll();
+    window.requestAnimationFrame(() => {
+      applyScroll();
+      if (typeof this.updateMessagesScrollBottomButtonVisibility === 'function') {
+        this.updateMessagesScrollBottomButtonVisibility();
+      }
+    });
   }
 
   getMessageAnimationIdentity(msg) {
@@ -3239,6 +3521,8 @@ export class ChatAppMessagingMethods {
     const time = String(msg.time || '');
     const imageUrl = String(msg.imageUrl || '').trim();
     const audioUrl = String(msg.audioUrl || '').trim();
+    const fileUrl = String(msg.fileUrl || msg.attachmentUrl || '').trim();
+    const fileName = String(msg.fileName || '').trim();
     const replyText = String(msg.replyTo?.text || '').trim().slice(0, 80);
     const fallbackKey = [
       'fp',
@@ -3250,6 +3534,8 @@ export class ChatAppMessagingMethods {
       time,
       imageUrl,
       audioUrl,
+      fileUrl,
+      fileName,
       replyText
     ].join('|');
 
@@ -3290,6 +3576,9 @@ export class ChatAppMessagingMethods {
     if (msg.type === 'voice' && msg.audioUrl) {
       return 'Голосове повідомлення';
     }
+    if (msg.type === 'file' && (msg.fileUrl || msg.attachmentUrl || msg.fileName)) {
+      return String(msg.fileName || msg.text || 'Файл').trim() || 'Файл';
+    }
     const text = (msg.text || '').trim();
     return text || 'Немає повідомлень';
   }
@@ -3301,6 +3590,9 @@ export class ChatAppMessagingMethods {
     }
     if (msg.type === 'voice' && msg.audioUrl) {
       return 'Голосове повідомлення';
+    }
+    if (msg.type === 'file' && (msg.fileUrl || msg.attachmentUrl || msg.fileName)) {
+      return String(msg.fileName || msg.text || 'Файл');
     }
     return msg.text || '';
   }
@@ -3467,7 +3759,11 @@ export class ChatAppMessagingMethods {
 
     const elapsedMs = startedAt > 0 ? (Date.now() - startedAt) : 0;
     const durationSeconds = Math.max(1, Math.round(elapsedMs / 1000));
-    this.sendVoiceMessage(audioUrl, durationSeconds);
+    const extension = blob.type.includes('ogg') ? 'ogg' : 'webm';
+    const voiceFile = new File([blob], `voice-${Date.now()}.${extension}`, {
+      type: blob.type || 'audio/webm'
+    });
+    this.sendVoiceMessage(voiceFile, audioUrl, durationSeconds);
   }
 
   blobToDataUrl(blob) {
@@ -3843,8 +4139,12 @@ export class ChatAppMessagingMethods {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, width, height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    this.sendImageMessage(dataUrl);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const previewUrl = canvas.toDataURL('image/jpeg', 0.9);
+      const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      this.sendImageMessage(file, previewUrl);
+    }, 'image/jpeg', 0.9);
     this.closeCameraCapture();
   }
 
@@ -3852,7 +4152,14 @@ export class ChatAppMessagingMethods {
     const input = event?.target;
     const file = input?.files?.[0];
     if (!file || !this.currentChat) return;
-    if (!file.type.startsWith('image/')) {
+    const isImage = file.type.startsWith('image/');
+    const isFilePicker = String(input?.id || '') === 'filePickerInput';
+    if (isFilePicker && !isImage) {
+      this.sendFileMessage(file);
+      input.value = '';
+      return;
+    }
+    if (!isImage) {
       this.showAlert('Оберіть файл зображення');
       input.value = '';
       return;
@@ -3862,7 +4169,7 @@ export class ChatAppMessagingMethods {
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : '';
       if (result) {
-        this.sendImageMessage(result);
+        this.sendImageMessage(file, result);
       }
       input.value = '';
     };
@@ -3873,24 +4180,28 @@ export class ChatAppMessagingMethods {
     reader.readAsDataURL(file);
   }
 
-  sendImageMessage(imageUrl) {
-    if (!imageUrl || !this.currentChat) return;
+  async sendImageMessage(file, previewUrl = '') {
+    if (!file || !this.currentChat) return;
     const input = document.getElementById('messageInput');
     const now = new Date();
     const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
     const newMessage = {
       id: this.getNextMessageId(this.currentChat),
+      serverId: null,
       text: '',
       type: 'image',
-      imageUrl,
+      imageUrl: previewUrl,
       from: 'own',
       time,
       date: now.toISOString().slice(0, 10),
+      createdAt: now.toISOString(),
+      pending: true,
       replyTo: this.replyTarget
         ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
         : null
     };
+    const restoreReplyTarget = newMessage.replyTo ? { ...newMessage.replyTo } : null;
 
     this.currentChat.messages.push(newMessage);
     this.saveChats();
@@ -3905,27 +4216,73 @@ export class ChatAppMessagingMethods {
     if (input && window.innerWidth <= 900) {
       input.focus({ preventScroll: true });
     }
+
+    try {
+      if (!this.currentChat.isGroup && this.currentChat.participantId) {
+        await this.ensurePrivateChatParticipantJoined(this.currentChat);
+      }
+      const uploaded = await this.uploadMessageAttachmentToServer(file, {
+        kind: 'image',
+        chat: this.currentChat,
+        replyToLocalId: restoreReplyTarget?.id ?? null
+      });
+      const sendResponse = uploaded.createdMessage
+        ? uploaded.createdMessage
+        : await this.sendAttachmentMessageToServer(this.currentChat, {
+          ...uploaded,
+          type: 'image'
+        }, {
+          replyToLocalId: restoreReplyTarget?.id ?? null
+        });
+      const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(newMessage.id));
+      if (optimisticCurrent) {
+        optimisticCurrent.imageUrl = uploaded.url || optimisticCurrent.imageUrl;
+        optimisticCurrent.serverId = this.extractServerMessageIdFromPayload(sendResponse) || optimisticCurrent.serverId;
+        optimisticCurrent.pending = true;
+      }
+      this.saveChats();
+      this.renderChatsList();
+      window.setTimeout(() => {
+        this.syncCurrentChatMessagesFromServer({ forceScroll: false, highlightOwn: false }).catch(() => {});
+      }, 900);
+    } catch (error) {
+      const rollbackIndex = this.currentChat.messages.findIndex((item) => Number(item?.id) === Number(newMessage.id) && !item?.serverId);
+      if (rollbackIndex !== -1) {
+        this.currentChat.messages.splice(rollbackIndex, 1);
+      }
+      this.saveChats();
+      this.renderChat();
+      this.renderChatsList();
+      if (restoreReplyTarget) {
+        this.setReplyTarget(restoreReplyTarget);
+      }
+      await this.showAlert(error?.message || 'Не вдалося надіслати фото.');
+    }
   }
 
-  sendVoiceMessage(audioUrl, durationSeconds = 0) {
-    if (!audioUrl || !this.currentChat) return;
+  async sendVoiceMessage(file, previewUrl, durationSeconds = 0) {
+    if (!file || !previewUrl || !this.currentChat) return;
     const input = document.getElementById('messageInput');
     const now = new Date();
     const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
     const newMessage = {
       id: this.getNextMessageId(this.currentChat),
+      serverId: null,
       text: '',
       type: 'voice',
-      audioUrl,
+      audioUrl: previewUrl,
       audioDuration: Math.max(0, Number(durationSeconds) || 0),
       from: 'own',
       time,
       date: now.toISOString().slice(0, 10),
+      createdAt: now.toISOString(),
+      pending: true,
       replyTo: this.replyTarget
         ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
         : null
     };
+    const restoreReplyTarget = newMessage.replyTo ? { ...newMessage.replyTo } : null;
 
     this.currentChat.messages.push(newMessage);
     this.saveChats();
@@ -3939,6 +4296,135 @@ export class ChatAppMessagingMethods {
 
     if (input && window.innerWidth <= 900) {
       input.focus({ preventScroll: true });
+    }
+
+    try {
+      if (!this.currentChat.isGroup && this.currentChat.participantId) {
+        await this.ensurePrivateChatParticipantJoined(this.currentChat);
+      }
+      const uploaded = await this.uploadMessageAttachmentToServer(file, {
+        kind: 'voice',
+        chat: this.currentChat,
+        replyToLocalId: restoreReplyTarget?.id ?? null
+      });
+      const sendResponse = uploaded.createdMessage
+        ? uploaded.createdMessage
+        : await this.sendAttachmentMessageToServer(this.currentChat, {
+          ...uploaded,
+          type: 'voice',
+          audioDuration: Math.max(0, Number(durationSeconds) || 0)
+        }, {
+          replyToLocalId: restoreReplyTarget?.id ?? null
+        });
+      const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(newMessage.id));
+      if (optimisticCurrent) {
+        optimisticCurrent.audioUrl = uploaded.url || optimisticCurrent.audioUrl;
+        optimisticCurrent.serverId = this.extractServerMessageIdFromPayload(sendResponse) || optimisticCurrent.serverId;
+        optimisticCurrent.pending = true;
+      }
+      this.saveChats();
+      this.renderChatsList();
+      window.setTimeout(() => {
+        this.syncCurrentChatMessagesFromServer({ forceScroll: false, highlightOwn: false }).catch(() => {});
+      }, 900);
+    } catch (error) {
+      const rollbackIndex = this.currentChat.messages.findIndex((item) => Number(item?.id) === Number(newMessage.id) && !item?.serverId);
+      if (rollbackIndex !== -1) {
+        this.currentChat.messages.splice(rollbackIndex, 1);
+      }
+      this.saveChats();
+      this.renderChat();
+      this.renderChatsList();
+      if (restoreReplyTarget) {
+        this.setReplyTarget(restoreReplyTarget);
+      }
+      await this.showAlert(error?.message || 'Не вдалося надіслати голосове повідомлення.');
+    }
+  }
+
+  async sendFileMessage(file) {
+    if (!(file instanceof File) || !this.currentChat) return;
+    const input = document.getElementById('messageInput');
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const newMessage = {
+      id: this.getNextMessageId(this.currentChat),
+      serverId: null,
+      text: file.name || 'Файл',
+      type: 'file',
+      fileUrl: '',
+      attachmentUrl: '',
+      fileName: file.name || 'Файл',
+      attachmentMimeType: file.type || '',
+      from: 'own',
+      time,
+      date: now.toISOString().slice(0, 10),
+      createdAt: now.toISOString(),
+      pending: true,
+      replyTo: this.replyTarget
+        ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
+        : null
+    };
+    const restoreReplyTarget = newMessage.replyTo ? { ...newMessage.replyTo } : null;
+
+    this.currentChat.messages.push(newMessage);
+    this.saveChats();
+    this.clearReplyTarget();
+    if (this.currentChat.messages.length === 1) {
+      this.renderChat(newMessage.id);
+    } else {
+      this.appendMessage(newMessage, ' new-message');
+    }
+    this.renderChatsList();
+
+    if (input && window.innerWidth <= 900) {
+      input.focus({ preventScroll: true });
+    }
+
+    try {
+      if (!this.currentChat.isGroup && this.currentChat.participantId) {
+        await this.ensurePrivateChatParticipantJoined(this.currentChat);
+      }
+      const uploaded = await this.uploadMessageAttachmentToServer(file, {
+        kind: 'file',
+        chat: this.currentChat,
+        content: file.name || '',
+        replyToLocalId: restoreReplyTarget?.id ?? null
+      });
+      const sendResponse = uploaded.createdMessage
+        ? uploaded.createdMessage
+        : await this.sendAttachmentMessageToServer(this.currentChat, {
+          ...uploaded,
+          type: 'file'
+        }, {
+          replyToLocalId: restoreReplyTarget?.id ?? null
+        });
+      const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(newMessage.id));
+      if (optimisticCurrent) {
+        optimisticCurrent.fileUrl = uploaded.url || '';
+        optimisticCurrent.attachmentUrl = uploaded.url || '';
+        optimisticCurrent.fileName = uploaded.fileName || optimisticCurrent.fileName;
+        optimisticCurrent.attachmentMimeType = uploaded.mimeType || optimisticCurrent.attachmentMimeType;
+        optimisticCurrent.serverId = this.extractServerMessageIdFromPayload(sendResponse) || optimisticCurrent.serverId;
+        optimisticCurrent.pending = true;
+      }
+      this.saveChats();
+      this.renderChatsList();
+      window.setTimeout(() => {
+        this.syncCurrentChatMessagesFromServer({ forceScroll: false, highlightOwn: false }).catch(() => {});
+      }, 900);
+    } catch (error) {
+      const rollbackIndex = this.currentChat.messages.findIndex((item) => Number(item?.id) === Number(newMessage.id) && !item?.serverId);
+      if (rollbackIndex !== -1) {
+        this.currentChat.messages.splice(rollbackIndex, 1);
+      }
+      this.saveChats();
+      this.renderChat();
+      this.renderChatsList();
+      if (restoreReplyTarget) {
+        this.setReplyTarget(restoreReplyTarget);
+      }
+      await this.showAlert(error?.message || 'Не вдалося надіслати файл.');
     }
   }
 
@@ -4199,6 +4685,20 @@ export class ChatAppMessagingMethods {
         </div>
       `;
     }
+    if (msg?.type === 'file' && (msg.fileUrl || msg.attachmentUrl || msg.documentUrl || msg.fileName)) {
+      const fileSrc = this.escapeAttr(String(msg.fileUrl || msg.attachmentUrl || msg.documentUrl || ''));
+      const fileName = this.escapeHtml(String(msg.fileName || msg.text || 'Файл'));
+      return `
+        <a class="message-file" href="${fileSrc}" target="_blank" rel="noopener noreferrer">
+          <span class="message-file-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+              <path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"></path>
+            </svg>
+          </span>
+          <span class="message-file-name">${fileName}</span>
+        </a>
+      `;
+    }
     return `<div class="message-text">${this.formatMessageText(msg?.text || '')}</div>`;
   }
 
@@ -4341,8 +4841,19 @@ export class ChatAppMessagingMethods {
     images.forEach((img) => {
       if (img.dataset.ready === 'true') return;
       const markLoaded = () => {
+        const messagesContainer = document.getElementById('messagesContainer');
+        const shouldStickToBottom = Boolean(
+          messagesContainer
+          && (
+            messagesContainer.dataset.mediaAutoScroll === 'true'
+            || (typeof this.isMessagesNearBottom === 'function' && this.isMessagesNearBottom(messagesContainer, 160))
+          )
+        );
         img.classList.add('is-loaded');
         img.dataset.ready = 'true';
+        if (shouldStickToBottom && typeof this.syncMessagesContainerToBottom === 'function') {
+          this.syncMessagesContainerToBottom(messagesContainer);
+        }
       };
       if (img.complete && img.naturalWidth > 0) {
         markLoaded();

@@ -2753,10 +2753,17 @@ export class ChatAppInteractionMethods {
     this.skipNextRenderChatAutoScroll = false;
 
     if (shouldAutoScroll) {
+      if (typeof this.enableMessagesMediaAutoScroll === 'function') {
+        this.enableMessagesMediaAutoScroll(messagesContainer);
+      }
       // Auto-scroll to bottom
       setTimeout(() => {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        this.updateMessagesScrollBottomButtonVisibility();
+        if (typeof this.syncMessagesContainerToBottom === 'function') {
+          this.syncMessagesContainerToBottom(messagesContainer);
+        } else {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          this.updateMessagesScrollBottomButtonVisibility();
+        }
       }, 0);
       return;
     }
