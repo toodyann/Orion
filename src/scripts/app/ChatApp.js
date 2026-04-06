@@ -75,6 +75,8 @@ export class ChatApp {
     this.lastSendDispatchAt = 0;
     this.lastSendTriggerSource = '';
     this.messagesBottomSyncTimers = [];
+    this.mediaRetryDrafts = new Map();
+    this.managedObjectUrls = new Set();
     this.loadTheme();
     this.profileMenuPlaceholder = null;
     this.init();

@@ -1336,6 +1336,9 @@ export class ChatAppCoreMethods {
 
         return {
           ...chat,
+          messages: Array.isArray(chat.messages)
+            ? chat.messages.filter((message) => message?.transientMediaDraft !== true)
+            : [],
           isGroup,
           participantId: participantId || null
         };
@@ -1345,7 +1348,27 @@ export class ChatAppCoreMethods {
   }
 
   saveChats() {
-    localStorage.setItem(this.getChatsStorageKey(), JSON.stringify(this.chats));
+    const sanitizedChats = Array.isArray(this.chats)
+      ? this.chats.map((chat) => {
+        if (!chat || typeof chat !== 'object') return chat;
+        const messages = Array.isArray(chat.messages) ? chat.messages : [];
+        const sanitizedMessages = messages
+          .filter((message) => message?.transientMediaDraft !== true)
+          .map((message) => {
+            if (!message || typeof message !== 'object') return message;
+            const nextMessage = { ...message };
+            delete nextMessage.transientMediaDraft;
+            delete nextMessage.failed;
+            delete nextMessage.mediaErrorMessage;
+            return nextMessage;
+          });
+        return {
+          ...chat,
+          messages: sanitizedMessages
+        };
+      })
+      : [];
+    localStorage.setItem(this.getChatsStorageKey(), JSON.stringify(sanitizedChats));
   }
 
   setupModalEnterHandlers() {

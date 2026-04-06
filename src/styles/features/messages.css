@@ -338,6 +338,42 @@ html.dark-theme .message.other .message-content {
   padding: 0 6px;
 }
 
+.message-media-failure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 0 6px;
+}
+
+.message-media-failure-text {
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.88;
+}
+
+.message-media-retry {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.message-media-retry:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.message-media-retry:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary-color) 58%, #ffffff);
+  outline-offset: 2px;
+}
+
 .message-content.has-voice {
   padding: 8px 10px;
   min-width: 240px;
@@ -614,6 +650,13 @@ html.dark-theme .message.other .message-content {
   fill: currentColor;
 }
 
+.message-meta .message-status .message-status-failed {
+  width: 13px;
+  height: 13px;
+  display: block;
+  fill: currentColor;
+}
+
 .message-meta .message-status.read .message-status-check + .message-status-check {
   margin-left: -8px;
 }
@@ -626,6 +669,18 @@ html.dark-theme .message.other .message-content {
 .message.own .message-meta .message-edited,
 .message.own .message-meta .message-status {
   color: color-mix(in srgb, #ffffff 84%, transparent);
+}
+
+.message.own[data-failed="true"] .message-meta .message-status,
+.message.own[data-failed="true"] .message-media-failure-text,
+.message.own[data-failed="true"] .message-media-retry {
+  color: #ffe2e2;
+}
+
+.message.other[data-failed="true"] .message-meta .message-status,
+.message.other[data-failed="true"] .message-media-failure-text,
+.message.other[data-failed="true"] .message-media-retry {
+  color: #b42318;
 }
 
 .message-meta .message-edited {

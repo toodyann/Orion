@@ -846,6 +846,7 @@ export class ChatAppInteractionMethods {
       }
     });
     this.setupImageViewerEvents();
+    this.setupMessageMediaRetryEvents();
     this.setupVoiceMessageEvents();
 
     document.getElementById('searchInput').addEventListener('input', (e) => this.filterChats(e.target.value));
@@ -2752,6 +2753,7 @@ export class ChatAppInteractionMethods {
       messageEl.dataset.time = msg.time || '';
       messageEl.dataset.editable = String(this.isTextMessageEditable(msg));
       messageEl.dataset.pending = msg?.pending === true ? 'true' : 'false';
+      messageEl.dataset.failed = msg?.failed === true ? 'true' : 'false';
       
       let avatarHtml = '';
       let senderNameHtml = '';
@@ -2774,6 +2776,7 @@ export class ChatAppInteractionMethods {
       const editedClass = msg.edited ? ' edited' : '';
       const imageClass = msg.type === 'image' && msg.imageUrl ? ' has-image' : '';
       const voiceClass = msg.type === 'voice' && msg.audioUrl ? ' has-voice' : '';
+      const fileClass = msg.type === 'file' && (msg.fileUrl || msg.attachmentUrl || msg.documentUrl || msg.fileName) ? ' has-file' : '';
       const hasInlineMeta = this.shouldInlineMessageMeta(msg);
       const inlineMetaClass = hasInlineMeta ? ' inline-meta' : '';
       const tailClass = typeof this.shouldShowMessageTail === 'function' && this.shouldShowMessageTail(msg, {
@@ -2793,7 +2796,7 @@ export class ChatAppInteractionMethods {
         ${avatarHtml}
         <div class="message-bubble">
           ${senderNameHtml}
-          <div class="message-content${editedClass}${imageClass}${voiceClass}${inlineMetaClass}${tailClass}">
+          <div class="message-content${editedClass}${imageClass}${voiceClass}${fileClass}${inlineMetaClass}${tailClass}">
             ${replyHtml}
             ${this.buildMessageBodyHtml(msg)}
             <span class="message-meta"><span class="message-time">${msg.time || ''}</span>${editedLabel}${deliveryStatus}</span>
@@ -3889,6 +3892,9 @@ export class ChatAppInteractionMethods {
     if (!this.currentChat) return;
     const idx = this.currentChat.messages.findIndex(m => m.id === messageId);
     if (idx === -1) return;
+    if (typeof this.releaseMediaRetryDraft === 'function') {
+      this.releaseMediaRetryDraft(messageId, { revokePreview: true });
+    }
     this.currentChat.messages.splice(idx, 1);
     this.saveChats();
     this.renderChat();
@@ -3922,6 +3928,9 @@ export class ChatAppInteractionMethods {
       this.markMessageDeletedForSelf(this.currentChat, targetMessage);
     }
 
+    if (typeof this.releaseMediaRetryDraft === 'function') {
+      this.releaseMediaRetryDraft(messageId, { revokePreview: true });
+    }
     this.currentChat.messages.splice(idx, 1);
     if (Number(this.editingMessageId) === Number(messageId)) {
       this.editingMessageId = null;

@@ -92,12 +92,95 @@ export class ChatAppMessagingMethods {
       .filter(Boolean);
   }
 
+  ensureMediaRetryDraftStore() {
+    if (!(this.mediaRetryDrafts instanceof Map)) {
+      this.mediaRetryDrafts = new Map();
+    }
+    if (!(this.managedObjectUrls instanceof Set)) {
+      this.managedObjectUrls = new Set();
+    }
+  }
+
+  createManagedObjectUrl(source) {
+    if (!source || typeof URL?.createObjectURL !== 'function') return '';
+    try {
+      const objectUrl = URL.createObjectURL(source);
+      if (objectUrl) {
+        this.ensureMediaRetryDraftStore();
+        this.managedObjectUrls.add(objectUrl);
+      }
+      return objectUrl;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  revokeManagedObjectUrl(url) {
+    const safeUrl = String(url || '').trim();
+    if (!safeUrl || !/^blob:/i.test(safeUrl)) return;
+    if (typeof URL?.revokeObjectURL === 'function') {
+      try {
+        URL.revokeObjectURL(safeUrl);
+      } catch (_) {
+      }
+    }
+    if (this.managedObjectUrls instanceof Set) {
+      this.managedObjectUrls.delete(safeUrl);
+    }
+  }
+
+  storeMediaRetryDraft(messageId, draft = {}) {
+    const safeId = Number(messageId);
+    if (!Number.isFinite(safeId) || safeId <= 0) return;
+    this.ensureMediaRetryDraftStore();
+    this.mediaRetryDrafts.set(safeId, {
+      kind: String(draft.kind || 'file').trim() || 'file',
+      file: draft.file instanceof File ? draft.file : null,
+      previewUrl: String(draft.previewUrl || '').trim(),
+      durationSeconds: Math.max(0, Number(draft.durationSeconds) || 0)
+    });
+  }
+
+  getMediaRetryDraft(messageId) {
+    const safeId = Number(messageId);
+    if (!Number.isFinite(safeId) || safeId <= 0) return null;
+    this.ensureMediaRetryDraftStore();
+    return this.mediaRetryDrafts.get(safeId) || null;
+  }
+
+  releaseMediaRetryDraft(messageId, { revokePreview = true } = {}) {
+    const safeId = Number(messageId);
+    if (!Number.isFinite(safeId) || safeId <= 0) return;
+    const draft = this.getMediaRetryDraft(safeId);
+    if (draft?.previewUrl && revokePreview) {
+      this.revokeManagedObjectUrl(draft.previewUrl);
+    }
+    if (this.mediaRetryDrafts instanceof Map) {
+      this.mediaRetryDrafts.delete(safeId);
+    }
+  }
+
+  getMessageStatusFailedSvg() {
+    return '<svg class="message-status-failed" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path d="M128,24A104,104,0,1,0,232,128,104.12,104.12,0,0,0,128,24Zm0,144a12,12,0,1,1,12-12A12,12,0,0,1,128,168Zm8-48a8,8,0,0,1-16,0V80a8,8,0,0,1,16,0Z"></path></svg>';
+  }
+
+  getRetryableMediaTypes() {
+    return new Set(['image', 'voice', 'file']);
+  }
+
+  isRetryableMediaMessage(message) {
+    if (!message || typeof message !== 'object') return false;
+    if (message.from !== 'own' || message.failed !== true) return false;
+    return this.getRetryableMediaTypes().has(String(message.type || '').trim());
+  }
+
   getMessageStatusCheckSvg() {
     return '<svg class="message-status-check" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>';
   }
 
   getMessageDeliveryState(message) {
     if (!message || message.from !== 'own') return '';
+    if (message.failed === true) return 'failed';
     if (message.pending === true) return '';
 
     const selfId = this.getAuthUserId();
@@ -111,6 +194,9 @@ export class ChatAppMessagingMethods {
   getMessageDeliveryStatusHtml(message) {
     const state = this.getMessageDeliveryState(message);
     if (!state) return '';
+    if (state === 'failed') {
+      return `<span class="message-status failed" aria-label="Помилка надсилання">${this.getMessageStatusFailedSvg()}</span>`;
+    }
     const checkSvg = this.getMessageStatusCheckSvg();
     const ariaLabel = state === 'read' ? 'Прочитано' : 'Надіслано';
     return `<span class="message-status ${state}" aria-label="${ariaLabel}">${checkSvg}${state === 'read' ? checkSvg : ''}</span>`;
@@ -125,7 +211,7 @@ export class ChatAppMessagingMethods {
           .join(',');
         return [
           String(msg?.serverId || msg?.id || ''),
-          msg?.pending === true ? 'pending' : 'done',
+          msg?.failed === true ? 'failed' : (msg?.pending === true ? 'pending' : 'done'),
           readBy
         ].join(':');
       })
@@ -156,6 +242,7 @@ export class ChatAppMessagingMethods {
       const messageEl = document.querySelector(`.message[data-id="${CSS.escape(safeId)}"]`);
       if (!messageEl) return;
       messageEl.dataset.pending = message?.pending === true ? 'true' : 'false';
+      messageEl.dataset.failed = message?.failed === true ? 'true' : 'false';
       const metaEl = messageEl.querySelector('.message-meta');
       if (!metaEl) return;
       const editedLabel = message?.edited ? '<span class="message-edited">редаговано</span>' : '';
@@ -4057,6 +4144,7 @@ export class ChatAppMessagingMethods {
     messageEl.dataset.time = msg.time || '';
     messageEl.dataset.editable = String(this.isTextMessageEditable(msg));
     messageEl.dataset.pending = msg?.pending === true ? 'true' : 'false';
+    messageEl.dataset.failed = msg?.failed === true ? 'true' : 'false';
     
     let avatarHtml = '';
     let senderNameHtml = '';
@@ -4924,6 +5012,341 @@ export class ChatAppMessagingMethods {
     await this.openCameraCapture();
   }
 
+  async loadImageElementFromFile(file) {
+    if (!(file instanceof File)) {
+      throw new Error('Некоректний файл зображення.');
+    }
+
+    const tempUrl = this.createManagedObjectUrl(file);
+    if (!tempUrl) {
+      throw new Error('Не вдалося підготувати зображення до обробки.');
+    }
+
+    try {
+      const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Не вдалося обробити зображення.'));
+        img.src = tempUrl;
+      });
+      return image;
+    } finally {
+      this.revokeManagedObjectUrl(tempUrl);
+    }
+  }
+
+  canvasToBlob(canvas, type, quality = 0.82) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+          return;
+        }
+        reject(new Error('Не вдалося підготувати файл зображення.'));
+      }, type, quality);
+    });
+  }
+
+  buildFileNameForMimeType(fileName, mimeType) {
+    const baseName = String(fileName || 'image').replace(/\.[^.]+$/, '') || 'image';
+    const extensionByType = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp'
+    };
+    const extension = extensionByType[String(mimeType || '').trim().toLowerCase()] || 'jpg';
+    return `${baseName}.${extension}`;
+  }
+
+  getImageCompressionMimeCandidates(fileType = '') {
+    const normalizedType = String(fileType || '').trim().toLowerCase();
+    if (!normalizedType || normalizedType === 'image/jpeg' || normalizedType === 'image/jpg') {
+      return ['image/jpeg'];
+    }
+    if (normalizedType === 'image/webp') {
+      return ['image/webp', 'image/jpeg'];
+    }
+    if (normalizedType === 'image/png' || normalizedType === 'image/avif' || normalizedType === 'image/heic' || normalizedType === 'image/heif') {
+      return ['image/webp', 'image/jpeg'];
+    }
+    return [normalizedType, 'image/jpeg'];
+  }
+
+  async prepareImageFileForUpload(file) {
+    if (!(file instanceof File)) {
+      throw new Error('Некоректний файл зображення.');
+    }
+
+    const fileType = String(file.type || '').trim().toLowerCase();
+    if (!fileType.startsWith('image/')) {
+      return file;
+    }
+    if (fileType === 'image/gif' || fileType === 'image/svg+xml') {
+      return file;
+    }
+
+    const image = await this.loadImageElementFromFile(file);
+    const sourceWidth = Number(image.naturalWidth || image.width || 0);
+    const sourceHeight = Number(image.naturalHeight || image.height || 0);
+    if (!sourceWidth || !sourceHeight) {
+      return file;
+    }
+
+    const maxSide = 1920;
+    const sizeThreshold = 1_400_000;
+    const longestSide = Math.max(sourceWidth, sourceHeight);
+    const scale = Math.min(1, maxSide / Math.max(1, longestSide));
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+    const requiresResize = targetWidth !== sourceWidth || targetHeight !== sourceHeight;
+    const requiresCompression = file.size > sizeThreshold;
+
+    if (!requiresResize && !requiresCompression) {
+      return file;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return file;
+    }
+
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.clearRect(0, 0, targetWidth, targetHeight);
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const candidates = this.getImageCompressionMimeCandidates(fileType);
+    let outputBlob = null;
+    let outputType = fileType || 'image/jpeg';
+
+    for (const candidateType of candidates) {
+      try {
+        const quality = candidateType === 'image/png' ? 0.92 : 0.82;
+        outputBlob = await this.canvasToBlob(canvas, candidateType, quality);
+        if (outputBlob?.size) {
+          outputType = candidateType;
+          break;
+        }
+      } catch (_) {
+      }
+    }
+
+    if (!outputBlob?.size) {
+      return file;
+    }
+    if (!requiresResize && outputBlob.size >= file.size * 0.98) {
+      return file;
+    }
+
+    return new File(
+      [outputBlob],
+      this.buildFileNameForMimeType(file.name, outputType),
+      { type: outputType, lastModified: Date.now() }
+    );
+  }
+
+  createOptimisticMediaMessage({ kind = 'file', file, previewUrl = '', durationSeconds = 0 } = {}) {
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const baseMessage = {
+      id: this.getNextMessageId(this.currentChat),
+      serverId: null,
+      text: '',
+      type: kind,
+      from: 'own',
+      time,
+      date: now.toISOString().slice(0, 10),
+      createdAt: now.toISOString(),
+      pending: true,
+      failed: false,
+      mediaErrorMessage: '',
+      transientMediaDraft: true,
+      replyTo: this.replyTarget
+        ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
+        : null
+    };
+
+    if (kind === 'image') {
+      return {
+        ...baseMessage,
+        imageUrl: previewUrl,
+        attachmentUrl: '',
+        localMediaPreview: true
+      };
+    }
+    if (kind === 'voice') {
+      return {
+        ...baseMessage,
+        audioUrl: previewUrl,
+        attachmentUrl: '',
+        audioDuration: Math.max(0, Number(durationSeconds) || 0),
+        localMediaPreview: true
+      };
+    }
+    return {
+      ...baseMessage,
+      text: file?.name || 'Файл',
+      fileUrl: '',
+      attachmentUrl: '',
+      fileName: file?.name || 'Файл',
+      attachmentMimeType: file?.type || ''
+    };
+  }
+
+  async processPendingMediaMessage(messageId, { replyToLocalId = null } = {}) {
+    if (!this.currentChat) return false;
+    const currentMessage = this.currentChat.messages.find((item) => Number(item?.id) === Number(messageId));
+    const draft = this.getMediaRetryDraft(messageId);
+    if (!currentMessage || !draft?.file) return false;
+
+    currentMessage.pending = true;
+    currentMessage.failed = false;
+    currentMessage.mediaErrorMessage = '';
+    this.saveChats();
+    this.renderChat();
+    this.renderChatsList();
+
+    try {
+      if (!this.currentChat.isGroup && this.currentChat.participantId) {
+        await this.ensurePrivateChatParticipantJoined(this.currentChat);
+      }
+
+      let uploadFile = draft.file;
+      if (draft.kind === 'image') {
+        uploadFile = await this.prepareImageFileForUpload(draft.file);
+      }
+
+      const uploaded = await this.uploadMessageAttachmentToServer(uploadFile, {
+        kind: draft.kind,
+        chat: this.currentChat,
+        content: draft.kind === 'file' ? (uploadFile.name || '') : '',
+        replyToLocalId
+      });
+      const sendResponse = uploaded.createdMessage
+        ? uploaded.createdMessage
+        : await this.sendAttachmentMessageToServer(this.currentChat, {
+          ...uploaded,
+          type: draft.kind,
+          audioDuration: draft.kind === 'voice' ? Math.max(0, Number(draft.durationSeconds) || 0) : 0
+        }, {
+          replyToLocalId
+        });
+
+      const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(messageId));
+      if (!optimisticCurrent) return false;
+
+      if (draft.kind === 'image') {
+        optimisticCurrent.imageUrl = uploaded.url || optimisticCurrent.imageUrl || '';
+        optimisticCurrent.attachmentUrl = uploaded.url || optimisticCurrent.attachmentUrl || '';
+        optimisticCurrent.localMediaPreview = false;
+      } else if (draft.kind === 'voice') {
+        optimisticCurrent.audioUrl = uploaded.url || optimisticCurrent.audioUrl || '';
+        optimisticCurrent.attachmentUrl = uploaded.url || optimisticCurrent.attachmentUrl || '';
+        optimisticCurrent.audioDuration = Math.max(0, Number(draft.durationSeconds) || optimisticCurrent.audioDuration || 0);
+        optimisticCurrent.localMediaPreview = false;
+      } else {
+        optimisticCurrent.fileUrl = uploaded.url || optimisticCurrent.fileUrl || '';
+        optimisticCurrent.attachmentUrl = uploaded.url || optimisticCurrent.attachmentUrl || '';
+        optimisticCurrent.fileName = uploaded.fileName || optimisticCurrent.fileName;
+      }
+
+      optimisticCurrent.attachmentMimeType = uploaded.mimeType || optimisticCurrent.attachmentMimeType || uploadFile.type || '';
+      optimisticCurrent.serverId = this.extractServerMessageIdFromPayload(sendResponse) || optimisticCurrent.serverId;
+      optimisticCurrent.pending = false;
+      optimisticCurrent.failed = false;
+      optimisticCurrent.mediaErrorMessage = '';
+      optimisticCurrent.transientMediaDraft = false;
+
+      this.releaseMediaRetryDraft(messageId, { revokePreview: true });
+      this.saveChats();
+      this.renderChat();
+      this.renderChatsList();
+      this.refreshDeliveryStatusUi(this.currentChat.messages);
+      if (typeof this.refreshDesktopSecondaryChatsListIfVisible === 'function') {
+        this.refreshDesktopSecondaryChatsListIfVisible();
+      }
+
+      const hasServerMessageId = Boolean(
+        this.extractServerMessageIdFromPayload(sendResponse)
+        || String(optimisticCurrent?.serverId || '').trim()
+      );
+      if (!hasServerMessageId) {
+        window.setTimeout(() => {
+          this.syncCurrentChatMessagesFromServer({ forceScroll: true, highlightOwn: false }).catch(() => {});
+        }, 900);
+      }
+      return true;
+    } catch (error) {
+      const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(messageId));
+      if (optimisticCurrent) {
+        optimisticCurrent.pending = false;
+        optimisticCurrent.failed = true;
+        optimisticCurrent.mediaErrorMessage = String(error?.message || 'Не вдалося надіслати медіа.');
+        optimisticCurrent.transientMediaDraft = true;
+      }
+      this.saveChats();
+      this.renderChat();
+      this.renderChatsList();
+      if (typeof this.refreshDesktopSecondaryChatsListIfVisible === 'function') {
+        this.refreshDesktopSecondaryChatsListIfVisible();
+      }
+      return false;
+    }
+  }
+
+  async queueMediaMessage({ kind = 'file', file, previewUrl = '', durationSeconds = 0 } = {}) {
+    if (!(file instanceof File) || !this.currentChat) return false;
+    const input = document.getElementById('messageInput');
+    const optimisticMessage = this.createOptimisticMediaMessage({
+      kind,
+      file,
+      previewUrl,
+      durationSeconds
+    });
+    const replyToLocalId = optimisticMessage.replyTo?.id ?? null;
+
+    this.storeMediaRetryDraft(optimisticMessage.id, {
+      kind,
+      file,
+      previewUrl,
+      durationSeconds
+    });
+
+    this.pinCurrentChatToBottom();
+    this.currentChat.messages.push(optimisticMessage);
+    this.saveChats();
+    this.clearReplyTarget();
+    if (this.currentChat.messages.length === 1) {
+      this.renderChat(optimisticMessage.id);
+    } else {
+      this.appendMessage(optimisticMessage, ' new-message');
+    }
+    this.renderChatsList();
+
+    if (input && window.innerWidth <= 900) {
+      input.focus({ preventScroll: true });
+    }
+
+    return this.processPendingMediaMessage(optimisticMessage.id, { replyToLocalId });
+  }
+
+  async retryFailedMediaMessage(messageId) {
+    if (!this.currentChat) return false;
+    const targetMessage = this.currentChat.messages.find((item) => Number(item?.id) === Number(messageId));
+    const draft = this.getMediaRetryDraft(messageId);
+    if (!targetMessage || !draft?.file) {
+      await this.showAlert('Немає локального файла для повторного надсилання.');
+      return false;
+    }
+    this.pinCurrentChatToBottom();
+    return this.processPendingMediaMessage(messageId, {
+      replyToLocalId: targetMessage.replyTo?.id ?? null
+    });
+  }
+
   capturePhotoFromCamera() {
     const video = document.getElementById('cameraCaptureVideo');
     if (!video || !this.currentChat) return;
@@ -4939,9 +5362,8 @@ export class ChatAppMessagingMethods {
     ctx.drawImage(video, 0, 0, width, height);
     canvas.toBlob((blob) => {
       if (!blob) return;
-      const previewUrl = canvas.toDataURL('image/jpeg', 0.9);
       const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
-      this.sendImageMessage(file, previewUrl);
+      this.sendImageMessage(file);
     }, 'image/jpeg', 0.9);
     this.closeCameraCapture();
   }
@@ -4962,303 +5384,40 @@ export class ChatAppMessagingMethods {
       input.value = '';
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      if (result) {
-        this.sendImageMessage(file, result);
-      }
-      input.value = '';
-    };
-    reader.onerror = () => {
-      this.showAlert('Не вдалося прочитати зображення');
-      input.value = '';
-    };
-    reader.readAsDataURL(file);
+    this.sendImageMessage(file);
+    input.value = '';
   }
 
-  async sendImageMessage(file, previewUrl = '') {
-    if (!file || !this.currentChat) return;
-    const input = document.getElementById('messageInput');
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-    const newMessage = {
-      id: this.getNextMessageId(this.currentChat),
-      serverId: null,
-      text: '',
-      type: 'image',
-      imageUrl: previewUrl,
-      localMediaPreview: true,
-      from: 'own',
-      time,
-      date: now.toISOString().slice(0, 10),
-      createdAt: now.toISOString(),
-      pending: true,
-      replyTo: this.replyTarget
-        ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
-        : null
-    };
-    const restoreReplyTarget = newMessage.replyTo ? { ...newMessage.replyTo } : null;
-
-    this.pinCurrentChatToBottom();
-    this.currentChat.messages.push(newMessage);
-    this.saveChats();
-    this.clearReplyTarget();
-    if (this.currentChat.messages.length === 1) {
-      this.renderChat(newMessage.id);
-    } else {
-      this.appendMessage(newMessage, ' new-message');
+  async sendImageMessage(file) {
+    if (!(file instanceof File) || !this.currentChat) return false;
+    const previewUrl = this.createManagedObjectUrl(file);
+    if (!previewUrl) {
+      await this.showAlert('Не вдалося підготувати фото до надсилання.');
+      return false;
     }
-    this.renderChatsList();
-
-    if (input && window.innerWidth <= 900) {
-      input.focus({ preventScroll: true });
-    }
-
-    try {
-      if (!this.currentChat.isGroup && this.currentChat.participantId) {
-        await this.ensurePrivateChatParticipantJoined(this.currentChat);
-      }
-      const uploaded = await this.uploadMessageAttachmentToServer(file, {
-        kind: 'image',
-        chat: this.currentChat,
-        replyToLocalId: restoreReplyTarget?.id ?? null
-      });
-      const sendResponse = uploaded.createdMessage
-        ? uploaded.createdMessage
-        : await this.sendAttachmentMessageToServer(this.currentChat, {
-          ...uploaded,
-          type: 'image'
-        }, {
-          replyToLocalId: restoreReplyTarget?.id ?? null
-        });
-      const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(newMessage.id));
-      if (optimisticCurrent) {
-        optimisticCurrent.attachmentUrl = uploaded.url || optimisticCurrent.attachmentUrl || '';
-        optimisticCurrent.serverId = this.extractServerMessageIdFromPayload(sendResponse) || optimisticCurrent.serverId;
-        optimisticCurrent.pending = false;
-      }
-      this.saveChats();
-      this.renderChatsList();
-      this.refreshDeliveryStatusUi(this.currentChat.messages);
-      if (typeof this.refreshDesktopSecondaryChatsListIfVisible === 'function') {
-        this.refreshDesktopSecondaryChatsListIfVisible();
-      }
-      const hasServerMessageId = Boolean(
-        this.extractServerMessageIdFromPayload(sendResponse)
-        || String(optimisticCurrent?.serverId || '').trim()
-      );
-      if (!hasServerMessageId) {
-        window.setTimeout(() => {
-          this.syncCurrentChatMessagesFromServer({ forceScroll: true, highlightOwn: false }).catch(() => {});
-        }, 900);
-      }
-    } catch (error) {
-      const rollbackIndex = this.currentChat.messages.findIndex((item) => Number(item?.id) === Number(newMessage.id) && !item?.serverId);
-      if (rollbackIndex !== -1) {
-        this.currentChat.messages.splice(rollbackIndex, 1);
-      }
-      this.saveChats();
-      this.renderChat();
-      this.renderChatsList();
-      if (restoreReplyTarget) {
-        this.setReplyTarget(restoreReplyTarget);
-      }
-      await this.showAlert(error?.message || 'Не вдалося надіслати фото.');
-    }
+    return this.queueMediaMessage({
+      kind: 'image',
+      file,
+      previewUrl
+    });
   }
 
   async sendVoiceMessage(file, previewUrl, durationSeconds = 0) {
-    if (!file || !previewUrl || !this.currentChat) return;
-    const input = document.getElementById('messageInput');
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-    const newMessage = {
-      id: this.getNextMessageId(this.currentChat),
-      serverId: null,
-      text: '',
-      type: 'voice',
-      audioUrl: previewUrl,
-      localMediaPreview: true,
-      audioDuration: Math.max(0, Number(durationSeconds) || 0),
-      from: 'own',
-      time,
-      date: now.toISOString().slice(0, 10),
-      createdAt: now.toISOString(),
-      pending: true,
-      replyTo: this.replyTarget
-        ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
-        : null
-    };
-    const restoreReplyTarget = newMessage.replyTo ? { ...newMessage.replyTo } : null;
-
-    this.pinCurrentChatToBottom();
-    this.currentChat.messages.push(newMessage);
-    this.saveChats();
-    this.clearReplyTarget();
-    if (this.currentChat.messages.length === 1) {
-      this.renderChat(newMessage.id);
-    } else {
-      this.appendMessage(newMessage, ' new-message');
-    }
-    this.renderChatsList();
-
-    if (input && window.innerWidth <= 900) {
-      input.focus({ preventScroll: true });
-    }
-
-    try {
-      if (!this.currentChat.isGroup && this.currentChat.participantId) {
-        await this.ensurePrivateChatParticipantJoined(this.currentChat);
-      }
-      const uploaded = await this.uploadMessageAttachmentToServer(file, {
-        kind: 'voice',
-        chat: this.currentChat,
-        replyToLocalId: restoreReplyTarget?.id ?? null
-      });
-      const sendResponse = uploaded.createdMessage
-        ? uploaded.createdMessage
-        : await this.sendAttachmentMessageToServer(this.currentChat, {
-          ...uploaded,
-          type: 'voice',
-          audioDuration: Math.max(0, Number(durationSeconds) || 0)
-        }, {
-          replyToLocalId: restoreReplyTarget?.id ?? null
-        });
-      const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(newMessage.id));
-      if (optimisticCurrent) {
-        optimisticCurrent.attachmentUrl = uploaded.url || optimisticCurrent.attachmentUrl || '';
-        optimisticCurrent.serverId = this.extractServerMessageIdFromPayload(sendResponse) || optimisticCurrent.serverId;
-        optimisticCurrent.pending = false;
-      }
-      this.saveChats();
-      this.renderChatsList();
-      this.refreshDeliveryStatusUi(this.currentChat.messages);
-      if (typeof this.refreshDesktopSecondaryChatsListIfVisible === 'function') {
-        this.refreshDesktopSecondaryChatsListIfVisible();
-      }
-      const hasServerMessageId = Boolean(
-        this.extractServerMessageIdFromPayload(sendResponse)
-        || String(optimisticCurrent?.serverId || '').trim()
-      );
-      if (!hasServerMessageId) {
-        window.setTimeout(() => {
-          this.syncCurrentChatMessagesFromServer({ forceScroll: true, highlightOwn: false }).catch(() => {});
-        }, 900);
-      }
-    } catch (error) {
-      const rollbackIndex = this.currentChat.messages.findIndex((item) => Number(item?.id) === Number(newMessage.id) && !item?.serverId);
-      if (rollbackIndex !== -1) {
-        this.currentChat.messages.splice(rollbackIndex, 1);
-      }
-      this.saveChats();
-      this.renderChat();
-      this.renderChatsList();
-      if (restoreReplyTarget) {
-        this.setReplyTarget(restoreReplyTarget);
-      }
-      await this.showAlert(error?.message || 'Не вдалося надіслати голосове повідомлення.');
-    }
+    if (!(file instanceof File) || !previewUrl || !this.currentChat) return false;
+    return this.queueMediaMessage({
+      kind: 'voice',
+      file,
+      previewUrl,
+      durationSeconds
+    });
   }
 
   async sendFileMessage(file) {
-    if (!(file instanceof File) || !this.currentChat) return;
-    const input = document.getElementById('messageInput');
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    const newMessage = {
-      id: this.getNextMessageId(this.currentChat),
-      serverId: null,
-      text: file.name || 'Файл',
-      type: 'file',
-      fileUrl: '',
-      attachmentUrl: '',
-      fileName: file.name || 'Файл',
-      attachmentMimeType: file.type || '',
-      from: 'own',
-      time,
-      date: now.toISOString().slice(0, 10),
-      createdAt: now.toISOString(),
-      pending: true,
-      replyTo: this.replyTarget
-        ? { id: this.replyTarget.id, text: this.replyTarget.text, from: this.replyTarget.from }
-        : null
-    };
-    const restoreReplyTarget = newMessage.replyTo ? { ...newMessage.replyTo } : null;
-
-    this.pinCurrentChatToBottom();
-    this.currentChat.messages.push(newMessage);
-    this.saveChats();
-    this.clearReplyTarget();
-    if (this.currentChat.messages.length === 1) {
-      this.renderChat(newMessage.id);
-    } else {
-      this.appendMessage(newMessage, ' new-message');
-    }
-    this.renderChatsList();
-
-    if (input && window.innerWidth <= 900) {
-      input.focus({ preventScroll: true });
-    }
-
-    try {
-      if (!this.currentChat.isGroup && this.currentChat.participantId) {
-        await this.ensurePrivateChatParticipantJoined(this.currentChat);
-      }
-      const uploaded = await this.uploadMessageAttachmentToServer(file, {
-        kind: 'file',
-        chat: this.currentChat,
-        content: file.name || '',
-        replyToLocalId: restoreReplyTarget?.id ?? null
-      });
-      const sendResponse = uploaded.createdMessage
-        ? uploaded.createdMessage
-        : await this.sendAttachmentMessageToServer(this.currentChat, {
-          ...uploaded,
-          type: 'file'
-        }, {
-          replyToLocalId: restoreReplyTarget?.id ?? null
-        });
-      const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(newMessage.id));
-      if (optimisticCurrent) {
-        optimisticCurrent.fileUrl = uploaded.url || '';
-        optimisticCurrent.attachmentUrl = uploaded.url || '';
-        optimisticCurrent.fileName = uploaded.fileName || optimisticCurrent.fileName;
-        optimisticCurrent.attachmentMimeType = uploaded.mimeType || optimisticCurrent.attachmentMimeType;
-        optimisticCurrent.serverId = this.extractServerMessageIdFromPayload(sendResponse) || optimisticCurrent.serverId;
-        optimisticCurrent.pending = false;
-      }
-      this.saveChats();
-      this.renderChatsList();
-      this.refreshDeliveryStatusUi(this.currentChat.messages);
-      if (typeof this.refreshDesktopSecondaryChatsListIfVisible === 'function') {
-        this.refreshDesktopSecondaryChatsListIfVisible();
-      }
-      const hasServerMessageId = Boolean(
-        this.extractServerMessageIdFromPayload(sendResponse)
-        || String(optimisticCurrent?.serverId || '').trim()
-      );
-      if (!hasServerMessageId) {
-        window.setTimeout(() => {
-          this.syncCurrentChatMessagesFromServer({ forceScroll: true, highlightOwn: false }).catch(() => {});
-        }, 900);
-      }
-    } catch (error) {
-      const rollbackIndex = this.currentChat.messages.findIndex((item) => Number(item?.id) === Number(newMessage.id) && !item?.serverId);
-      if (rollbackIndex !== -1) {
-        this.currentChat.messages.splice(rollbackIndex, 1);
-      }
-      this.saveChats();
-      this.renderChat();
-      this.renderChatsList();
-      if (restoreReplyTarget) {
-        this.setReplyTarget(restoreReplyTarget);
-      }
-      await this.showAlert(error?.message || 'Не вдалося надіслати файл.');
-    }
+    if (!(file instanceof File) || !this.currentChat) return false;
+    return this.queueMediaMessage({
+      kind: 'file',
+      file
+    });
   }
 
   openNewChatModal() {
@@ -5523,6 +5682,24 @@ export class ChatAppMessagingMethods {
     return urls;
   }
 
+  getMediaFailureText(message) {
+    const raw = String(message?.mediaErrorMessage || '').trim();
+    if (!raw) return 'Не вдалося надіслати. Спробуйте ще раз.';
+    return raw;
+  }
+
+  buildMediaFailureMarkup(message) {
+    if (!this.isRetryableMediaMessage(message)) return '';
+    const safeId = this.escapeAttr(String(message?.id || ''));
+    const failureText = this.escapeHtml(this.getMediaFailureText(message));
+    return `
+      <div class="message-media-failure" role="status" aria-live="polite">
+        <span class="message-media-failure-text">${failureText}</span>
+        <button type="button" class="message-media-retry" data-message-id="${safeId}">Повторити</button>
+      </div>
+    `;
+  }
+
   buildMessageBodyHtml(msg) {
     if (msg?.type === 'image' && msg.imageUrl) {
       const normalizedUrl = this.normalizeAttachmentUrl(msg.imageUrl);
@@ -5533,12 +5710,14 @@ export class ChatAppMessagingMethods {
       const fetchPriority = isPriorityImage ? 'high' : 'auto';
       const caption = (msg.text || '').trim();
       const captionHtml = caption ? `<div class="message-image-caption">${this.formatMessageText(caption)}</div>` : '';
-      return `<img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="async" />${captionHtml}`;
+      const failureHtml = this.buildMediaFailureMarkup(msg);
+      return `<img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="async" />${captionHtml}${failureHtml}`;
     }
     if (msg?.type === 'voice' && msg.audioUrl) {
       const safeUrl = this.escapeAttr(msg.audioUrl);
       const durationValue = Number.isFinite(Number(msg.audioDuration)) ? Number(msg.audioDuration) : 0;
       const durationLabel = this.formatVoiceDuration(durationValue);
+      const failureHtml = this.buildMediaFailureMarkup(msg);
       return `
         <div class="message-voice" data-duration="${durationValue}">
           <button type="button" class="voice-play-btn" aria-label="Відтворити голосове повідомлення">
@@ -5559,13 +5738,14 @@ export class ChatAppMessagingMethods {
           </div>
           <span class="voice-duration">${durationLabel}</span>
           <audio class="voice-audio" preload="metadata" src="${safeUrl}"></audio>
-        </div>
+        </div>${failureHtml}
       `;
     }
     if (msg?.type === 'file' && (msg.fileUrl || msg.attachmentUrl || msg.documentUrl || msg.fileName)) {
       const rawFileSrc = String(msg.fileUrl || msg.attachmentUrl || msg.documentUrl || '').trim();
       const fileSrc = this.escapeAttr(rawFileSrc);
       const fileName = this.escapeHtml(String(msg.fileName || msg.text || 'Файл'));
+      const failureHtml = this.buildMediaFailureMarkup(msg);
       if (!rawFileSrc) {
         return `
           <div class="message-file message-file--pending" role="status" aria-live="polite">
@@ -5575,7 +5755,7 @@ export class ChatAppMessagingMethods {
               </svg>
             </span>
             <span class="message-file-name">${fileName}</span>
-          </div>
+          </div>${failureHtml}
         `;
       }
       return `
@@ -5586,7 +5766,7 @@ export class ChatAppMessagingMethods {
             </svg>
           </span>
           <span class="message-file-name">${fileName}</span>
-        </a>
+        </a>${failureHtml}
       `;
     }
     return `<div class="message-text">${this.formatMessageText(msg?.text || '')}</div>`;
@@ -5772,6 +5952,22 @@ export class ChatAppMessagingMethods {
       const audioEl = voiceEl.querySelector('.voice-audio');
       if (!audioEl) return;
       this.bindVoiceMessageAudio(voiceEl, audioEl);
+    });
+  }
+
+  setupMessageMediaRetryEvents() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (!messagesContainer || messagesContainer.dataset.mediaRetryBound === 'true') return;
+    messagesContainer.dataset.mediaRetryBound = 'true';
+
+    messagesContainer.addEventListener('click', (event) => {
+      const retryBtn = event.target.closest('.message-media-retry');
+      if (!retryBtn) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const messageId = Number(retryBtn.getAttribute('data-message-id') || 0);
+      if (!Number.isFinite(messageId) || messageId <= 0) return;
+      this.retryFailedMediaMessage(messageId).catch(() => {});
     });
   }
 
