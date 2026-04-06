@@ -58,6 +58,179 @@ export class ChatAppMessagingMethods {
     return '';
   }
 
+  ensureDesktopNotificationDedupStore() {
+    if (!(this.desktopNotificationSeenKeys instanceof Map)) {
+      this.desktopNotificationSeenKeys = new Map();
+    }
+  }
+
+  pruneDesktopNotificationDedupStore({ ttlMs = 180000 } = {}) {
+    this.ensureDesktopNotificationDedupStore();
+    const safeTtl = Math.max(15000, Number(ttlMs) || 180000);
+    const now = Date.now();
+    this.desktopNotificationSeenKeys.forEach((seenAt, key) => {
+      if (!Number.isFinite(seenAt) || now - seenAt > safeTtl) {
+        this.desktopNotificationSeenKeys.delete(key);
+      }
+    });
+  }
+
+  getDesktopNotificationMessageKey(chat, message) {
+    if (!message || typeof message !== 'object') return '';
+    const chatKey = this.resolveChatServerId(chat) || String(chat?.id || '').trim() || 'chat';
+    const serverId = String(message.serverId || '').trim();
+    if (serverId) return `server:${chatKey}:${serverId}`;
+
+    const localId = Number(message.id);
+    if (Number.isFinite(localId) && localId > 0) {
+      const createdAt = String(message.createdAt || '').trim();
+      const timestamp = Number(this.getMessageTimestampValue(message) || 0);
+      return `local:${chatKey}:${localId}:${createdAt || timestamp}`;
+    }
+
+    const comparableKey = this.getComparableMessageKey(message);
+    const timestamp = Number(this.getMessageTimestampValue(message) || 0);
+    return `fallback:${chatKey}:${comparableKey}:${timestamp}`;
+  }
+
+  getDesktopNotificationBody(chat, message) {
+    const safeChat = chat && typeof chat === 'object' ? chat : {};
+    const safeMessage = message && typeof message === 'object' ? message : {};
+    const senderName = String(safeMessage.senderName || '').trim();
+    const isGroupChat = Boolean(safeChat.isGroup);
+    const prefix = isGroupChat && senderName ? `${senderName}: ` : '';
+    const messageType = String(safeMessage.type || 'text').trim();
+    const messageText = String(safeMessage.text || '').trim();
+    const fileName = String(safeMessage.fileName || '').trim();
+
+    if (messageType === 'image') {
+      return `${prefix}${messageText ? `Фото: ${messageText}` : 'Надіслав(ла) фото'}`;
+    }
+    if (messageType === 'voice') {
+      return `${prefix}Голосове повідомлення`;
+    }
+    if (messageType === 'file') {
+      return `${prefix}${fileName ? `Файл: ${fileName}` : 'Надіслав(ла) файл'}`;
+    }
+    if (messageText) {
+      return `${prefix}${messageText}`;
+    }
+    return `${prefix}Нове повідомлення`;
+  }
+
+  showDesktopBrowserNotification({
+    title = 'Orion',
+    body = '',
+    icon = '',
+    tag = '',
+    notificationKey = '',
+    requireEnabledSetting = true,
+    closeAfterMs = 5000,
+    silent = null,
+    onClick = null
+  } = {}) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') {
+      return null;
+    }
+    if (requireEnabledSetting && this.settings?.desktopNotifications === false) {
+      return null;
+    }
+
+    this.pruneDesktopNotificationDedupStore();
+    const safeNotificationKey = String(notificationKey || '').trim();
+    if (safeNotificationKey) {
+      if (this.desktopNotificationSeenKeys.has(safeNotificationKey)) {
+        return null;
+      }
+      this.desktopNotificationSeenKeys.set(safeNotificationKey, Date.now());
+    }
+
+    const safeTitle = String(title || '').trim() || 'Orion';
+    const safeBody = String(body || '').trim();
+    const safeIcon = this.getAvatarImage(icon);
+    const safeTag = String(tag || safeNotificationKey || '').trim();
+    const notification = new Notification(safeTitle, {
+      body: safeBody,
+      icon: safeIcon || undefined,
+      tag: safeTag || undefined,
+      silent: typeof silent === 'boolean' ? silent : !this.settings?.soundNotifications
+    });
+
+    notification.onclick = () => {
+      try {
+        window.focus();
+      } catch (_) {
+      }
+      if (typeof onClick === 'function') {
+        try {
+          onClick();
+        } catch (_) {
+        }
+      }
+      notification.close();
+    };
+
+    const safeCloseAfterMs = Math.max(1500, Number(closeAfterMs) || 5000);
+    window.setTimeout(() => notification.close(), safeCloseAfterMs);
+    return notification;
+  }
+
+  notifyDesktopIncomingMessage(chat, message) {
+    if (!chat || !message || typeof message !== 'object') return false;
+    if (String(message.from || '').trim() === 'own') return false;
+
+    const notificationKey = this.getDesktopNotificationMessageKey(chat, message);
+    const title = String(chat.name || message.senderName || 'Orion').trim() || 'Orion';
+    const body = this.getDesktopNotificationBody(chat, message);
+    const icon = this.getAvatarImage(
+      chat.avatarImage
+      || chat.avatarUrl
+      || message.senderAvatarImage
+      || ''
+    );
+    const chatServerId = this.resolveChatServerId(chat);
+    const localChatId = chat?.id;
+
+    const notification = this.showDesktopBrowserNotification({
+      title,
+      body,
+      icon,
+      tag: notificationKey,
+      notificationKey,
+      requireEnabledSetting: true,
+      onClick: () => {
+        const resolvedChat = (Array.isArray(this.chats) ? this.chats : []).find((item) => {
+          if (!item) return false;
+          if (chatServerId && this.resolveChatServerId(item) === chatServerId) return true;
+          return localChatId != null && item.id === localChatId;
+        });
+        if (resolvedChat && typeof this.selectChat === 'function') {
+          this.selectChat(resolvedChat.id);
+        }
+      }
+    });
+
+    return Boolean(notification);
+  }
+
+  notifyDesktopForNewMessages(chat, prevMessages = [], nextMessages = []) {
+    const safePrev = Array.isArray(prevMessages) ? prevMessages : [];
+    const safeNext = Array.isArray(nextMessages) ? nextMessages : [];
+    if (!chat || !safeNext.length) return;
+
+    const previousKeys = new Set(
+      safePrev
+        .map((message) => this.getDesktopNotificationMessageKey(chat, message))
+        .filter(Boolean)
+    );
+
+    safeNext.forEach((message) => {
+      const key = this.getDesktopNotificationMessageKey(chat, message);
+      if (!key || previousKeys.has(key)) return;
+      this.notifyDesktopIncomingMessage(chat, message);
+    });
+  }
+
   getApiHeaders({ json = false } = {}) {
     const headers = {};
     if (json) headers['Content-Type'] = 'application/json';
@@ -1804,17 +1977,18 @@ export class ChatAppMessagingMethods {
     const targetChat = this.findChatByServerId(eventChatId) || this.findDirectChatByParticipantId(senderId);
     if (!targetChat) return false;
 
-    const currentChatServerId = this.resolveChatServerId(this.currentChat);
-    const targetChatServerId = this.resolveChatServerId(targetChat);
-    if (currentChatServerId && targetChatServerId && String(currentChatServerId) === String(targetChatServerId)) {
-      return false;
-    }
-
     const nextMessage = this.buildLocalMessageFromRealtimePayload(payload, targetChat);
     if (!nextMessage) return false;
     nextMessage.from = 'other';
     if (senderId) {
       nextMessage.senderId = senderId;
+    }
+    this.notifyDesktopIncomingMessage(targetChat, nextMessage);
+
+    const currentChatServerId = this.resolveChatServerId(this.currentChat);
+    const targetChatServerId = this.resolveChatServerId(targetChat);
+    if (currentChatServerId && targetChatServerId && String(currentChatServerId) === String(targetChatServerId)) {
+      return false;
     }
 
     const nextServerId = String(nextMessage.serverId || '').trim();
@@ -3373,19 +3547,21 @@ export class ChatAppMessagingMethods {
 
     for (const chat of inactiveChatsNeedingRefresh) {
       try {
+        const previousMessages = Array.isArray(chat.messages) ? [...chat.messages] : [];
         const serverMessages = await this.fetchChatMessagesFromServer(chat);
         const mappedMessages = this.mapServerMessagesToLocal(chat, serverMessages);
         const nextMessages = this.mergeRecentPendingOwnMessages(
           mappedMessages,
-          Array.isArray(chat.messages) ? chat.messages : []
+          previousMessages
         );
-        const previousLastKey = Array.isArray(chat.messages) && chat.messages.length
-          ? this.getMessageStableKey(chat.messages[chat.messages.length - 1])
+        const previousLastKey = previousMessages.length
+          ? this.getMessageStableKey(previousMessages[previousMessages.length - 1])
           : '';
         const nextLastKey = nextMessages.length
           ? this.getMessageStableKey(nextMessages[nextMessages.length - 1])
           : '';
 
+        this.notifyDesktopForNewMessages(chat, previousMessages, nextMessages);
         chat.messages = nextMessages;
         this.applyChatMessagesPaginationState(chat, {
           nextCursor: this.inferChatMessagesNextCursor(serverMessages, chat.messagesPageSize || this.getChatMessagesPageSize())
@@ -3747,6 +3923,8 @@ export class ChatAppMessagingMethods {
     const nextVisualSignature = this.getMessagesVisualSignature(nextMessages);
 
     if (previousSignature === nextSignature && previousStatusSignature === nextStatusSignature) return false;
+
+    this.notifyDesktopForNewMessages(targetChat, prevMessages, nextMessages);
 
     const previousKeys = new Set(
       prevMessages

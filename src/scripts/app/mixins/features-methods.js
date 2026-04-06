@@ -5193,11 +5193,13 @@ export class ChatAppFeaturesMethods {
     }
 
     if (Notification.permission === 'granted') {
-      const notification = new Notification('Orion', {
+      this.showDesktopBrowserNotification({
+        title: 'Orion',
         body: 'Тестове сповіщення працює.',
-        silent: !this.settings?.soundNotifications
+        notificationKey: `system:test:${Date.now()}`,
+        requireEnabledSetting: false,
+        closeAfterMs: 3500
       });
-      window.setTimeout(() => notification.close(), 3500);
       return;
     }
 
