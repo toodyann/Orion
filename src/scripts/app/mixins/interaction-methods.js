@@ -2370,6 +2370,14 @@ export class ChatAppInteractionMethods {
     this.renderChat();
     this.triggerChatEnterAnimation();
     this.applyMobileChatViewportLayout();
+    if (typeof this.pinCurrentChatToBottom === 'function') {
+      this.pinCurrentChatToBottom(900);
+    } else {
+      const messagesContainer = document.getElementById('messagesContainer');
+      if (messagesContainer && typeof this.syncMessagesContainerToBottom === 'function') {
+        this.syncMessagesContainerToBottom(messagesContainer);
+      }
+    }
     if (typeof this.syncCurrentChatMessagesFromServer === 'function') {
       this.syncCurrentChatMessagesFromServer({ forceScroll: true })
         .then(() => {

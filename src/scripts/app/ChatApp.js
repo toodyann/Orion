@@ -74,6 +74,7 @@ export class ChatApp {
     this.serverMissingChatCyclesById = new Map();
     this.lastSendDispatchAt = 0;
     this.lastSendTriggerSource = '';
+    this.messagesBottomSyncTimers = [];
     this.loadTheme();
     this.profileMenuPlaceholder = null;
     this.init();

@@ -3405,8 +3405,12 @@ export class ChatAppMessagingMethods {
     this.renderChat(highlightId);
 
     if (shouldStickToBottom) {
-      container.scrollTop = container.scrollHeight;
-      this.updateMessagesScrollBottomButtonVisibility();
+      if (typeof this.syncMessagesContainerToBottom === 'function') {
+        this.syncMessagesContainerToBottom(container);
+      } else {
+        container.scrollTop = container.scrollHeight;
+        this.updateMessagesScrollBottomButtonVisibility();
+      }
       return;
     }
 
@@ -4240,20 +4244,41 @@ export class ChatAppMessagingMethods {
 
   syncMessagesContainerToBottom(messagesContainer, { smooth = false } = {}) {
     if (!messagesContainer) return;
+    if (Array.isArray(this.messagesBottomSyncTimers)) {
+      this.messagesBottomSyncTimers.forEach((timerId) => clearTimeout(timerId));
+    }
+    this.messagesBottomSyncTimers = [];
+
     const applyScroll = () => {
+      const maxTop = Math.max(0, messagesContainer.scrollHeight - messagesContainer.clientHeight);
       if (smooth && typeof messagesContainer.scrollTo === 'function') {
-        messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: 'smooth' });
+        messagesContainer.scrollTo({ top: maxTop, behavior: 'smooth' });
       } else {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messagesContainer.scrollTop = maxTop;
       }
     };
 
     applyScroll();
     window.requestAnimationFrame(() => {
       applyScroll();
-      if (typeof this.updateMessagesScrollBottomButtonVisibility === 'function') {
-        this.updateMessagesScrollBottomButtonVisibility();
-      }
+    });
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        applyScroll();
+        if (typeof this.updateMessagesScrollBottomButtonVisibility === 'function') {
+          this.updateMessagesScrollBottomButtonVisibility();
+        }
+      });
+    });
+
+    [60, 180].forEach((delay) => {
+      const timerId = window.setTimeout(() => {
+        applyScroll();
+        if (typeof this.updateMessagesScrollBottomButtonVisibility === 'function') {
+          this.updateMessagesScrollBottomButtonVisibility();
+        }
+      }, delay);
+      this.messagesBottomSyncTimers.push(timerId);
     });
   }
 
@@ -4691,7 +4716,10 @@ export class ChatAppMessagingMethods {
     }
     this.forceComposerFocusUntil = 0;
     if (window.innerWidth > 900) {
-      this.launchNativePicker(document.getElementById('galleryPickerInput'));
+      this.launchNativePicker(
+        document.getElementById('filePickerInput')
+        || document.getElementById('galleryPickerInput')
+      );
       return;
     }
     this.openAttachSheet();
@@ -5535,8 +5563,21 @@ export class ChatAppMessagingMethods {
       `;
     }
     if (msg?.type === 'file' && (msg.fileUrl || msg.attachmentUrl || msg.documentUrl || msg.fileName)) {
-      const fileSrc = this.escapeAttr(String(msg.fileUrl || msg.attachmentUrl || msg.documentUrl || ''));
+      const rawFileSrc = String(msg.fileUrl || msg.attachmentUrl || msg.documentUrl || '').trim();
+      const fileSrc = this.escapeAttr(rawFileSrc);
       const fileName = this.escapeHtml(String(msg.fileName || msg.text || 'Файл'));
+      if (!rawFileSrc) {
+        return `
+          <div class="message-file message-file--pending" role="status" aria-live="polite">
+            <span class="message-file-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                <path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"></path>
+              </svg>
+            </span>
+            <span class="message-file-name">${fileName}</span>
+          </div>
+        `;
+      }
       return `
         <a class="message-file" href="${fileSrc}" target="_blank" rel="noopener noreferrer">
           <span class="message-file-icon" aria-hidden="true">

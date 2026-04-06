@@ -427,7 +427,7 @@ export function mountAppShell() {
           </button>
           <input type="file" id="galleryPickerInput" accept="image/*" hidden />
           <input type="file" id="cameraPickerInput" accept="image/*" capture="environment" hidden />
-          <input type="file" id="filePickerInput" accept="image/*" hidden />
+          <input type="file" id="filePickerInput" hidden />
           <textarea
             id="messageInput"
             class="message-input"

@@ -359,6 +359,10 @@ html.dark-theme .message.other .message-content {
   text-decoration: none;
 }
 
+.message-file--pending {
+  cursor: default;
+}
+
 .message-file:hover {
   text-decoration: none;
 }
