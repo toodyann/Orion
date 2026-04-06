@@ -3495,15 +3495,28 @@ export class ChatAppMessagingMethods {
       pageParams.set('cursor', safeCursor);
     }
 
-    const pageResponse = await fetch(buildApiUrl(`/messages/page?${pageParams.toString()}`), {
-      headers: this.getApiHeaders()
-    });
-    const pageData = await this.readJsonSafe(pageResponse);
+    let pageResponse;
+    let pageData;
+    try {
+      pageResponse = await fetch(buildApiUrl(`/messages/page?${pageParams.toString()}`), {
+        headers: this.getApiHeaders()
+      });
+      pageData = await this.readJsonSafe(pageResponse);
+    } catch (error) {
+      if (safeCursor) {
+        return { items: [], nextCursor: null };
+      }
+      throw error;
+    }
+
     if (pageResponse.ok) {
       return this.normalizeServerMessagesPagePayload(pageData);
     }
 
     if (pageResponse.status !== 404 && pageResponse.status !== 405) {
+      if (safeCursor) {
+        return { items: [], nextCursor: null };
+      }
       throw new Error(this.getRequestErrorMessage(pageData, 'Не вдалося завантажити повідомлення.'));
     }
 
@@ -3557,14 +3570,43 @@ export class ChatAppMessagingMethods {
     chat.messagesPaginationReady = true;
   }
 
+  showMessagesTopLoader(container = document.getElementById('messagesContainer')) {
+    if (!container) return null;
+    let loader = container.querySelector('.messages-top-loader');
+    if (loader) {
+      loader.hidden = false;
+      return loader;
+    }
+
+    loader = document.createElement('div');
+    loader.className = 'messages-top-loader';
+    loader.setAttribute('role', 'status');
+    loader.setAttribute('aria-live', 'polite');
+    loader.innerHTML = `
+      <span class="messages-top-loader-spinner" aria-hidden="true"></span>
+      <span class="messages-top-loader-text">Завантаження повідомлень...</span>
+    `;
+    container.prepend(loader);
+    return loader;
+  }
+
+  hideMessagesTopLoader(container = document.getElementById('messagesContainer')) {
+    if (!container) return;
+    const loader = container.querySelector('.messages-top-loader');
+    if (loader) {
+      loader.remove();
+    }
+  }
+
   async loadOlderMessagesPage(chat = this.currentChat) {
     if (!chat || this.loadingOlderMessages === true) return false;
     const chatCursor = String(chat.messagesNextCursor || '').trim();
     if (!chatCursor) return false;
 
     this.loadingOlderMessages = true;
+    const container = document.getElementById('messagesContainer');
+    this.showMessagesTopLoader(container);
     try {
-      const container = document.getElementById('messagesContainer');
       const previousScrollHeight = container?.scrollHeight || 0;
       const previousScrollTop = container?.scrollTop || 0;
       const page = await this.fetchChatMessagesPageFromServer(chat, {
@@ -3599,6 +3641,7 @@ export class ChatAppMessagingMethods {
       return olderMessages.length > 0;
     } finally {
       this.loadingOlderMessages = false;
+      this.hideMessagesTopLoader(container);
     }
   }
 

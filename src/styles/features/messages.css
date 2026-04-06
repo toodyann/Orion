@@ -26,6 +26,59 @@
   white-space: nowrap;
 }
 
+.messages-top-loader {
+  position: sticky;
+  top: calc(var(--app-header-height, 56px) + 10px);
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: auto;
+  margin: 8px auto 8px 16px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-secondary) 84%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.2;
+  opacity: 0.88;
+  z-index: 6;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.messages-top-loader-spinner {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-top-color: rgba(255, 255, 255, 0.88);
+  animation: messages-top-loader-spin 0.78s linear infinite;
+}
+
+.messages-top-loader-text {
+  display: inline-block;
+}
+
+@keyframes messages-top-loader-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .messages-top-loader {
+    top: calc(var(--app-header-height, 56px) + 8px);
+    margin-left: 10px;
+  }
+}
+
 .chat-empty-state {
   flex: 1;
   display: flex;
