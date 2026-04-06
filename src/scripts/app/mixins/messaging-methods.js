@@ -129,6 +129,139 @@ export class ChatAppMessagingMethods {
     }
   }
 
+  normalizeImageDimensions(width, height) {
+    const safeWidth = Math.max(1, Math.round(Number(width) || 0));
+    const safeHeight = Math.max(1, Math.round(Number(height) || 0));
+    if (!safeWidth || !safeHeight) return null;
+    return { width: safeWidth, height: safeHeight };
+  }
+
+  ensureChatImageDimensionCache() {
+    if (!(this.chatImageDimensionCache instanceof Map)) {
+      this.chatImageDimensionCache = new Map();
+    }
+    if (!(this.chatImageDimensionLoadPromises instanceof Map)) {
+      this.chatImageDimensionLoadPromises = new Map();
+    }
+  }
+
+  getCachedChatImageDimensions(url = '') {
+    const safeUrl = this.normalizeAttachmentUrl(url);
+    if (!safeUrl) return null;
+    this.ensureChatImageDimensionCache();
+    const cached = this.chatImageDimensionCache.get(safeUrl);
+    if (!cached || typeof cached !== 'object') return null;
+    return this.normalizeImageDimensions(cached.width, cached.height);
+  }
+
+  setCachedChatImageDimensions(url = '', width = 0, height = 0) {
+    const safeUrl = this.normalizeAttachmentUrl(url);
+    const normalized = this.normalizeImageDimensions(width, height);
+    if (!safeUrl || !normalized) return null;
+    this.ensureChatImageDimensionCache();
+    this.chatImageDimensionCache.set(safeUrl, normalized);
+    return normalized;
+  }
+
+  applyMessageImageDimensions(message, width = 0, height = 0) {
+    if (!message || typeof message !== 'object') return null;
+    const normalized = this.normalizeImageDimensions(width, height);
+    if (!normalized) return null;
+    message.imageWidth = normalized.width;
+    message.imageHeight = normalized.height;
+    const imageUrl = String(message.imageUrl || '').trim();
+    if (imageUrl) {
+      this.setCachedChatImageDimensions(imageUrl, normalized.width, normalized.height);
+    }
+    return normalized;
+  }
+
+  getMessageImageDimensions(message) {
+    if (!message || typeof message !== 'object') return null;
+    const direct = this.normalizeImageDimensions(message.imageWidth, message.imageHeight);
+    if (direct) return direct;
+    return this.getCachedChatImageDimensions(message.imageUrl || '');
+  }
+
+  async getImageFileDimensions(file) {
+    if (!(file instanceof File)) return null;
+    const image = await this.loadImageElementFromFile(file);
+    return this.normalizeImageDimensions(
+      image.naturalWidth || image.width || 0,
+      image.naturalHeight || image.height || 0
+    );
+  }
+
+  loadChatImageDimensions(url = '') {
+    const safeUrl = this.normalizeAttachmentUrl(url);
+    if (!safeUrl) return Promise.resolve(null);
+
+    const cached = this.getCachedChatImageDimensions(safeUrl);
+    if (cached) return Promise.resolve(cached);
+
+    this.ensureChatImageDimensionCache();
+    const existingPromise = this.chatImageDimensionLoadPromises.get(safeUrl);
+    if (existingPromise) return existingPromise;
+
+    const loadPromise = new Promise((resolve) => {
+      const image = new Image();
+      const finalize = (dimensions = null) => {
+        this.chatImageDimensionLoadPromises.delete(safeUrl);
+        resolve(dimensions);
+      };
+      image.onload = () => {
+        finalize(this.setCachedChatImageDimensions(
+          safeUrl,
+          image.naturalWidth || image.width || 0,
+          image.naturalHeight || image.height || 0
+        ));
+      };
+      image.onerror = () => finalize(null);
+      image.src = safeUrl;
+    });
+
+    this.chatImageDimensionLoadPromises.set(safeUrl, loadPromise);
+    return loadPromise;
+  }
+
+  async warmChatImageDimensions(chat = this.currentChat, { limit = 8, timeoutMs = 180 } = {}) {
+    const messages = Array.isArray(chat?.messages) ? chat.messages : [];
+    if (!messages.length) return;
+
+    const targets = [];
+    for (let index = messages.length - 1; index >= 0 && targets.length < limit; index -= 1) {
+      const message = messages[index];
+      if (String(message?.type || '') !== 'image') continue;
+      const imageUrl = String(message?.imageUrl || '').trim();
+      if (!imageUrl || this.getMessageImageDimensions(message)) continue;
+      targets.push({ message, imageUrl });
+    }
+    if (!targets.length) return;
+
+    const warmupPromise = Promise.allSettled(
+      targets.map(async ({ message, imageUrl }) => {
+        const dimensions = await this.loadChatImageDimensions(imageUrl);
+        if (dimensions) {
+          this.applyMessageImageDimensions(message, dimensions.width, dimensions.height);
+        }
+      })
+    );
+
+    const safeTimeout = Math.max(80, Number(timeoutMs) || 180);
+    await Promise.race([
+      warmupPromise,
+      new Promise((resolve) => window.setTimeout(resolve, safeTimeout))
+    ]);
+  }
+
+  getMessageImageMarkupSize(message) {
+    const dimensions = this.getMessageImageDimensions(message);
+    if (dimensions) {
+      return ` width="${dimensions.width}" height="${dimensions.height}"`;
+    }
+    return ' width="4" height="3"';
+  }
+
   storeMediaRetryDraft(messageId, draft = {}) {
     const safeId = Number(messageId);
     if (!Number.isFinite(safeId) || safeId <= 0) return;
@@ -2827,6 +2960,10 @@ export class ChatAppMessagingMethods {
             ? attachmentUrl
             : ''
         );
+        const incomingImageDimensions = this.normalizeImageDimensions(
+          item.imageWidth ?? item.width ?? item.mediaWidth ?? item.attachmentWidth ?? item.metadata?.width,
+          item.imageHeight ?? item.height ?? item.mediaHeight ?? item.attachmentHeight ?? item.metadata?.height
+        );
         const audioUrl = rawAudioUrl || (
           attachmentMime.startsWith('audio/')
             ? attachmentUrl
@@ -2890,6 +3027,12 @@ export class ChatAppMessagingMethods {
           preserveOwnVisual
           && matchedLocalMessage?.localMediaPreview === true
         );
+        const preservedImageDimensions = preserveOwnVisual
+          ? this.normalizeImageDimensions(matchedLocalMessage?.imageWidth, matchedLocalMessage?.imageHeight)
+          : null;
+        const finalImageDimensions = incomingImageDimensions
+          || preservedImageDimensions
+          || this.getCachedChatImageDimensions(imageUrl);
         const preservedTime = preserveOwnVisual ? String(matchedLocalMessage.time || '') : '';
         const preservedDate = preserveOwnVisual ? String(matchedLocalMessage.date || '') : '';
         const preservedReplyTo = preserveOwnVisual && matchedLocalMessage.replyTo
@@ -2922,6 +3065,8 @@ export class ChatAppMessagingMethods {
                 ? String(matchedLocalMessage.imageUrl).trim()
                 : imageUrl)
             : '',
+          imageWidth: type === 'image' ? (finalImageDimensions?.width || null) : null,
+          imageHeight: type === 'image' ? (finalImageDimensions?.height || null) : null,
           audioUrl: type === 'voice'
             ? (preserveLocalMediaPreview && String(matchedLocalMessage?.audioUrl || '').trim()
                 ? String(matchedLocalMessage.audioUrl).trim()
@@ -3229,7 +3374,11 @@ export class ChatAppMessagingMethods {
     for (const chat of inactiveChatsNeedingRefresh) {
       try {
         const serverMessages = await this.fetchChatMessagesFromServer(chat);
-        const nextMessages = this.mapServerMessagesToLocal(chat, serverMessages);
+        const mappedMessages = this.mapServerMessagesToLocal(chat, serverMessages);
+        const nextMessages = this.mergeRecentPendingOwnMessages(
+          mappedMessages,
+          Array.isArray(chat.messages) ? chat.messages : []
+        );
         const previousLastKey = Array.isArray(chat.messages) && chat.messages.length
           ? this.getMessageStableKey(chat.messages[chat.messages.length - 1])
           : '';
@@ -3529,8 +3678,12 @@ export class ChatAppMessagingMethods {
     const targetChat = this.currentChat;
     const pageSize = targetChat.messagesPageSize || this.getChatMessagesPageSize();
     const serverMessages = await this.fetchChatMessagesFromServer(targetChat);
-    const nextRecentMessages = this.mapServerMessagesToLocal(targetChat, serverMessages);
     const prevMessages = Array.isArray(targetChat.messages) ? targetChat.messages : [];
+    const mappedRecentMessages = this.mapServerMessagesToLocal(targetChat, serverMessages);
+    const nextRecentMessages = this.mergeRecentPendingOwnMessages(
+      mappedRecentMessages,
+      prevMessages
+    );
     const preservedOlderMessages = this.getPreservedOlderMessages(prevMessages, nextRecentMessages);
     const nextMessages = [...preservedOlderMessages, ...nextRecentMessages];
     const inferredNextCursor = this.inferChatMessagesNextCursor(serverMessages, pageSize);
@@ -4285,7 +4438,7 @@ export class ChatAppMessagingMethods {
     return true;
   }
 
-  enableMessagesMediaAutoScroll(messagesContainer, ttlMs = 1600) {
+  enableMessagesMediaAutoScroll(messagesContainer, ttlMs = 3200) {
     if (!messagesContainer) return;
     messagesContainer.dataset.mediaAutoScroll = 'true';
     if (this.messagesMediaAutoScrollTimer) {
@@ -4297,12 +4450,35 @@ export class ChatAppMessagingMethods {
         delete currentContainer.dataset.mediaAutoScroll;
       }
       this.messagesMediaAutoScrollTimer = null;
-    }, Math.max(600, Number(ttlMs) || 1600));
+    }, Math.max(900, Number(ttlMs) || 3200));
+  }
+
+  isMessagesAutoScrollSuppressed() {
+    const untilTs = Number(this.messagesAutoScrollSuppressedUntil || 0);
+    return Number.isFinite(untilTs) && untilTs > Date.now();
+  }
+
+  cancelPendingMessagesAutoScroll(messagesContainer = null, { suppressMs = 2200 } = {}) {
+    const container = messagesContainer || document.getElementById('messagesContainer');
+    if (this.messagesMediaAutoScrollTimer) {
+      clearTimeout(this.messagesMediaAutoScrollTimer);
+      this.messagesMediaAutoScrollTimer = null;
+    }
+    if (Array.isArray(this.messagesBottomSyncTimers)) {
+      this.messagesBottomSyncTimers.forEach((timerId) => clearTimeout(timerId));
+    }
+    this.messagesBottomSyncTimers = [];
+    this.currentChatBottomPinUntil = 0;
+    this.messagesAutoScrollSuppressedUntil = Date.now() + Math.max(400, Number(suppressMs) || 2200);
+    if (container) {
+      delete container.dataset.mediaAutoScroll;
+    }
   }
 
   pinCurrentChatToBottom(ttlMs = 420) {
     const safeTtl = Number.isFinite(Number(ttlMs)) ? Math.max(180, Number(ttlMs)) : 420;
     this.currentChatBottomPinUntil = Date.now() + safeTtl;
+    this.messagesAutoScrollSuppressedUntil = 0;
     const currentChatServerId = this.resolveChatServerId(this.currentChat);
     const currentChatLocalId = Number(this.currentChat?.id);
     this.currentChatBottomPinKey = currentChatServerId
@@ -4338,6 +4514,7 @@ export class ChatAppMessagingMethods {
     this.messagesBottomSyncTimers = [];
 
     const applyScroll = () => {
+      if (this.isMessagesAutoScrollSuppressed()) return;
       const maxTop = Math.max(0, messagesContainer.scrollHeight - messagesContainer.clientHeight);
       if (smooth && typeof messagesContainer.scrollTo === 'function') {
         messagesContainer.scrollTo({ top: maxTop, behavior: 'smooth' });
@@ -4359,7 +4536,7 @@ export class ChatAppMessagingMethods {
       });
     });
 
-    [60, 180].forEach((delay) => {
+    [60, 180, 420, 900, 1800].forEach((delay) => {
       const timerId = window.setTimeout(() => {
         applyScroll();
         if (typeof this.updateMessagesScrollBottomButtonVisibility === 'function') {
@@ -5170,11 +5347,14 @@ export class ChatAppMessagingMethods {
     };
 
     if (kind === 'image') {
+      const imageDimensions = this.normalizeImageDimensions(file?.imageWidth, file?.imageHeight);
       return {
         ...baseMessage,
         imageUrl: previewUrl,
         attachmentUrl: '',
-        localMediaPreview: true
+        localMediaPreview: true,
+        imageWidth: imageDimensions?.width || null,
+        imageHeight: imageDimensions?.height || null
       };
     }
     if (kind === 'voice') {
@@ -5202,12 +5382,17 @@ export class ChatAppMessagingMethods {
     const draft = this.getMediaRetryDraft(messageId);
     if (!currentMessage || !draft?.file) return false;
 
+    const wasFailed = currentMessage.failed === true;
     currentMessage.pending = true;
     currentMessage.failed = false;
     currentMessage.mediaErrorMessage = '';
     this.saveChats();
-    this.renderChat();
     this.renderChatsList();
+    if (wasFailed) {
+      this.renderChat();
+    } else {
+      this.refreshDeliveryStatusUi([currentMessage]);
+    }
 
     try {
       if (!this.currentChat.isGroup && this.currentChat.participantId) {
@@ -5237,6 +5422,7 @@ export class ChatAppMessagingMethods {
 
       const optimisticCurrent = this.currentChat.messages.find((item) => Number(item?.id) === Number(messageId));
       if (!optimisticCurrent) return false;
+      const previousImageUrl = String(optimisticCurrent.imageUrl || '').trim();
 
       if (draft.kind === 'image') {
         optimisticCurrent.imageUrl = uploaded.url || optimisticCurrent.imageUrl || '';
@@ -5260,11 +5446,15 @@ export class ChatAppMessagingMethods {
       optimisticCurrent.mediaErrorMessage = '';
       optimisticCurrent.transientMediaDraft = false;
 
-      this.releaseMediaRetryDraft(messageId, { revokePreview: true });
+      this.releaseMediaRetryDraft(messageId, { revokePreview: draft.kind !== 'image' });
       this.saveChats();
-      this.renderChat();
       this.renderChatsList();
       this.refreshDeliveryStatusUi(this.currentChat.messages);
+      if (draft.kind === 'image' && uploaded.url) {
+        this.transitionRenderedMessageImageToUploadedSource(messageId, uploaded.url, previousImageUrl);
+      } else if (draft.kind === 'file') {
+        this.renderChat();
+      }
       if (typeof this.refreshDesktopSecondaryChatsListIfVisible === 'function') {
         this.refreshDesktopSecondaryChatsListIfVisible();
       }
@@ -5295,6 +5485,57 @@ export class ChatAppMessagingMethods {
       }
       return false;
     }
+  }
+
+  transitionRenderedMessageImageToUploadedSource(messageId, uploadedUrl, previousUrl = '') {
+    const safeId = String(messageId || '').trim();
+    const nextUrl = String(uploadedUrl || '').trim();
+    const prevUrl = String(previousUrl || '').trim();
+    if (!safeId || !nextUrl) {
+      if (prevUrl && prevUrl !== nextUrl) {
+        this.revokeManagedObjectUrl(prevUrl);
+      }
+      return;
+    }
+
+    const selector = `.message[data-id="${CSS.escape(safeId)}"] .message-image`;
+    const imageEl = document.querySelector(selector);
+    if (!imageEl) {
+      if (prevUrl && prevUrl !== nextUrl) {
+        this.revokeManagedObjectUrl(prevUrl);
+      }
+      return;
+    }
+
+    const currentUrl = String(imageEl.currentSrc || imageEl.getAttribute('src') || '').trim();
+    if (currentUrl === nextUrl) {
+      if (prevUrl && prevUrl !== nextUrl) {
+        this.revokeManagedObjectUrl(prevUrl);
+      }
+      return;
+    }
+
+    const preloadImage = new Image();
+    try {
+      preloadImage.decoding = 'async';
+    } catch (_) {
+    }
+    preloadImage.onload = () => {
+      if (imageEl.isConnected) {
+        imageEl.src = nextUrl;
+        imageEl.dataset.ready = 'true';
+        imageEl.classList.add('is-loaded');
+      }
+      if (prevUrl && prevUrl !== nextUrl) {
+        this.revokeManagedObjectUrl(prevUrl);
+      }
+    };
+    preloadImage.onerror = () => {
+      if (prevUrl && prevUrl !== nextUrl) {
+        this.revokeManagedObjectUrl(prevUrl);
+      }
+    };
+    preloadImage.src = nextUrl;
   }
 
   async queueMediaMessage({ kind = 'file', file, previewUrl = '', durationSeconds = 0 } = {}) {
@@ -5390,6 +5631,14 @@ export class ChatAppMessagingMethods {
 
   async sendImageMessage(file) {
     if (!(file instanceof File) || !this.currentChat) return false;
+    try {
+      const dimensions = await this.getImageFileDimensions(file);
+      if (dimensions) {
+        file.imageWidth = dimensions.width;
+        file.imageHeight = dimensions.height;
+      }
+    } catch (_) {
+    }
     const previewUrl = this.createManagedObjectUrl(file);
     if (!previewUrl) {
       await this.showAlert('Не вдалося підготувати фото до надсилання.');
@@ -5704,6 +5953,7 @@ export class ChatAppMessagingMethods {
     if (msg?.type === 'image' && msg.imageUrl) {
       const normalizedUrl = this.normalizeAttachmentUrl(msg.imageUrl);
       const safeUrl = this.escapeAttr(normalizedUrl);
+      const imageSizeAttrs = this.getMessageImageMarkupSize(msg);
       const isPriorityImage = this.priorityCurrentChatImageUrls instanceof Set
         && this.priorityCurrentChatImageUrls.has(normalizedUrl);
       const loadingMode = isPriorityImage ? 'eager' : 'lazy';
@@ -5711,7 +5961,12 @@ export class ChatAppMessagingMethods {
       const caption = (msg.text || '').trim();
       const captionHtml = caption ? `<div class="message-image-caption">${this.formatMessageText(caption)}</div>` : '';
       const failureHtml = this.buildMediaFailureMarkup(msg);
-      return `<img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="async" />${captionHtml}${failureHtml}`;
+      return `
+        <div class="message-image-frame">
+          <span class="message-image-spinner" aria-hidden="true"></span>
+          <img class="message-image" src="${safeUrl}" alt="Надіслане фото" loading="${loadingMode}" fetchpriority="${fetchPriority}" decoding="async"${imageSizeAttrs} />
+        </div>${captionHtml}${failureHtml}
+      `;
     }
     if (msg?.type === 'voice' && msg.audioUrl) {
       const safeUrl = this.escapeAttr(msg.audioUrl);
@@ -5916,14 +6171,44 @@ export class ChatAppMessagingMethods {
       const sourceKey = String(img.currentSrc || img.getAttribute('src') || '').trim();
       const markLoaded = () => {
         const messagesContainer = document.getElementById('messagesContainer');
+        const frameEl = img.closest('.message-image-frame');
+        const messageEl = img.closest('.message');
+        const messageId = Number(messageEl?.dataset.id || 0);
+        const normalizedDimensions = this.normalizeImageDimensions(
+          img.naturalWidth || img.width || img.clientWidth || 0,
+          img.naturalHeight || img.height || img.clientHeight || 0
+        );
+        if (normalizedDimensions) {
+          img.setAttribute('width', String(normalizedDimensions.width));
+          img.setAttribute('height', String(normalizedDimensions.height));
+          if (sourceKey) {
+            this.setCachedChatImageDimensions(sourceKey, normalizedDimensions.width, normalizedDimensions.height);
+          }
+          if (this.currentChat && Number.isFinite(messageId) && messageId > 0) {
+            const targetMessage = this.currentChat.messages.find((item) => Number(item?.id) === messageId);
+            if (targetMessage) {
+              this.applyMessageImageDimensions(
+                targetMessage,
+                normalizedDimensions.width,
+                normalizedDimensions.height
+              );
+            }
+          }
+        }
         const shouldStickToBottom = Boolean(
+          !this.isMessagesAutoScrollSuppressed()
+          && (
           messagesContainer
           && (
             messagesContainer.dataset.mediaAutoScroll === 'true'
             || (typeof this.isMessagesNearBottom === 'function' && this.isMessagesNearBottom(messagesContainer, 160))
           )
+          )
         );
         img.classList.add('is-loaded');
+        if (frameEl) {
+          frameEl.classList.add('is-loaded');
+        }
         img.dataset.ready = 'true';
         if (sourceKey) {
           this.loadedMessageImageUrls.add(sourceKey);
@@ -6489,6 +6774,7 @@ export class ChatAppMessagingMethods {
     window.addEventListener('resize', () => {
       if (!this.isImageViewerOpen()) return;
       this.scheduleImageViewerToolbarLayout();
+      this.scheduleImageViewerInlineConfirmLayout();
     });
   }
 
@@ -6515,6 +6801,8 @@ export class ChatAppMessagingMethods {
       pinchStartDistance: 0,
       pinchStartScale: 1,
       toolbarLayoutScheduled: false,
+      inlineConfirmLayoutScheduled: false,
+      inlineConfirmCleanup: null,
       pointers: new Map()
     };
     return this.imageViewerState;
@@ -6530,7 +6818,11 @@ export class ChatAppMessagingMethods {
       senderAvatar: document.getElementById('imageViewerSenderAvatar'),
       senderAvatarImage: document.getElementById('imageViewerSenderAvatarImage'),
       senderAvatarInitials: document.getElementById('imageViewerSenderAvatarInitials'),
-      senderName: document.getElementById('imageViewerSenderName')
+      senderName: document.getElementById('imageViewerSenderName'),
+      inlineConfirm: document.getElementById('imageViewerInlineConfirm'),
+      inlineConfirmText: document.getElementById('imageViewerInlineConfirmText'),
+      inlineConfirmOkBtn: document.getElementById('imageViewerInlineConfirmOkBtn'),
+      inlineConfirmCancelBtn: document.getElementById('imageViewerInlineConfirmCancelBtn')
     };
   }
 
@@ -6617,6 +6909,100 @@ export class ChatAppMessagingMethods {
     senderAvatarInitials.hidden = Boolean(avatarImageSrc);
   }
 
+  clearImageViewerInlineConfirmBindings() {
+    const state = this.getImageViewerState();
+    if (typeof state.inlineConfirmCleanup === 'function') {
+      state.inlineConfirmCleanup();
+    }
+    state.inlineConfirmCleanup = null;
+  }
+
+  hideImageViewerInlineConfirm() {
+    const { inlineConfirm, inlineConfirmText, inlineConfirmOkBtn, inlineConfirmCancelBtn } = this.getImageViewerElements();
+    const state = this.getImageViewerState();
+    this.clearImageViewerInlineConfirmBindings();
+    state.inlineConfirmLayoutScheduled = false;
+    if (!inlineConfirm) return;
+    inlineConfirm.hidden = true;
+    inlineConfirm.style.removeProperty('--image-viewer-inline-confirm-top');
+    if (inlineConfirmText) inlineConfirmText.textContent = '';
+    if (inlineConfirmOkBtn) inlineConfirmOkBtn.textContent = 'Видалити';
+    if (inlineConfirmCancelBtn) inlineConfirmCancelBtn.textContent = 'Скасувати';
+  }
+
+  scheduleImageViewerInlineConfirmLayout() {
+    const state = this.getImageViewerState();
+    const { inlineConfirm } = this.getImageViewerElements();
+    if (!inlineConfirm || inlineConfirm.hidden) return;
+    if (state.inlineConfirmLayoutScheduled) return;
+    state.inlineConfirmLayoutScheduled = true;
+    window.requestAnimationFrame(() => {
+      state.inlineConfirmLayoutScheduled = false;
+      this.updateImageViewerInlineConfirmLayout();
+    });
+  }
+
+  updateImageViewerInlineConfirmLayout() {
+    const { overlay, image, inlineConfirm } = this.getImageViewerElements();
+    if (!overlay || !image || !inlineConfirm || inlineConfirm.hidden || !overlay.classList.contains('active')) return;
+
+    const overlayRect = overlay.getBoundingClientRect();
+    const imageRect = image.getBoundingClientRect();
+    const confirmHeight = inlineConfirm.offsetHeight || 92;
+    const edgeGap = window.innerWidth <= 768 ? 10 : 14;
+    const minTop = edgeGap;
+    const maxTop = Math.max(minTop, overlayRect.height - confirmHeight - edgeGap);
+    const preferredTop = (Number.isFinite(imageRect.bottom) ? imageRect.bottom - overlayRect.top : overlayRect.height * 0.5) + edgeGap;
+    const nextTop = Math.max(minTop, Math.min(maxTop, preferredTop));
+
+    inlineConfirm.style.setProperty('--image-viewer-inline-confirm-top', `${Math.round(nextTop)}px`);
+  }
+
+  showImageViewerInlineConfirm(
+    message,
+    {
+      confirmText = 'Видалити',
+      cancelText = 'Скасувати'
+    } = {}
+  ) {
+    const {
+      inlineConfirm,
+      inlineConfirmText,
+      inlineConfirmOkBtn,
+      inlineConfirmCancelBtn
+    } = this.getImageViewerElements();
+
+    if (!inlineConfirm || !inlineConfirmText || !inlineConfirmOkBtn || !inlineConfirmCancelBtn) {
+      return this.showConfirm(message, 'Підтвердження');
+    }
+
+    this.hideImageViewerInlineConfirm();
+    inlineConfirmText.textContent = String(message || '').trim() || 'Підтвердити дію?';
+    inlineConfirmOkBtn.textContent = confirmText;
+    inlineConfirmCancelBtn.textContent = cancelText;
+    inlineConfirm.hidden = false;
+    this.scheduleImageViewerInlineConfirmLayout();
+
+    return new Promise((resolve) => {
+      const cleanup = () => {
+        inlineConfirmOkBtn.removeEventListener('click', onConfirm);
+        inlineConfirmCancelBtn.removeEventListener('click', onCancel);
+      };
+      const onConfirm = () => {
+        this.hideImageViewerInlineConfirm();
+        resolve(true);
+      };
+      const onCancel = () => {
+        this.hideImageViewerInlineConfirm();
+        resolve(false);
+      };
+
+      inlineConfirmOkBtn.addEventListener('click', onConfirm);
+      inlineConfirmCancelBtn.addEventListener('click', onCancel);
+      this.getImageViewerState().inlineConfirmCleanup = cleanup;
+    });
+  }
+
   scheduleImageViewerToolbarLayout() {
     const state = this.getImageViewerState();
     if (state.toolbarLayoutScheduled) return;
@@ -6628,30 +7014,20 @@ export class ChatAppMessagingMethods {
   }
 
   updateImageViewerToolbarLayout() {
-    const { overlay, stage, image, toolbar } = this.getImageViewerElements();
-    if (!overlay || !stage || !image || !toolbar || !overlay.classList.contains('active')) return;
+    const { overlay, stage, toolbar } = this.getImageViewerElements();
+    if (!overlay || !stage || !toolbar || !overlay.classList.contains('active')) return;
 
     const stageRect = stage.getBoundingClientRect();
-    const imageRect = image.getBoundingClientRect();
     if (!stageRect.width || !stageRect.height) return;
 
     const isMobile = window.innerWidth <= 768;
     const minBottom = isMobile ? 10 : 14;
-    const edgeGap = isMobile ? 8 : 12;
-    const toolbarHeight = toolbar.offsetHeight || (isMobile ? 38 : 44);
-    const visibleImageBottom = Number.isFinite(imageRect.bottom) ? imageRect.bottom : stageRect.bottom;
-    const gapToImage = Math.max(0, stageRect.bottom - visibleImageBottom);
-    // Place toolbar outside (below) the image whenever there is room.
-    const desiredBottom = gapToImage - toolbarHeight - edgeGap;
-    const maxBottom = Math.max(minBottom, stageRect.height - toolbarHeight - edgeGap);
-    const nextBottom = Math.min(maxBottom, Math.max(minBottom, desiredBottom));
-
     const widthPadding = isMobile ? 16 : 24;
     const minWidth = isMobile ? 220 : 320;
-    const imageWidth = imageRect.width > 1 ? imageRect.width : stageRect.width - widthPadding;
-    const nextWidth = Math.max(minWidth, Math.min(imageWidth, stageRect.width - widthPadding));
+    const preferredWidth = isMobile ? 420 : 560;
+    const nextWidth = Math.max(minWidth, Math.min(preferredWidth, stageRect.width - widthPadding));
 
-    toolbar.style.setProperty('--image-viewer-toolbar-bottom', `${Math.round(nextBottom)}px`);
+    toolbar.style.setProperty('--image-viewer-toolbar-bottom', `${Math.round(minBottom)}px`);
     toolbar.style.setProperty('--image-viewer-toolbar-width', `${Math.round(nextWidth)}px`);
   }
 
@@ -6682,6 +7058,8 @@ export class ChatAppMessagingMethods {
     state.pinchStartDistance = 0;
     state.pinchStartScale = state.minScale;
     state.toolbarLayoutScheduled = false;
+    state.inlineConfirmLayoutScheduled = false;
+    this.hideImageViewerInlineConfirm();
     this.applyImageViewerTransform();
     this.renderImageViewerSender();
 
@@ -6734,6 +7112,8 @@ export class ChatAppMessagingMethods {
     state.pinchStartDistance = 0;
     state.pinchStartScale = state.minScale;
     state.toolbarLayoutScheduled = false;
+    state.inlineConfirmLayoutScheduled = false;
+    this.hideImageViewerInlineConfirm();
     image.style.removeProperty('transform');
     image.removeAttribute('src');
     if (toolbar) {
@@ -6836,13 +7216,17 @@ export class ChatAppMessagingMethods {
     image.style.transform = `translate3d(${state.translateX}px, ${state.translateY}px, 0) scale(${state.scale})`;
     stage.classList.toggle('is-zoomed', state.scale > state.minScale + 0.001);
     this.scheduleImageViewerToolbarLayout();
+    this.scheduleImageViewerInlineConfirmLayout();
   }
 
   async deleteImageFromViewer() {
     const state = this.getImageViewerState();
     if (!this.currentChat || !Number.isFinite(state.messageId) || state.messageId <= 0) return;
 
-    const confirmed = await this.showConfirm('Видалити це фото?', 'Видалення фото');
+    const confirmed = await this.showImageViewerInlineConfirm('Видалити це фото?', {
+      confirmText: 'Видалити',
+      cancelText: 'Скасувати'
+    });
     if (!confirmed) return;
 
     this.closeImageViewer();
@@ -6901,7 +7285,7 @@ export class ChatAppMessagingMethods {
       this.renderChat(forwardedMessage.id);
     }
     this.renderChatsList();
-    await this.showNotice('Фото переслано!');
+    await this.showAlert('Фото переслано!', 'Пересилання');
   }
 
   getImageViewerDistance(firstPoint, secondPoint) {

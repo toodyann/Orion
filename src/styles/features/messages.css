@@ -312,12 +312,42 @@ html.dark-theme .message.other .message-content {
   padding: 6px;
 }
 
+.message-image-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.message-image-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.92);
+  animation: message-image-spinner-rotate 0.8s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.message-image-frame.is-loaded .message-image-spinner {
+  display: none;
+}
+
 .message-image {
   display: block;
   width: min(280px, 68vw);
   max-width: 100%;
+  max-height: min(420px, 56vh);
+  height: auto;
   border-radius: 12px;
-  object-fit: cover;
+  object-fit: contain;
   cursor: zoom-in;
   user-select: none;
   -webkit-user-drag: none;
@@ -325,6 +355,7 @@ html.dark-theme .message.other .message-content {
   filter: none;
   transform: none;
   transition: none;
+  background: transparent;
 }
 
 .message-image.is-loaded {
@@ -336,6 +367,15 @@ html.dark-theme .message.other .message-content {
 .message-image-caption {
   margin-top: 8px;
   padding: 0 6px;
+}
+
+@keyframes message-image-spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .message-media-failure {

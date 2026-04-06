@@ -2693,6 +2693,85 @@ body.image-viewer-open {
   -webkit-backdrop-filter: none;
 }
 
+.image-viewer-inline-confirm {
+  position: absolute;
+  left: 50%;
+  top: var(--image-viewer-inline-confirm-top, 50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(320px, calc(100% - 24px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(10, 16, 28, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  transform: translateX(-50%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.image-viewer-inline-confirm[hidden] {
+  display: none !important;
+}
+
+.image-viewer-inline-confirm-text {
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  text-align: center;
+}
+
+.image-viewer-inline-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.image-viewer-inline-confirm-btn {
+  min-width: 112px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.14s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.image-viewer-inline-confirm-btn:hover {
+  opacity: 1;
+}
+
+.image-viewer-inline-confirm-btn:active {
+  transform: scale(0.98);
+}
+
+.image-viewer-inline-confirm-btn--ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.image-viewer-inline-confirm-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.image-viewer-inline-confirm-btn--danger {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.image-viewer-inline-confirm-btn--danger:hover {
+  background: #dc2626;
+}
+
 .image-viewer-toolbar {
   position: absolute;
   left: 50%;
@@ -2872,6 +2951,26 @@ html:not(.dark-theme) .image-viewer-btn:hover {
   .image-viewer-sender {
     max-width: min(54vw, 220px);
     gap: 8px;
+  }
+
+  .image-viewer-inline-confirm {
+    width: min(300px, calc(100% - 16px));
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .image-viewer-inline-confirm-text {
+    font-size: 13px;
+  }
+
+  .image-viewer-inline-confirm-actions {
+    gap: 8px;
+  }
+
+  .image-viewer-inline-confirm-btn {
+    min-width: 96px;
+    min-height: 36px;
+    font-size: 12px;
   }
 
   .image-viewer-sender-avatar {

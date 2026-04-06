@@ -799,6 +799,13 @@ export function mountAppShell() {
     <div class="image-viewer-stage" id="imageViewerStage">
       <img class="image-viewer-image" id="imageViewerImage" alt="Перегляд зображення" draggable="false" />
     </div>
+    <div class="image-viewer-inline-confirm" id="imageViewerInlineConfirm" hidden>
+      <div class="image-viewer-inline-confirm-text" id="imageViewerInlineConfirmText">Видалити це фото?</div>
+      <div class="image-viewer-inline-confirm-actions">
+        <button type="button" class="image-viewer-inline-confirm-btn image-viewer-inline-confirm-btn--ghost" id="imageViewerInlineConfirmCancelBtn">Скасувати</button>
+        <button type="button" class="image-viewer-inline-confirm-btn image-viewer-inline-confirm-btn--danger" id="imageViewerInlineConfirmOkBtn">Видалити</button>
+      </div>
+    </div>
     <div class="image-viewer-toolbar">
       <div class="image-viewer-sender" id="imageViewerSender" hidden>
         <span class="image-viewer-sender-avatar" id="imageViewerSenderAvatar" aria-hidden="true">

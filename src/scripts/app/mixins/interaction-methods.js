@@ -1407,6 +1407,14 @@ export class ChatAppInteractionMethods {
       scrollBottomBtn.dataset.ready = 'true';
       messagesContainer.addEventListener('scroll', () => {
         this.updateMessagesScrollBottomButtonVisibility();
+        if (this.currentChat && !this.isMessagesNearBottom(messagesContainer, 96)) {
+          if (typeof this.cancelPendingMessagesAutoScroll === 'function') {
+            this.cancelPendingMessagesAutoScroll(messagesContainer, { suppressMs: 2200 });
+          } else {
+            delete messagesContainer.dataset.mediaAutoScroll;
+            this.currentChatBottomPinUntil = 0;
+          }
+        }
         if (
           this.currentChat
           && messagesContainer.scrollTop <= 80
@@ -2296,7 +2304,7 @@ export class ChatAppInteractionMethods {
     });
   }
 
-  selectChat(chatId) {
+  async selectChat(chatId) {
     this.closeContactProfileSection();
     if (typeof this.stopRealtimeTyping === 'function') {
       this.stopRealtimeTyping({ emit: true });
@@ -2368,18 +2376,24 @@ export class ChatAppInteractionMethods {
       }
     } catch (e) {
     }
+    const selectedChat = this.currentChat;
+    if (selectedChat && typeof this.warmChatImageDimensions === 'function') {
+      await this.warmChatImageDimensions(selectedChat, { limit: 8, timeoutMs: 180 }).catch(() => {});
+    }
+    if (this.currentChat !== selectedChat) return;
     this.renderChat();
     this.triggerChatEnterAnimation();
     this.applyMobileChatViewportLayout();
     if (typeof this.pinCurrentChatToBottom === 'function') {
-      this.pinCurrentChatToBottom(900);
+      this.pinCurrentChatToBottom(2600);
     } else {
       const messagesContainer = document.getElementById('messagesContainer');
       if (messagesContainer && typeof this.syncMessagesContainerToBottom === 'function') {
         this.syncMessagesContainerToBottom(messagesContainer);
       }
     }
-    if (typeof this.syncCurrentChatMessagesFromServer === 'function') {
+    const hasLocalMessagesCache = Array.isArray(this.currentChat?.messages) && this.currentChat.messages.length > 0;
+    if (!hasLocalMessagesCache && typeof this.syncCurrentChatMessagesFromServer === 'function') {
       this.syncCurrentChatMessagesFromServer({ forceScroll: true })
         .then(() => {
           if (this.currentChat && typeof this.emitRealtimeReadReceipts === 'function') {
