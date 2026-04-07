@@ -615,10 +615,18 @@ export const settingsTemplates = {
 
       <div class="settings-item">
         <div class="settings-item-label">
-          <span>Дозвіл браузера</span>
-          <p class="settings-item-desc" id="desktopNotificationState">Натисніть, щоб перевірити або надати доступ</p>
+          <span>Застосунок Orion</span>
+          <p class="settings-item-desc" id="pwaInstallState">Перевірка можливості встановлення...</p>
         </div>
-        <button type="button" class="btn btn-secondary settings-item-action" id="desktopNotificationActionBtn">Перевірити</button>
+        <button type="button" class="btn btn-secondary settings-item-action" id="pwaInstallActionBtn">Встановити</button>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-label">
+          <span>Оновлення застосунку</span>
+          <p class="settings-item-desc" id="pwaUpdateState">Перевірка версії...</p>
+        </div>
+        <button type="button" class="btn btn-secondary settings-item-action" id="pwaUpdateActionBtn">Оновити</button>
       </div>
 
       <div class="settings-item">

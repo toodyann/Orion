@@ -5216,6 +5216,91 @@ export class ChatAppFeaturesMethods {
     }
   }
 
+  isStandalonePwaMode() {
+    const mediaStandalone = typeof window.matchMedia === 'function'
+      && window.matchMedia('(display-mode: standalone)').matches;
+    const iosStandalone = window.navigator?.standalone === true;
+    return Boolean(mediaStandalone || iosStandalone);
+  }
+
+  updatePwaControls(settingsContainer) {
+    const installStateEl = settingsContainer?.querySelector('#pwaInstallState');
+    const installBtn = settingsContainer?.querySelector('#pwaInstallActionBtn');
+    const updateStateEl = settingsContainer?.querySelector('#pwaUpdateState');
+    const updateBtn = settingsContainer?.querySelector('#pwaUpdateActionBtn');
+    if (!installStateEl || !installBtn || !updateStateEl || !updateBtn) return;
+
+    const isSupported = 'serviceWorker' in navigator;
+    const isInstalled = this.isStandalonePwaMode();
+    const deferredPrompt = window.__ORION_PWA_DEFERRED_PROMPT || null;
+    const updateRegistration = window.__ORION_PWA_UPDATE_REGISTRATION || null;
+    const hasUpdate = Boolean(updateRegistration?.waiting);
+
+    if (!('serviceWorker' in navigator)) {
+      installStateEl.textContent = 'PWA не підтримується у цьому браузері';
+      installBtn.textContent = 'Недоступно';
+      installBtn.disabled = true;
+      updateStateEl.textContent = 'Service Worker недоступний';
+      updateBtn.textContent = 'Недоступно';
+      updateBtn.disabled = true;
+      return;
+    }
+
+    if (isInstalled) {
+      installStateEl.textContent = 'Застосунок уже встановлено';
+      installBtn.textContent = 'Встановлено';
+      installBtn.disabled = true;
+    } else if (deferredPrompt) {
+      installStateEl.textContent = 'Можна встановити Orion як застосунок';
+      installBtn.textContent = 'Встановити';
+      installBtn.disabled = false;
+    } else if (isSupported) {
+      installStateEl.textContent = 'Chrome сам покаже install prompt, коли сторінка буде придатна для встановлення';
+      installBtn.textContent = 'Очікування';
+      installBtn.disabled = true;
+    } else {
+      installStateEl.textContent = 'PWA не підтримується у цьому браузері';
+      installBtn.textContent = 'Недоступно';
+      installBtn.disabled = true;
+    }
+
+    if (hasUpdate) {
+      updateStateEl.textContent = 'Є нова версія Orion';
+      updateBtn.textContent = 'Оновити';
+      updateBtn.disabled = false;
+    } else {
+      updateStateEl.textContent = 'Остання версія вже активна';
+      updateBtn.textContent = 'Актуально';
+      updateBtn.disabled = true;
+    }
+  }
+
+  async handlePwaInstallAction(settingsContainer) {
+    const deferredPrompt = window.__ORION_PWA_DEFERRED_PROMPT || null;
+    if (!deferredPrompt || typeof deferredPrompt.prompt !== 'function') {
+      this.updatePwaControls(settingsContainer);
+      return;
+    }
+
+    try {
+      await deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+    } catch (_) {
+      // Ignore prompt dismissal errors.
+    } finally {
+      window.__ORION_PWA_DEFERRED_PROMPT = null;
+      this.updatePwaControls(settingsContainer);
+    }
+  }
+
+  handlePwaUpdateAction() {
+    const registration = window.__ORION_PWA_UPDATE_REGISTRATION || null;
+    const waitingWorker = registration?.waiting;
+    if (!waitingWorker) return;
+    waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    window.location.reload();
+  }
+
   applyThemeMode(mode) {
     const themeMode = ['light', 'dark', 'system'].includes(mode) ? mode : 'system';
     this.settings = { ...(this.settings || {}), theme: themeMode };
@@ -5556,6 +5641,9 @@ export class ChatAppFeaturesMethods {
         const vibrationEnabled = settingsContainer.querySelector('#vibrationEnabled');
         const messagePreview = settingsContainer.querySelector('#messagePreview');
         const desktopNotificationActionBtn = settingsContainer.querySelector('#desktopNotificationActionBtn');
+        const pwaInstallActionBtn = settingsContainer.querySelector('#pwaInstallActionBtn');
+        const pwaUpdateActionBtn = settingsContainer.querySelector('#pwaUpdateActionBtn');
+        this.activePwaSettingsContainer = settingsContainer;
         
         if (soundNotif) soundNotif.checked = this.settings.soundNotifications ?? true;
         if (desktopNotif) desktopNotif.checked = this.settings.desktopNotifications ?? true;
@@ -5568,11 +5656,35 @@ export class ChatAppFeaturesMethods {
         bindLiveSave(messagePreview);
 
         this.updateDesktopNotificationStatus(settingsContainer);
+        this.updatePwaControls(settingsContainer);
         if (desktopNotificationActionBtn && desktopNotificationActionBtn.dataset.bound !== 'true') {
           desktopNotificationActionBtn.dataset.bound = 'true';
           desktopNotificationActionBtn.addEventListener('click', async () => {
             await this.handleDesktopNotificationAction(settingsContainer);
           });
+        }
+        if (pwaInstallActionBtn && pwaInstallActionBtn.dataset.bound !== 'true') {
+          pwaInstallActionBtn.dataset.bound = 'true';
+          pwaInstallActionBtn.addEventListener('click', async () => {
+            await this.handlePwaInstallAction(settingsContainer);
+          });
+        }
+        if (pwaUpdateActionBtn && pwaUpdateActionBtn.dataset.bound !== 'true') {
+          pwaUpdateActionBtn.dataset.bound = 'true';
+          pwaUpdateActionBtn.addEventListener('click', () => {
+            this.handlePwaUpdateAction();
+          });
+        }
+        if (!this.pwaStateEventsBound) {
+          this.pwaStateEventsBound = true;
+          const syncPwaState = () => {
+            if (this.activePwaSettingsContainer) {
+              this.updatePwaControls(this.activePwaSettingsContainer);
+            }
+          };
+          window.addEventListener('orion:pwa-installable-change', syncPwaState);
+          window.addEventListener('orion:pwa-update-change', syncPwaState);
+          window.addEventListener('orion:pwa-installed', syncPwaState);
         }
       }
       

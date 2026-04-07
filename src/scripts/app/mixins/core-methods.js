@@ -267,22 +267,92 @@ export class ChatAppCoreMethods {
       .slice(0, 200);
   }
 
-  async refreshCoinWalletFromBackend({ includeTransactions = false, silent = true } = {}) {
+  async refreshCoinWalletFromBackend({ includeTransactions = false, silent = true, force = false } = {}) {
     const headers = this.getWalletApiHeaders();
     if (!String(headers?.['X-User-Id'] || '').trim()) return null;
 
     const currency = this.getWalletCurrencyCode();
     const encodedCurrency = encodeURIComponent(currency);
+    const now = Date.now();
+    const walletSuccessTtlMs = 15_000;
+    const transactionsSuccessTtlMs = 20_000;
+    const walletFailureCooldownMs = 30_000;
+    const transactionsFailureCooldownMs = 30_000;
 
-    try {
+    if (!force) {
+      if (this.walletRefreshPromise) {
+        if (this.walletRefreshIncludesTransactions || !includeTransactions) {
+          return this.walletRefreshPromise;
+        }
+        return this.walletRefreshPromise.then(() => this.refreshCoinWalletFromBackend({
+          includeTransactions: true,
+          silent,
+          force: true
+        }));
+      }
+
+      const walletRetryAfter = Number(this.walletRefreshRetryAfterTs || 0);
+      if (walletRetryAfter > now) {
+        return {
+          balance: this.getTapBalanceCents(),
+          currency,
+          cached: true,
+          skipped: 'wallet-backoff'
+        };
+      }
+
+      if (includeTransactions) {
+        const txRetryAfter = Number(this.walletTransactionsRetryAfterTs || 0);
+        if (txRetryAfter > now) {
+          return {
+            balance: this.getTapBalanceCents(),
+            currency,
+            cached: true,
+            skipped: 'transactions-backoff'
+          };
+        }
+      }
+
+      const walletLastRefreshAt = Number(this.walletLastRefreshAt || 0);
+      const walletIsFresh = walletLastRefreshAt > 0 && (now - walletLastRefreshAt) < walletSuccessTtlMs;
+      if (walletIsFresh) {
+        if (!includeTransactions) {
+          return {
+            balance: this.getTapBalanceCents(),
+            currency,
+            cached: true,
+            skipped: 'wallet-cache'
+          };
+        }
+        const txLastRefreshAt = Number(this.walletLastTransactionsRefreshAt || 0);
+        const transactionsAreFresh = txLastRefreshAt > 0 && (now - txLastRefreshAt) < transactionsSuccessTtlMs;
+        if (transactionsAreFresh) {
+          return {
+            balance: this.getTapBalanceCents(),
+            currency,
+            cached: true,
+            skipped: 'transactions-cache'
+          };
+        }
+      }
+    }
+
+    const refreshTask = (async () => {
       const walletResponse = await fetch(buildApiUrl(`/wallet/me?currency=${encodedCurrency}`), {
         headers
       });
       if (!walletResponse.ok) {
+        this.walletRefreshRetryAfterTs = Date.now() + walletFailureCooldownMs;
         if (!silent) {
           console.warn(`[wallet] GET /wallet/me failed with status ${walletResponse.status}`);
         }
-        return null;
+        return {
+          balance: this.getTapBalanceCents(),
+          currency,
+          cached: true,
+          failed: true,
+          status: walletResponse.status
+        };
       }
 
       const walletPayload = await walletResponse.json().catch(() => ({}));
@@ -295,6 +365,8 @@ export class ChatAppCoreMethods {
         this.coinLastSyncedBalanceCents = nextBalance;
         this.setTapBalanceCents(nextBalance, { syncBackend: false });
       }
+      this.walletRefreshRetryAfterTs = 0;
+      this.walletLastRefreshAt = Date.now();
 
       if (includeTransactions) {
         const txResponse = await fetch(buildApiUrl(`/wallet/me/transactions?currency=${encodedCurrency}`), {
@@ -304,8 +376,13 @@ export class ChatAppCoreMethods {
           const txPayload = await txResponse.json().catch(() => ({}));
           const normalized = this.normalizeWalletTransactionsPayload(txPayload);
           this.saveCoinTransactionHistory(normalized);
+          this.walletTransactionsRetryAfterTs = 0;
+          this.walletLastTransactionsRefreshAt = Date.now();
         } else if (!silent) {
+          this.walletTransactionsRetryAfterTs = Date.now() + transactionsFailureCooldownMs;
           console.warn(`[wallet] GET /wallet/me/transactions failed with status ${txResponse.status}`);
+        } else {
+          this.walletTransactionsRetryAfterTs = Date.now() + transactionsFailureCooldownMs;
         }
       }
 
@@ -313,12 +390,28 @@ export class ChatAppCoreMethods {
         balance: this.getTapBalanceCents(),
         currency
       };
-    } catch (error) {
+    })().catch((error) => {
+      this.walletRefreshRetryAfterTs = Date.now() + walletFailureCooldownMs;
       if (!silent) {
         console.warn('[wallet] Failed to refresh wallet from backend:', error);
       }
-      return null;
-    }
+      return {
+        balance: this.getTapBalanceCents(),
+        currency,
+        cached: true,
+        failed: true
+      };
+    });
+
+    this.walletRefreshPromise = refreshTask;
+    this.walletRefreshIncludesTransactions = Boolean(includeTransactions);
+
+    return refreshTask.finally(() => {
+      if (this.walletRefreshPromise === refreshTask) {
+        this.walletRefreshPromise = null;
+        this.walletRefreshIncludesTransactions = false;
+      }
+    });
   }
 
   async syncCoinBalanceToBackend(balanceCents, { silent = true } = {}) {

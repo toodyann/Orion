@@ -99,9 +99,17 @@ export class ChatAppMessagingMethods {
     const senderName = String(safeMessage.senderName || '').trim();
     const isGroupChat = Boolean(safeChat.isGroup);
     const prefix = isGroupChat && senderName ? `${senderName}: ` : '';
+    const previewEnabled = this.settings?.messagePreview !== false;
     const messageType = String(safeMessage.type || 'text').trim();
     const messageText = String(safeMessage.text || '').trim();
     const fileName = String(safeMessage.fileName || '').trim();
+
+    if (!previewEnabled) {
+      if (messageType === 'image') return `${prefix}Нове фото`;
+      if (messageType === 'voice') return `${prefix}Нове голосове повідомлення`;
+      if (messageType === 'file') return `${prefix}Новий файл`;
+      return `${prefix}Нове повідомлення`;
+    }
 
     if (messageType === 'image') {
       return `${prefix}${messageText ? `Фото: ${messageText}` : 'Надіслав(ла) фото'}`;
@@ -123,6 +131,7 @@ export class ChatAppMessagingMethods {
     body = '',
     icon = '',
     tag = '',
+    data = null,
     notificationKey = '',
     requireEnabledSetting = true,
     closeAfterMs = 5000,
@@ -149,30 +158,55 @@ export class ChatAppMessagingMethods {
     const safeBody = String(body || '').trim();
     const safeIcon = this.getAvatarImage(icon);
     const safeTag = String(tag || safeNotificationKey || '').trim();
-    const notification = new Notification(safeTitle, {
+    const safeSilent = typeof silent === 'boolean' ? silent : !this.settings?.soundNotifications;
+    const safeCloseAfterMs = Math.max(1500, Number(closeAfterMs) || 5000);
+    const safeData = data && typeof data === 'object' ? { ...data } : undefined;
+    const notificationOptions = {
       body: safeBody,
       icon: safeIcon || undefined,
+      badge: safeIcon || undefined,
       tag: safeTag || undefined,
-      silent: typeof silent === 'boolean' ? silent : !this.settings?.soundNotifications
-    });
-
-    notification.onclick = () => {
-      try {
-        window.focus();
-      } catch (_) {
-      }
-      if (typeof onClick === 'function') {
-        try {
-          onClick();
-        } catch (_) {
-        }
-      }
-      notification.close();
+      data: safeData,
+      silent: safeSilent
     };
 
-    const safeCloseAfterMs = Math.max(1500, Number(closeAfterMs) || 5000);
-    window.setTimeout(() => notification.close(), safeCloseAfterMs);
-    return notification;
+    const showWindowNotification = () => {
+      const notification = new Notification(safeTitle, notificationOptions);
+
+      notification.onclick = () => {
+        try {
+          window.focus();
+        } catch (_) {
+        }
+        if (typeof onClick === 'function') {
+          try {
+            onClick();
+          } catch (_) {
+          }
+        }
+        notification.close();
+      };
+
+      window.setTimeout(() => notification.close(), safeCloseAfterMs);
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration()
+        .then((registration) => {
+          if (!registration || typeof registration.showNotification !== 'function') {
+            showWindowNotification();
+            return null;
+          }
+          return registration.showNotification(safeTitle, notificationOptions);
+        })
+        .catch(() => {
+          showWindowNotification();
+        });
+      return true;
+    }
+
+    showWindowNotification();
+    return true;
   }
 
   notifyDesktopIncomingMessage(chat, message) {
@@ -196,6 +230,12 @@ export class ChatAppMessagingMethods {
       body,
       icon,
       tag: notificationKey,
+      data: {
+        type: 'orion-open-chat',
+        url: window.location.href,
+        chatServerId,
+        localChatId
+      },
       notificationKey,
       requireEnabledSetting: true,
       onClick: () => {

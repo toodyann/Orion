@@ -77,6 +77,12 @@ export class ChatApp {
     this.messagesBottomSyncTimers = [];
     this.mediaRetryDrafts = new Map();
     this.managedObjectUrls = new Set();
+    this.walletRefreshPromise = null;
+    this.walletRefreshIncludesTransactions = false;
+    this.walletLastRefreshAt = 0;
+    this.walletLastTransactionsRefreshAt = 0;
+    this.walletRefreshRetryAfterTs = 0;
+    this.walletTransactionsRetryAfterTs = 0;
     this.loadTheme();
     this.profileMenuPlaceholder = null;
     this.init();
