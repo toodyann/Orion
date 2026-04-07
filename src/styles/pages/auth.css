@@ -426,15 +426,17 @@ html.dark-theme .auth-submit.is-loading::after {
 
 @media (max-width: 560px) {
   .auth-page::before {
-    top: 12%;
+    top: 14%;
     font-size: clamp(118px, 40vw, 172px);
     transform: translate(-50%, -50%) scaleX(0.54) scaleY(0.5);
   }
 
   .auth-page {
     align-items: flex-start;
-    padding: 12px 12px 16px;
-    padding-top: 168px;
+    padding: max(12px, env(safe-area-inset-top))
+      12px
+      max(16px, env(safe-area-inset-bottom));
+    padding-top: max(152px, calc(env(safe-area-inset-top) + 140px));
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -451,5 +453,40 @@ html.dark-theme .auth-submit.is-loading::after {
   .auth-headline h2 {
     margin-top: 8px;
     font-size: 30px;
+  }
+}
+
+@media (max-width: 400px) {
+  .auth-page::before {
+    top: 15%;
+    font-size: clamp(92px, 34vw, 132px);
+  }
+
+  .auth-page {
+    padding-top: max(136px, calc(env(safe-area-inset-top) + 124px));
+  }
+
+  .auth-theme-toggle--floating {
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .auth-panel {
+    gap: 10px;
+  }
+
+  .auth-headline h2 {
+    font-size: 26px;
+  }
+
+  .auth-form {
+    gap: 8px;
+  }
+
+  .auth-form input,
+  .auth-submit {
+    height: 44px;
   }
 }

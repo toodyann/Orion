@@ -6,7 +6,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
 
 /* Global Font */
-* {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   font-family:
     "Inter",
     -apple-system,

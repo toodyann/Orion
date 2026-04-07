@@ -148,7 +148,7 @@ html.dark-theme .orion-app #settingsContainerMobile .settings-section.active {
   z-index: 4;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
   min-height: 40px;
   padding: 0 14px;
   border-radius: 14px;
@@ -2920,26 +2920,20 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 }
 
 .shop-filter-trigger:hover {
-  border-color: color-mix(in srgb, var(--primary-color) 34%, var(--border-color));
+  border-color: color-mix(
+    in srgb,
+    var(--primary-color) 34%,
+    var(--border-color)
+  );
   background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
   transform: translateY(-1px);
 }
 
 .shop-filter-trigger.is-open {
-  color: #fff;
-  border-color: color-mix(
-    in srgb,
-    var(--primary-color) 54%,
-    var(--border-color)
-  );
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    color-mix(in srgb, var(--primary-strong) 76%, #a3a3a3)
-  );
-  box-shadow:
-    0 12px 24px color-mix(in srgb, var(--primary-color) 18%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
 }
 
 .shop-filter-trigger.is-open svg {
@@ -3013,7 +3007,8 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-color) 88%, transparent);
 }
 
 .shop-filter-panel-title {
@@ -3043,7 +3038,11 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 }
 
 .shop-filter-close:hover {
-  border-color: color-mix(in srgb, var(--primary-color) 36%, var(--border-color));
+  border-color: color-mix(
+    in srgb,
+    var(--primary-color) 36%,
+    var(--border-color)
+  );
   color: var(--text-primary);
 }
 
@@ -3192,32 +3191,29 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 }
 
 .shop-filter-reset {
-  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
-  background: color-mix(in srgb, var(--bg-color) 84%, transparent);
-  color: var(--text-secondary);
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--text-primary);
 }
 
 .shop-filter-apply {
-  border: 1px solid
-    color-mix(in srgb, var(--primary-color) 54%, var(--border-color));
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    color-mix(in srgb, var(--primary-strong) 76%, #a3a3a3)
-  );
-  color: #fff;
-  box-shadow:
-    0 12px 24px color-mix(in srgb, var(--primary-color) 18%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--text-primary);
+  box-shadow: none;
 }
 
 .shop-filter-reset:hover {
-  border-color: color-mix(in srgb, var(--primary-color) 32%, var(--border-color));
+  border-color: color-mix(in srgb, var(--border-color) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 96%, transparent);
   color: var(--text-primary);
 }
 
 .shop-filter-apply:hover {
-  filter: brightness(1.04);
+  filter: none;
+  border-color: color-mix(in srgb, var(--border-color) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 96%, transparent);
+  color: var(--text-primary);
 }
 
 @media (min-width: 769px) {
@@ -3276,29 +3272,33 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 }
 
 .shop-filter-btn:hover {
-  border-color: color-mix(
-    in srgb,
-    var(--border-color) 86%,
-    var(--primary-color)
-  );
-  background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+  border-color: transparent;
+  background: color-mix(in srgb, #ffffff 8%, transparent);
+  color: #ffffff;
 }
 
 .shop-filter-btn.active {
-  color: #fff;
-  border-color: color-mix(
-    in srgb,
-    var(--primary-color) 54%,
-    var(--border-color)
-  );
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    color-mix(in srgb, var(--primary-strong) 76%, #a3a3a3)
-  );
-  box-shadow:
-    0 10px 20px color-mix(in srgb, var(--primary-color) 16%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+html:not(.dark-theme) .shop-filter-btn:hover {
+  background: rgba(15, 15, 15, 0.08);
+  color: #111111;
+}
+
+html:not(.dark-theme) .shop-filter-btn.active {
+  background: rgba(15, 15, 15, 0.12);
+  color: #111111;
+}
+
+html:not(.dark-theme) .shop-filter-trigger.is-open {
+  background: rgba(15, 15, 15, 0.12);
+  color: #111111;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .shop-filter-trigger:focus-visible,
@@ -3891,7 +3891,11 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
 }
 
 .shop-item-inspect-action {
-  border-color: color-mix(in srgb, var(--border-color) 86%, var(--primary-color));
+  border-color: color-mix(
+    in srgb,
+    var(--border-color) 86%,
+    var(--primary-color)
+  );
   background: color-mix(in srgb, var(--surface-soft) 94%, transparent);
   color: var(--text-primary);
 }
@@ -3935,7 +3939,11 @@ html.dark-theme .profile-hero-card[data-profile-aura="midnight"] {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
   background:
-    radial-gradient(circle at 50% 6%, rgba(255, 255, 255, 0.14), transparent 52%),
+    radial-gradient(
+      circle at 50% 6%,
+      rgba(255, 255, 255, 0.14),
+      transparent 52%
+    ),
     radial-gradient(circle at 50% 110%, rgba(0, 0, 0, 0.28), transparent 42%),
     linear-gradient(
       180deg,
@@ -5052,7 +5060,7 @@ html.dark-theme .profile-settings-card.profile-settings-menu-card {
 }
 
 .mini-game-play-overlay::before {
-  content: '';
+  content: "";
   display: block;
   width: 28px;
   height: 28px;
@@ -5079,7 +5087,8 @@ html.dark-theme .profile-settings-card.profile-settings-menu-card {
 }
 
 .mini-game-panel[data-mini-game-panel="flappy"].is-running #flappyOrionStart,
-.mini-game-panel[data-mini-game-panel="flappy"].flappy-game-over #flappyOrionStart,
+.mini-game-panel[data-mini-game-panel="flappy"].flappy-game-over
+  #flappyOrionStart,
 .mini-game-panel[data-mini-game-panel="drift"].is-running #orionDriftStart {
   opacity: 0;
   visibility: hidden;
@@ -5215,7 +5224,7 @@ html.dark-theme .profile-settings-card.profile-settings-menu-card {
   .wallet-history-item-amount,
   .currency-value-inline
 )::after {
-  content: '';
+  content: "";
   display: inline-block;
   width: max(13px, 0.76em);
   height: max(13px, 0.76em);
@@ -5877,7 +5886,6 @@ html:not(.dark-theme) .mini-game-canvas {
     min-height: 0;
     height: 100%;
   }
-
 }
 
 /* Profile settings minimalist */

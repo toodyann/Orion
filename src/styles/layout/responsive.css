@@ -4046,3 +4046,268 @@
     box-shadow: none !important;
   }
 }
+
+@media (max-width: 768px) {
+  html,
+  body,
+  #app {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  .orion-app,
+  .main-layout,
+  .sidebar,
+  .chat-area,
+  .chat-container,
+  .chat-modal-header,
+  .messages-container,
+  .message-input-area,
+  #settingsContainerMobile,
+  #settingsContainerMobile .settings-section,
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  #settingsContainerMobile .coin-tapper-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .main-layout > *,
+  .sidebar > *,
+  .chat-area > *,
+  .chat-container > *,
+  #settingsContainerMobile > *,
+  #settingsContainerMobile .settings-content > *,
+  #settingsContainerMobile .shop-content > *,
+  #settingsContainerMobile .calls-content > *,
+  #settingsContainerMobile .wallet-content > *,
+  #settingsContainerMobile .profile-content > *,
+  #settingsContainerMobile .profile-settings-content > *,
+  #settingsContainerMobile .profile-items-content > *,
+  #settingsContainerMobile .mini-games-content > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  img,
+  svg,
+  canvas,
+  video {
+    max-width: 100%;
+  }
+
+  .message-bubble {
+    max-width: min(84%, 100%);
+  }
+
+  .message-content.has-file {
+    min-width: 0;
+  }
+
+  .message-content.has-voice {
+    min-width: min(220px, calc(100vw - 112px));
+  }
+
+  .voice-track {
+    margin: 0 8px;
+  }
+
+  .message-input-area {
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .input-wrapper {
+    gap: 6px;
+  }
+
+  .modal,
+  .alert-modal {
+    width: min(calc(100vw - 20px), 520px) !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  .modal-content,
+  .alert-modal-inner,
+  .modal-body,
+  .alert-body,
+  .group-info-modal-body,
+  .group-appearance-modal-body,
+  .contact-profile-view-body {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .contact-profile-actions {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .contact-profile-actions .profile-action-btn,
+  .contact-profile-actions .contact-profile-more,
+  .contact-profile-more {
+    flex: 1 1 calc(50% - 4px);
+    max-width: none;
+  }
+
+  .wallet-history-item,
+  .profile-item-card,
+  .shop-item-card,
+  .mini-game-view,
+  .profile-hero-card,
+  .profile-settings-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom-nav {
+    padding: 6px 4px
+      calc(8px + env(safe-area-inset-bottom) + var(--mobile-nav-lift, 10px)) !important;
+  }
+
+  .bottom-nav-item {
+    min-height: 54px !important;
+    padding: 4px 1px 6px !important;
+  }
+
+  .bottom-nav-item > svg,
+  .bottom-nav-item > .nav-avatar {
+    width: 26px !important;
+    height: 26px !important;
+    flex: 0 0 26px !important;
+  }
+
+  .bottom-nav-item > span:not(.nav-avatar) {
+    font-size: 10px !important;
+  }
+
+  .chat-modal-header {
+    padding-right: 8px !important;
+    padding-left: 8px !important;
+  }
+
+  .chat-modal-header .app-chat-info {
+    max-width: calc(100% - 84px) !important;
+    gap: 10px !important;
+    padding: 8px 10px !important;
+  }
+
+  .chat-modal-header .app-chat-name {
+    max-width: 112px !important;
+    font-size: 15px !important;
+  }
+
+  .chat-modal-header .app-chat-avatar {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 13px !important;
+  }
+
+  .message-bubble {
+    max-width: 88%;
+  }
+
+  .message-content.has-voice {
+    width: min(100%, calc(100vw - 72px));
+    min-width: 0;
+  }
+
+  .message-content.has-file,
+  .message-file {
+    width: 100%;
+  }
+
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  .coin-tapper-content {
+    padding-right: 10px !important;
+    padding-left: 10px !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-grid,
+  .profile-items-grid,
+  .mini-games-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-items-grid.is-list .profile-item-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .coin-tapper-content {
+    gap: 22px !important;
+  }
+
+  .coin-tapper-image {
+    width: min(72vw, 220px) !important;
+    height: min(72vw, 220px) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #settingsContainerMobile #messenger-settings .shop-filter-trigger.is-open {
+    border-color: transparent !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  html:not(.dark-theme)
+    #settingsContainerMobile
+    #messenger-settings
+    .shop-filter-trigger.is-open {
+    background: rgba(15, 15, 15, 0.12) !important;
+    color: #111111 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn:hover {
+    border-color: transparent !important;
+    background: color-mix(in srgb, #ffffff 8%, transparent) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  #settingsContainerMobile #messenger-settings .shop-filter-btn.active {
+    border-color: transparent !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  html:not(.dark-theme)
+    #settingsContainerMobile
+    #messenger-settings
+    .shop-filter-btn:hover {
+    background: rgba(15, 15, 15, 0.08) !important;
+    color: #111111 !important;
+  }
+
+  html:not(.dark-theme)
+    #settingsContainerMobile
+    #messenger-settings
+    .shop-filter-btn.active {
+    background: rgba(15, 15, 15, 0.12) !important;
+    color: #111111 !important;
+  }
+}
