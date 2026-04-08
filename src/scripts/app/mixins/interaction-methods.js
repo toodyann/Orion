@@ -416,11 +416,13 @@ export class ChatAppInteractionMethods {
     }
 
     const value = String(query || '').trim();
+    const previousQuery = String(this.desktopSecondaryChatSearchQuery || '').trim();
     this.desktopSecondaryChatSearchQuery = value;
     this.desktopSecondaryChatSearchMode = true;
     this.desktopSecondaryUserSearchError = '';
 
     if (!value) {
+      this.desktopSecondaryUserSearchLastRemoteQuery = '';
       this.desktopSecondaryUserSearchResults = [];
       this.desktopSecondaryUserSearchLoading = false;
       this.renderDesktopSecondaryChatsList(listEl, targetNavId);
@@ -441,11 +443,18 @@ export class ChatAppInteractionMethods {
       return;
     }
 
+    if (value === previousQuery && value === String(this.desktopSecondaryUserSearchLastRemoteQuery || '').trim()) {
+      this.desktopSecondaryUserSearchLoading = false;
+      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      return;
+    }
+
     const requestId = (this.desktopSecondaryUserSearchRequestId || 0) + 1;
     this.desktopSecondaryUserSearchRequestId = requestId;
 
     this.desktopSecondaryUserSearchTimer = window.setTimeout(async () => {
       try {
+        this.desktopSecondaryUserSearchLastRemoteQuery = value;
         const remoteUsers = await this.fetchRegisteredUsers(value);
         if (this.desktopSecondaryUserSearchRequestId !== requestId) return;
 
@@ -470,7 +479,16 @@ export class ChatAppInteractionMethods {
           }
         }
       }
-    }, 220);
+    }, 320);
+  }
+
+  isDesktopSecondarySearchEditingKey(event) {
+    const key = String(event?.key || '');
+    if (!key) return false;
+    if (event?.defaultPrevented) return false;
+    if (key === 'Backspace' || key === 'Delete' || key === 'Enter' || key === ' ') return true;
+    if (key.length === 1 && !event?.metaKey && !event?.ctrlKey && !event?.altKey) return true;
+    return false;
   }
 
   renderDesktopSecondaryUserSection(title, users, contentEl, listEl, targetNavId = 'navChats') {
@@ -618,13 +636,31 @@ export class ChatAppInteractionMethods {
       this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId);
     });
     input.addEventListener('input', (event) => {
+      if (!event.isTrusted) return;
+      const inputType = String(event.inputType || '').trim();
+      const wasKeyboardEdit = this.desktopSecondaryChatSearchPendingKeyboardEdit === true;
+      const isDirectUserEdit = Boolean(
+        wasKeyboardEdit
+        || inputType.startsWith('insert')
+        || inputType.startsWith('delete')
+        || inputType === 'historyUndo'
+        || inputType === 'historyRedo'
+      );
+      this.desktopSecondaryChatSearchPendingKeyboardEdit = false;
+      if (!isDirectUserEdit) return;
       this.scheduleDesktopSecondaryUserSearch(event.target.value, listEl, targetNavId);
     });
     input.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      this.resetDesktopSecondaryChatSearchState();
-      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.desktopSecondaryChatSearchPendingKeyboardEdit = false;
+        this.resetDesktopSecondaryChatSearchState();
+        this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+        return;
+      }
+      if (this.isDesktopSecondarySearchEditingKey(event)) {
+        this.desktopSecondaryChatSearchPendingKeyboardEdit = true;
+      }
     });
     searchWrap.appendChild(input);
     shell.appendChild(searchWrap);
@@ -722,6 +758,7 @@ export class ChatAppInteractionMethods {
     const listEl = document.getElementById('desktopSecondaryMenuList');
     if (!menuRoot || !listEl || !menuRoot.classList.contains('active')) return;
     if (listEl.dataset.menuMode !== 'chats' && listEl.dataset.menuMode !== 'chat-search') return;
+    if (this.desktopSecondaryChatSearchMode) return;
     this.renderDesktopSecondaryChatsList(listEl, 'navChats');
   }
 
