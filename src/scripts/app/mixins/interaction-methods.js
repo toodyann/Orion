@@ -322,6 +322,9 @@ export class ChatAppInteractionMethods {
     this.desktopSecondaryUserSearchLoading = false;
     this.desktopSecondaryUserSearchError = '';
     this.desktopSecondaryUserSearchRequestId = 0;
+    this.desktopSecondaryUserSearchLastRemoteQuery = '';
+    this.desktopSecondaryChatSearchPendingKeyboardEdit = false;
+    this.desktopSecondaryChatSearchRestoringFocus = false;
   }
 
   startDesktopSecondarySearchRevealAnimation(listEl) {
@@ -385,6 +388,7 @@ export class ChatAppInteractionMethods {
 
   async ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId = 'navChats') {
     if (!listEl || this.desktopSecondaryAllUsersLoading) return;
+    if (this.desktopSecondaryAllUsersFetched === true) return;
     if (Array.isArray(this.desktopSecondaryAllUsers) && this.desktopSecondaryAllUsers.length) return;
 
     this.desktopSecondaryAllUsersLoading = true;
@@ -401,6 +405,7 @@ export class ChatAppInteractionMethods {
       this.desktopSecondaryUserSearchError = 'Не вдалося завантажити список користувачів.';
     } finally {
       this.desktopSecondaryAllUsersLoading = false;
+      this.desktopSecondaryAllUsersFetched = true;
       const activeList = document.getElementById('desktopSecondaryMenuList');
       const menuRoot = document.getElementById('desktopSecondaryMenu');
       if (activeList === listEl && menuRoot?.dataset.menuRoot === targetNavId) {
@@ -628,6 +633,10 @@ export class ChatAppInteractionMethods {
     input.spellcheck = false;
     input.value = String(this.desktopSecondaryChatSearchQuery || '');
     input.addEventListener('focus', () => {
+      if (this.desktopSecondaryChatSearchRestoringFocus === true) {
+        this.desktopSecondaryChatSearchRestoringFocus = false;
+        return;
+      }
       if (!this.desktopSecondaryChatSearchMode) {
         this.desktopSecondaryChatSearchMode = true;
         this.startDesktopSecondarySearchRevealAnimation(listEl);
@@ -743,6 +752,7 @@ export class ChatAppInteractionMethods {
       const nextInput = listEl.querySelector('.desktop-secondary-chat-search-input');
       if (nextInput instanceof HTMLInputElement) {
         window.requestAnimationFrame(() => {
+          this.desktopSecondaryChatSearchRestoringFocus = true;
           nextInput.focus({ preventScroll: true });
           const start = typeof searchSelectionStart === 'number' ? searchSelectionStart : nextInput.value.length;
           const end = typeof searchSelectionEnd === 'number' ? searchSelectionEnd : start;
@@ -1128,6 +1138,7 @@ export class ChatAppInteractionMethods {
         const input = listEl.querySelector('.desktop-secondary-chat-search-input');
         if (input instanceof HTMLInputElement) {
           window.requestAnimationFrame(() => {
+            this.desktopSecondaryChatSearchRestoringFocus = true;
             input.focus({ preventScroll: true });
             input.select();
           });
