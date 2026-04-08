@@ -305,76 +305,392 @@ export class ChatAppInteractionMethods {
     });
   }
 
-  renderDesktopSecondaryChatsList(listEl, targetNavId = 'navChats') {
-    if (!listEl) return;
-    listEl.innerHTML = '';
-    listEl.classList.add('desktop-secondary-menu-list--chats');
-    listEl.dataset.menuMode = 'chats';
+  resetDesktopSecondaryChatSearchState() {
+    if (this.desktopSecondaryUserSearchTimer) {
+      clearTimeout(this.desktopSecondaryUserSearchTimer);
+      this.desktopSecondaryUserSearchTimer = null;
+    }
 
-    const sortedChats = this.getSortedChats();
-    if (!sortedChats.length) {
-      const emptyState = document.createElement('div');
-      emptyState.className = 'desktop-secondary-chat-empty';
-      emptyState.textContent = 'Чатів ще немає';
-      listEl.appendChild(emptyState);
+    this.desktopSecondaryChatSearchQuery = '';
+    this.desktopSecondaryChatSearchMode = false;
+    this.desktopSecondaryUserSearchResults = [];
+    this.desktopSecondaryUserSearchLoading = false;
+    this.desktopSecondaryUserSearchError = '';
+    this.desktopSecondaryUserSearchRequestId = 0;
+  }
+
+  collectDesktopSecondaryRecentUsers(limit = 6) {
+    const byId = new Set();
+    const users = [];
+
+    this.getSortedChats().forEach((chat) => {
+      if (!chat || chat.isGroup || users.length >= limit) return;
+      const participantId = String(chat.participantId || '').trim();
+      if (!participantId || byId.has(participantId)) return;
+
+      const cachedMeta = typeof this.getCachedUserMeta === 'function'
+        ? this.getCachedUserMeta(participantId)
+        : {};
+      byId.add(participantId);
+      users.push({
+        id: participantId,
+        name: String(chat.name || cachedMeta?.name || 'Користувач').trim() || 'Користувач',
+        tag: '',
+        mobile: '',
+        email: '',
+        avatarImage: this.getAvatarImage(chat.avatarImage || cachedMeta?.avatarImage || ''),
+        avatarColor: String(chat.avatarColor || cachedMeta?.avatarColor || '').trim(),
+        raw: null
+      });
+    });
+
+    return users;
+  }
+
+  collectDesktopSecondarySearchUsers() {
+    const knownUsers = typeof this.collectKnownUsersForSearch === 'function'
+      ? this.collectKnownUsersForSearch()
+      : [];
+    const recentUsers = this.collectDesktopSecondaryRecentUsers();
+    const allUsers = Array.isArray(this.desktopSecondaryAllUsers)
+      ? this.desktopSecondaryAllUsers
+      : [];
+
+    return typeof this.mergeNormalizedUsers === 'function'
+      ? this.mergeNormalizedUsers(recentUsers, knownUsers, allUsers)
+      : [...recentUsers, ...knownUsers, ...allUsers];
+  }
+
+  async ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId = 'navChats') {
+    if (!listEl || this.desktopSecondaryAllUsersLoading) return;
+    if (Array.isArray(this.desktopSecondaryAllUsers) && this.desktopSecondaryAllUsers.length) return;
+
+    this.desktopSecondaryAllUsersLoading = true;
+    this.desktopSecondaryUserSearchError = '';
+    this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+
+    try {
+      const users = typeof this.fetchAllRegisteredUsers === 'function'
+        ? await this.fetchAllRegisteredUsers()
+        : [];
+      this.desktopSecondaryAllUsers = Array.isArray(users) ? users : [];
+    } catch {
+      this.desktopSecondaryAllUsers = [];
+      this.desktopSecondaryUserSearchError = 'Не вдалося завантажити список користувачів.';
+    } finally {
+      this.desktopSecondaryAllUsersLoading = false;
+      const activeList = document.getElementById('desktopSecondaryMenuList');
+      const menuRoot = document.getElementById('desktopSecondaryMenu');
+      if (activeList === listEl && menuRoot?.dataset.menuRoot === targetNavId) {
+        this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      }
+    }
+  }
+
+  scheduleDesktopSecondaryUserSearch(query, listEl, targetNavId = 'navChats') {
+    if (this.desktopSecondaryUserSearchTimer) {
+      clearTimeout(this.desktopSecondaryUserSearchTimer);
+      this.desktopSecondaryUserSearchTimer = null;
+    }
+
+    const value = String(query || '').trim();
+    this.desktopSecondaryChatSearchQuery = value;
+    this.desktopSecondaryChatSearchMode = true;
+    this.desktopSecondaryUserSearchError = '';
+
+    if (!value) {
+      this.desktopSecondaryUserSearchResults = [];
+      this.desktopSecondaryUserSearchLoading = false;
+      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId);
       return;
     }
 
-    const listWrap = document.createElement('div');
-    listWrap.className = 'desktop-secondary-chat-list';
+    const localUsers = this.collectDesktopSecondarySearchUsers();
+    this.desktopSecondaryUserSearchResults = typeof this.rankUsersByQuery === 'function'
+      ? this.rankUsersByQuery(localUsers, value)
+      : localUsers;
+    this.desktopSecondaryUserSearchLoading = value.length >= 2;
+    this.renderDesktopSecondaryChatsList(listEl, targetNavId);
 
-    sortedChats.forEach((chat) => {
-      const lastMessage = chat.messages[chat.messages.length - 1];
-      const previewText = this.getChatPreviewText(chat, lastMessage);
-      const safePreviewText = this.escapeHtml(previewText || 'Немає повідомлень');
-      const typingClass = this.isChatTypingActive(chat) ? ' is-typing' : '';
-      const deliveryState = (lastMessage && typeof this.getMessageDeliveryState === 'function')
-        ? this.getMessageDeliveryState(lastMessage)
-        : '';
-      const statusCheckIcon = typeof this.getMessageStatusCheckSvg === 'function'
-        ? this.getMessageStatusCheckSvg()
-        : '<svg class="message-status-check" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>';
-      const deliveryStatusHtml = deliveryState
-        ? `<span class="desktop-secondary-chat-status ${deliveryState}" aria-label="${deliveryState === 'read' ? 'Прочитано' : 'Надіслано'}">${statusCheckIcon}${deliveryState === 'read' ? statusCheckIcon : ''}</span>`
-        : '';
-      const unreadCount = Math.max(0, Number(chat?.unreadCount || 0));
-      const unreadBadge = unreadCount > 99 ? '99+' : String(unreadCount);
-      const isActive = this.currentChat?.id === chat.id;
-      const showPinnedMark = Boolean(chat?.isPinned);
+    if (value.length < 2 || typeof this.fetchRegisteredUsers !== 'function') {
+      this.desktopSecondaryUserSearchLoading = false;
+      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      return;
+    }
+
+    const requestId = (this.desktopSecondaryUserSearchRequestId || 0) + 1;
+    this.desktopSecondaryUserSearchRequestId = requestId;
+
+    this.desktopSecondaryUserSearchTimer = window.setTimeout(async () => {
+      try {
+        const remoteUsers = await this.fetchRegisteredUsers(value);
+        if (this.desktopSecondaryUserSearchRequestId !== requestId) return;
+
+        const combined = typeof this.mergeNormalizedUsers === 'function'
+          ? this.mergeNormalizedUsers(this.desktopSecondaryUserSearchResults, remoteUsers)
+          : [...this.desktopSecondaryUserSearchResults, ...remoteUsers];
+        this.desktopSecondaryUserSearchResults = typeof this.rankUsersByQuery === 'function'
+          ? this.rankUsersByQuery(combined, value)
+          : combined;
+        if (Array.isArray(remoteUsers) && remoteUsers.length && typeof this.mergeNormalizedUsers === 'function') {
+          this.desktopSecondaryAllUsers = this.mergeNormalizedUsers(this.desktopSecondaryAllUsers || [], remoteUsers);
+        }
+      } catch {
+        if (this.desktopSecondaryUserSearchRequestId !== requestId) return;
+        this.desktopSecondaryUserSearchError = 'Не вдалося виконати пошук користувачів.';
+      } finally {
+        if (this.desktopSecondaryUserSearchRequestId === requestId) {
+          this.desktopSecondaryUserSearchLoading = false;
+          const menuRoot = document.getElementById('desktopSecondaryMenu');
+          if (menuRoot?.dataset.menuRoot === targetNavId) {
+            this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+          }
+        }
+      }
+    }, 220);
+  }
+
+  renderDesktopSecondaryUserSection(title, users, contentEl, listEl, targetNavId = 'navChats') {
+    if (!contentEl || !Array.isArray(users) || !users.length) return;
+
+    const sectionEl = document.createElement('section');
+    sectionEl.className = 'desktop-secondary-user-section';
+
+    const titleEl = document.createElement('h4');
+    titleEl.className = 'desktop-secondary-user-section-title';
+    titleEl.textContent = title;
+    sectionEl.appendChild(titleEl);
+
+    const listWrap = document.createElement('div');
+    listWrap.className = 'desktop-secondary-user-list';
+
+    users.forEach((user) => {
+      const safeSecondary = [
+        user?.tag ? `@${user.tag}` : '',
+        user?.mobile || user?.email || ''
+      ].filter(Boolean).join(' · ');
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = `desktop-secondary-chat-item ${isActive ? 'active' : ''} ${unreadCount > 0 ? 'has-unread' : ''}`;
-      button.dataset.chatId = String(chat.id);
-
+      button.className = 'desktop-secondary-user-item';
+      button.dataset.userId = String(user?.id || '');
       button.innerHTML = `
-        ${showPinnedMark ? `<span class="desktop-secondary-chat-pin" aria-label="Закріплений чат" title="Закріплений чат"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M216,168h-9.29L185.54,48H192a8,8,0,0,0,0-16H64a8,8,0,0,0,0,16h6.46L49.29,168H40a8,8,0,0,0,0,16h80v56a8,8,0,0,0,16,0V184h80a8,8,0,0,0,0-16ZM86.71,48h82.58l21.17,120H65.54Z"></path></svg></span>` : ''}
-        ${this.getChatAvatarHtml(chat, 'desktop-secondary-chat-avatar')}
-        <div class="desktop-secondary-chat-info">
-          <span class="desktop-secondary-chat-name">${this.escapeHtml(chat.name)}</span>
-          <span class="desktop-secondary-chat-preview${typingClass}">${safePreviewText}</span>
-        </div>
-        <div class="desktop-secondary-chat-meta">
-          <span class="desktop-secondary-chat-time-wrap">${deliveryStatusHtml}<span class="desktop-secondary-chat-time">${lastMessage?.time || ''}</span></span>
-          ${unreadCount > 0 ? `<span class="desktop-secondary-chat-unread">${unreadBadge}</span>` : ''}
-        </div>
+        ${this.getChatAvatarHtml({
+          name: user?.name || 'Користувач',
+          avatarImage: user?.avatarImage || '',
+          avatarColor: user?.avatarColor || ''
+        }, 'desktop-secondary-chat-avatar')}
+        <span class="desktop-secondary-user-copy">
+          <span class="desktop-secondary-user-main">${this.escapeHtml(user?.name || 'Користувач')}</span>
+          <span class="desktop-secondary-user-secondary">${this.escapeHtml(safeSecondary || 'Натисніть, щоб відкрити чат')}</span>
+        </span>
       `;
-
-      button.addEventListener('click', () => {
-        const targetButton = document.getElementById(targetNavId);
-        if (targetButton) this.setActiveNavButton(targetButton);
-        this.selectChat(chat.id);
-        this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      button.addEventListener('click', async () => {
+        try {
+          if (typeof this.openOrCreateDirectChatByUser === 'function') {
+            await this.openOrCreateDirectChatByUser(user);
+          }
+          this.resetDesktopSecondaryChatSearchState();
+          this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+        } catch (error) {
+          await this.showAlert(error?.message || 'Не вдалося відкрити чат.');
+        }
       });
-
-      button.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        this.openChatListMenu(button, e.clientX, e.clientY);
-      });
-
       listWrap.appendChild(button);
     });
 
-    listEl.appendChild(listWrap);
+    sectionEl.appendChild(listWrap);
+    contentEl.appendChild(sectionEl);
+  }
+
+  renderDesktopSecondaryChatSearchContent(contentEl, listEl, targetNavId = 'navChats') {
+    const query = String(this.desktopSecondaryChatSearchQuery || '').trim();
+    const allUsers = Array.isArray(this.desktopSecondaryAllUsers)
+      ? [...this.desktopSecondaryAllUsers].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || ''), 'uk'))
+      : [];
+    const recentUsers = this.collectDesktopSecondaryRecentUsers();
+
+    if (!query) {
+      if (recentUsers.length) {
+        this.renderDesktopSecondaryUserSection('Недавні користувачі', recentUsers, contentEl, listEl, targetNavId);
+      }
+      if (allUsers.length) {
+        this.renderDesktopSecondaryUserSection('Усі користувачі', allUsers, contentEl, listEl, targetNavId);
+      }
+
+      if (this.desktopSecondaryAllUsersLoading) {
+        const loadingEl = document.createElement('div');
+        loadingEl.className = 'desktop-secondary-search-state';
+        loadingEl.textContent = 'Завантажуємо список користувачів...';
+        contentEl.appendChild(loadingEl);
+        return;
+      }
+
+      if (!recentUsers.length && !allUsers.length) {
+        const emptyEl = document.createElement('div');
+        emptyEl.className = 'desktop-secondary-search-state';
+        emptyEl.textContent = this.desktopSecondaryUserSearchError || 'Користувачів поки не знайдено.';
+        contentEl.appendChild(emptyEl);
+      }
+      return;
+    }
+
+    const localUsers = this.collectDesktopSecondarySearchUsers();
+    const baseResults = typeof this.rankUsersByQuery === 'function'
+      ? this.rankUsersByQuery(localUsers, query)
+      : localUsers;
+    const combinedResults = typeof this.mergeNormalizedUsers === 'function'
+      ? this.mergeNormalizedUsers(baseResults, this.desktopSecondaryUserSearchResults || [])
+      : [...baseResults, ...(this.desktopSecondaryUserSearchResults || [])];
+    const rankedResults = typeof this.rankUsersByQuery === 'function'
+      ? this.rankUsersByQuery(combinedResults, query)
+      : combinedResults;
+
+    if (rankedResults.length) {
+      this.renderDesktopSecondaryUserSection('Результати пошуку', rankedResults, contentEl, listEl, targetNavId);
+    } else {
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'desktop-secondary-search-state';
+      emptyEl.textContent = this.desktopSecondaryUserSearchLoading
+        ? 'Шукаємо користувачів...'
+        : (this.desktopSecondaryUserSearchError || `Немає користувачів за запитом "${query}".`);
+      contentEl.appendChild(emptyEl);
+    }
+  }
+
+  renderDesktopSecondaryChatsList(listEl, targetNavId = 'navChats') {
+    if (!listEl) return;
+    const activeElement = document.activeElement;
+    const shouldRestoreSearchFocus = activeElement instanceof HTMLInputElement
+      && activeElement.classList.contains('desktop-secondary-chat-search-input');
+    const searchSelectionStart = shouldRestoreSearchFocus ? activeElement.selectionStart : null;
+    const searchSelectionEnd = shouldRestoreSearchFocus ? activeElement.selectionEnd : null;
+
+    listEl.innerHTML = '';
+    listEl.classList.add('desktop-secondary-menu-list--chats');
+    listEl.dataset.menuMode = this.desktopSecondaryChatSearchMode ? 'chat-search' : 'chats';
+
+    const shell = document.createElement('div');
+    shell.className = 'desktop-secondary-chat-shell';
+
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'desktop-secondary-chat-search';
+    searchWrap.innerHTML = `
+      <span class="desktop-secondary-chat-search-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 256 256"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path></svg>
+      </span>
+    `;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'desktop-secondary-chat-search-input';
+    input.placeholder = 'Пошук або новий чат';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.value = String(this.desktopSecondaryChatSearchQuery || '');
+    input.addEventListener('focus', () => {
+      if (!this.desktopSecondaryChatSearchMode) {
+        this.desktopSecondaryChatSearchMode = true;
+        this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      }
+      this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId);
+    });
+    input.addEventListener('input', (event) => {
+      this.scheduleDesktopSecondaryUserSearch(event.target.value, listEl, targetNavId);
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      this.resetDesktopSecondaryChatSearchState();
+      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+    });
+    searchWrap.appendChild(input);
+    shell.appendChild(searchWrap);
+
+    const contentEl = document.createElement('div');
+    contentEl.className = 'desktop-secondary-chat-content';
+
+    if (this.desktopSecondaryChatSearchMode) {
+      this.renderDesktopSecondaryChatSearchContent(contentEl, listEl, targetNavId);
+    } else {
+      const sortedChats = this.getSortedChats();
+      if (!sortedChats.length) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'desktop-secondary-chat-empty';
+        emptyState.textContent = 'Чатів ще немає';
+        contentEl.appendChild(emptyState);
+      } else {
+        const listWrap = document.createElement('div');
+        listWrap.className = 'desktop-secondary-chat-list';
+
+        sortedChats.forEach((chat) => {
+          const lastMessage = chat.messages[chat.messages.length - 1];
+          const previewText = this.getChatPreviewText(chat, lastMessage);
+          const safePreviewText = this.escapeHtml(previewText || 'Немає повідомлень');
+          const typingClass = this.isChatTypingActive(chat) ? ' is-typing' : '';
+          const deliveryState = (lastMessage && typeof this.getMessageDeliveryState === 'function')
+            ? this.getMessageDeliveryState(lastMessage)
+            : '';
+          const statusCheckIcon = typeof this.getMessageStatusCheckSvg === 'function'
+            ? this.getMessageStatusCheckSvg()
+            : '<svg class="message-status-check" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>';
+          const deliveryStatusHtml = deliveryState
+            ? `<span class="desktop-secondary-chat-status ${deliveryState}" aria-label="${deliveryState === 'read' ? 'Прочитано' : 'Надіслано'}">${statusCheckIcon}${deliveryState === 'read' ? statusCheckIcon : ''}</span>`
+            : '';
+          const unreadCount = Math.max(0, Number(chat?.unreadCount || 0));
+          const unreadBadge = unreadCount > 99 ? '99+' : String(unreadCount);
+          const isActive = this.currentChat?.id === chat.id;
+          const showPinnedMark = Boolean(chat?.isPinned);
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = `desktop-secondary-chat-item ${isActive ? 'active' : ''} ${unreadCount > 0 ? 'has-unread' : ''}`;
+          button.dataset.chatId = String(chat.id);
+
+          button.innerHTML = `
+            ${showPinnedMark ? `<span class="desktop-secondary-chat-pin" aria-label="Закріплений чат" title="Закріплений чат"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M216,168h-9.29L185.54,48H192a8,8,0,0,0,0-16H64a8,8,0,0,0,0,16h6.46L49.29,168H40a8,8,0,0,0,0,16h80v56a8,8,0,0,0,16,0V184h80a8,8,0,0,0,0-16ZM86.71,48h82.58l21.17,120H65.54Z"></path></svg></span>` : ''}
+            ${this.getChatAvatarHtml(chat, 'desktop-secondary-chat-avatar')}
+            <div class="desktop-secondary-chat-info">
+              <span class="desktop-secondary-chat-name">${this.escapeHtml(chat.name)}</span>
+              <span class="desktop-secondary-chat-preview${typingClass}">${safePreviewText}</span>
+            </div>
+            <div class="desktop-secondary-chat-meta">
+              <span class="desktop-secondary-chat-time-wrap">${deliveryStatusHtml}<span class="desktop-secondary-chat-time">${lastMessage?.time || ''}</span></span>
+              ${unreadCount > 0 ? `<span class="desktop-secondary-chat-unread">${unreadBadge}</span>` : ''}
+            </div>
+          `;
+
+          button.addEventListener('click', () => {
+            const targetButton = document.getElementById(targetNavId);
+            if (targetButton) this.setActiveNavButton(targetButton);
+            this.selectChat(chat.id);
+            this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+          });
+
+          button.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.openChatListMenu(button, e.clientX, e.clientY);
+          });
+
+          listWrap.appendChild(button);
+        });
+
+        contentEl.appendChild(listWrap);
+      }
+    }
+
+    shell.appendChild(contentEl);
+    listEl.appendChild(shell);
+
+    if (shouldRestoreSearchFocus) {
+      const nextInput = listEl.querySelector('.desktop-secondary-chat-search-input');
+      if (nextInput instanceof HTMLInputElement) {
+        window.requestAnimationFrame(() => {
+          nextInput.focus({ preventScroll: true });
+          const start = typeof searchSelectionStart === 'number' ? searchSelectionStart : nextInput.value.length;
+          const end = typeof searchSelectionEnd === 'number' ? searchSelectionEnd : start;
+          nextInput.setSelectionRange(start, end);
+        });
+      }
+    }
   }
 
   refreshDesktopSecondaryChatsListIfVisible() {
@@ -382,7 +698,7 @@ export class ChatAppInteractionMethods {
     const menuRoot = document.getElementById('desktopSecondaryMenu');
     const listEl = document.getElementById('desktopSecondaryMenuList');
     if (!menuRoot || !listEl || !menuRoot.classList.contains('active')) return;
-    if (listEl.dataset.menuMode !== 'chats') return;
+    if (listEl.dataset.menuMode !== 'chats' && listEl.dataset.menuMode !== 'chat-search') return;
     this.renderDesktopSecondaryChatsList(listEl, 'navChats');
   }
 
@@ -512,8 +828,12 @@ export class ChatAppInteractionMethods {
     listEl.innerHTML = '';
     listEl.classList.remove('desktop-secondary-menu-list--chats');
     listEl.dataset.menuMode = 'default';
+    if (targetNavId !== 'navChats') {
+      this.resetDesktopSecondaryChatSearchState();
+    }
 
     if (targetNavId === 'navChats') {
+      this.resetDesktopSecondaryChatSearchState();
       const targetButton = document.getElementById(targetNavId);
       if (targetButton) this.setActiveNavButton(targetButton);
       this.openChatsHomeView({ syncNav: false });
@@ -600,6 +920,7 @@ export class ChatAppInteractionMethods {
       listEl.dataset.menuMode = 'default';
       listEl.innerHTML = '';
     }
+    this.resetDesktopSecondaryChatSearchState();
     if (sidebar) {
       sidebar.classList.remove('compact');
     }
@@ -671,8 +992,27 @@ export class ChatAppInteractionMethods {
     document.getElementById('newChatBtn').addEventListener('click', () => this.openNewChatModal());
     const desktopSecondaryMenuNewChat = document.getElementById('desktopSecondaryMenuNewChat');
     const desktopSecondaryMenuBack = document.getElementById('desktopSecondaryMenuBack');
+    const desktopSecondaryMenuSearch = document.getElementById('desktopSecondaryMenuSearch');
     if (desktopSecondaryMenuNewChat) {
       desktopSecondaryMenuNewChat.addEventListener('click', () => this.openNewChatModal());
+    }
+    if (desktopSecondaryMenuSearch) {
+      desktopSecondaryMenuSearch.addEventListener('click', () => {
+        if (window.innerWidth <= 768) return;
+        const menuRoot = document.getElementById('desktopSecondaryMenu');
+        const listEl = document.getElementById('desktopSecondaryMenuList');
+        if (!menuRoot || !listEl || menuRoot.dataset.menuRoot !== 'navChats') return;
+        this.desktopSecondaryChatSearchMode = true;
+        this.renderDesktopSecondaryChatsList(listEl, 'navChats');
+        this.ensureDesktopSecondaryAllUsersLoaded(listEl, 'navChats');
+        const input = listEl.querySelector('.desktop-secondary-chat-search-input');
+        if (input instanceof HTMLInputElement) {
+          window.requestAnimationFrame(() => {
+            input.focus({ preventScroll: true });
+            input.select();
+          });
+        }
+      });
     }
     if (desktopSecondaryMenuBack) {
       desktopSecondaryMenuBack.addEventListener('click', () => {

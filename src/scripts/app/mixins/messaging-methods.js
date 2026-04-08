@@ -1509,6 +1509,206 @@ export class ChatAppMessagingMethods {
       .filter((item) => item.id && item.id !== selfId);
   }
 
+  mergeNormalizedUsers(...lists) {
+    const byId = new Map();
+
+    lists.flat().forEach((user) => {
+      if (!user || typeof user !== 'object') return;
+      const id = String(user.id || '').trim();
+      if (!id) return;
+
+      const previous = byId.get(id) || {};
+      const next = {
+        ...previous,
+        ...user,
+        id,
+        name: String(user.name || previous.name || '').trim(),
+        tag: String(user.tag || previous.tag || '').trim(),
+        mobile: String(user.mobile || previous.mobile || '').trim(),
+        email: String(user.email || previous.email || '').trim(),
+        avatarImage: this.getAvatarImage(user.avatarImage || previous.avatarImage || ''),
+        avatarColor: String(user.avatarColor || previous.avatarColor || '').trim(),
+        raw: user.raw || previous.raw || null
+      };
+
+      byId.set(id, next);
+    });
+
+    return Array.from(byId.values());
+  }
+
+  collectKnownUsersForSearch() {
+    const selfId = this.getAuthUserId();
+    const knownUsers = [];
+
+    if (Array.isArray(this.chats)) {
+      this.chats.forEach((chat) => {
+        if (!chat || chat.isGroup) return;
+        const participantId = String(chat.participantId || '').trim();
+        if (!participantId || participantId === selfId) return;
+
+        const cachedMeta = typeof this.getCachedUserMeta === 'function'
+          ? this.getCachedUserMeta(participantId)
+          : {};
+        knownUsers.push({
+          id: participantId,
+          name: String(chat.name || cachedMeta?.name || 'Користувач').trim() || 'Користувач',
+          tag: '',
+          mobile: '',
+          email: '',
+          avatarImage: this.getAvatarImage(chat.avatarImage || cachedMeta?.avatarImage || ''),
+          avatarColor: String(chat.avatarColor || cachedMeta?.avatarColor || '').trim(),
+          raw: null
+        });
+      });
+    }
+
+    if (this.knownUsersById instanceof Map) {
+      this.knownUsersById.forEach((meta, userId) => {
+        const safeId = String(userId || '').trim();
+        if (!safeId || safeId === selfId) return;
+        knownUsers.push({
+          id: safeId,
+          name: String(meta?.name || 'Користувач').trim() || 'Користувач',
+          tag: '',
+          mobile: '',
+          email: '',
+          avatarImage: this.getAvatarImage(meta?.avatarImage || ''),
+          avatarColor: String(meta?.avatarColor || '').trim(),
+          raw: null
+        });
+      });
+    }
+
+    return this.mergeNormalizedUsers(knownUsers).sort((a, b) => {
+      const aName = String(a?.name || '').trim() || 'Користувач';
+      const bName = String(b?.name || '').trim() || 'Користувач';
+      return aName.localeCompare(bName, 'uk');
+    });
+  }
+
+  async fetchAllRegisteredUsers({ force = false } = {}) {
+    if (!force && Array.isArray(this.allRegisteredUsersCache) && this.allRegisteredUsersCache.length) {
+      return this.allRegisteredUsersCache;
+    }
+    if (!force && this.allRegisteredUsersPromise) {
+      return this.allRegisteredUsersPromise;
+    }
+
+    this.allRegisteredUsersPromise = (async () => {
+      try {
+        const response = await fetch(buildApiUrl('/users'), {
+          headers: this.getApiHeaders()
+        });
+        if (!response.ok) {
+          return this.collectKnownUsersForSearch();
+        }
+
+        const data = await this.readJsonSafe(response);
+        const users = this.mergeNormalizedUsers(
+          this.normalizeUserList(data),
+          this.collectKnownUsersForSearch()
+        ).sort((a, b) => {
+          const aTag = String(a?.tag || '').trim();
+          const bTag = String(b?.tag || '').trim();
+          if (aTag && bTag && aTag !== bTag) return aTag.localeCompare(bTag, 'uk');
+          return String(a?.name || '').localeCompare(String(b?.name || ''), 'uk');
+        });
+
+        this.allRegisteredUsersCache = users;
+        return users;
+      } catch {
+        return this.collectKnownUsersForSearch();
+      } finally {
+        this.allRegisteredUsersPromise = null;
+      }
+    })();
+
+    return this.allRegisteredUsersPromise;
+  }
+
+  async openOrCreateDirectChatByUser(user) {
+    const selected = user && typeof user === 'object' ? user : null;
+    const selectedId = String(selected?.id || '').trim();
+    if (!selectedId) {
+      throw new Error('Не вдалося визначити користувача для чату.');
+    }
+
+    const cachedMeta = typeof this.getCachedUserMeta === 'function'
+      ? this.getCachedUserMeta(selectedId)
+      : {};
+    const safeName = String(
+      selected?.name
+      || cachedMeta?.name
+      || this.getUserDisplayName(selected?.raw || selected)
+      || 'Користувач'
+    ).trim() || 'Користувач';
+    const safeAvatarImage = this.getAvatarImage(
+      selected?.avatarImage
+      || cachedMeta?.avatarImage
+      || this.getUserAvatarImage(selected?.raw || selected)
+      || ''
+    );
+    const safeAvatarColor = String(
+      selected?.avatarColor
+      || cachedMeta?.avatarColor
+      || this.getUserAvatarColor(selected?.raw || selected)
+      || ''
+    ).trim();
+
+    this.cacheKnownUserMeta(selectedId, {
+      name: safeName,
+      avatarImage: safeAvatarImage,
+      avatarColor: safeAvatarColor
+    });
+
+    const existingChat = this.findDirectChatByParticipantId(selectedId);
+    if (existingChat) {
+      this.selectChat(existingChat.id);
+      return existingChat;
+    }
+
+    const payload = {
+      name: safeName,
+      isPrivate: true,
+      isGroup: false
+    };
+
+    const serverChat = await this.createChatOnServer(payload);
+    const createdChatId = this.extractServerChatId(serverChat);
+    if (!createdChatId) {
+      throw new Error('Сервер не повернув ідентифікатор чату.');
+    }
+
+    const joined = await this.joinChatOnServerAsUser(createdChatId, selectedId);
+    if (!joined) {
+      throw new Error('Не вдалося додати другого користувача до чату.');
+    }
+
+    const newChat = this.buildLocalChatFromServer(serverChat, {
+      name: safeName,
+      isGroup: false,
+      participantId: selectedId,
+      avatarImage: safeAvatarImage,
+      avatarColor: safeAvatarColor
+    });
+    newChat.participantConfidence = 2;
+    newChat.participantJoinedVerified = true;
+    newChat.status = this.getPresenceStatusForUser(selectedId, 'offline');
+
+    this.chats.push(newChat);
+    this.saveChats();
+    this.renderChatsList();
+    this.selectChat(newChat.id);
+    this.runServerChatSync({ forceScroll: true });
+
+    window.setTimeout(() => {
+      this.runServerChatSync({ forceScroll: false });
+    }, 450);
+
+    return newChat;
+  }
+
   renderNewChatSearchState({
     loading = false,
     message = '',
