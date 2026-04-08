@@ -1508,6 +1508,7 @@ html.dark-theme .bottom-nav-indicator {
     align-items: center;
     justify-content: space-between;
     padding: 0 10px !important;
+    z-index: 4;
   }
 
   .desktop-secondary-menu-header-left {
@@ -1521,6 +1522,7 @@ html.dark-theme .bottom-nav-indicator {
     display: flex;
     align-items: center;
     gap: 4px;
+    position: relative;
   }
 
   .desktop-secondary-menu-header-btn {
@@ -1553,6 +1555,13 @@ html.dark-theme .bottom-nav-indicator {
     color: #ffffff;
   }
 
+  .desktop-secondary-header-menu {
+    left: auto;
+    right: 0;
+    top: calc(100% + 6px);
+    bottom: auto;
+  }
+
   .desktop-secondary-menu-header h3 {
     margin: 0;
     padding: 0;
@@ -1571,6 +1580,7 @@ html.dark-theme .bottom-nav-indicator {
     gap: 12px;
     padding: 12px 0 14px !important;
     overflow-y: auto;
+    z-index: 1;
   }
 
   .desktop-secondary-menu-list--chats {
@@ -1585,6 +1595,30 @@ html.dark-theme .bottom-nav-indicator {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+  }
+
+  @keyframes desktop-secondary-search-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.985);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes desktop-secondary-search-item-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .desktop-secondary-chat-search {
@@ -1769,6 +1803,41 @@ html.dark-theme .bottom-nav-indicator {
   html:not(.dark-theme) .desktop-secondary-user-secondary,
   html:not(.dark-theme) .desktop-secondary-search-state {
     color: rgba(10, 18, 32, 0.58);
+  }
+
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-section,
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-search-state {
+    opacity: 0;
+    animation: desktop-secondary-search-reveal 220ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
+  }
+
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item {
+    opacity: 0;
+    animation: desktop-secondary-search-item-reveal 240ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
+  }
+
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(1) {
+    animation-delay: 20ms;
+  }
+
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(2) {
+    animation-delay: 45ms;
+  }
+
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(3) {
+    animation-delay: 70ms;
+  }
+
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(4) {
+    animation-delay: 95ms;
+  }
+
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(5) {
+    animation-delay: 120ms;
+  }
+
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(n + 6) {
+    animation-delay: 145ms;
   }
 
   .desktop-secondary-chat-item {
@@ -2226,6 +2295,18 @@ html.dark-theme .bottom-nav-indicator {
 
   .desktop-nav-rail-account-menu.active {
     display: flex;
+  }
+
+  .sidebar:has(#desktopSecondaryCreateMenu.active) {
+    overflow: visible !important;
+  }
+
+  .desktop-secondary-menu-header-actions > .desktop-secondary-header-menu {
+    left: auto;
+    right: 0;
+    top: calc(100% + 6px);
+    bottom: auto;
+    z-index: 160;
   }
 
   .desktop-nav-rail-account-menu-item {

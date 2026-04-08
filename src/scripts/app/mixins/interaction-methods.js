@@ -306,6 +306,11 @@ export class ChatAppInteractionMethods {
   }
 
   resetDesktopSecondaryChatSearchState() {
+    if (this.desktopSecondarySearchRevealTimer) {
+      clearTimeout(this.desktopSecondarySearchRevealTimer);
+      this.desktopSecondarySearchRevealTimer = null;
+    }
+
     if (this.desktopSecondaryUserSearchTimer) {
       clearTimeout(this.desktopSecondaryUserSearchTimer);
       this.desktopSecondaryUserSearchTimer = null;
@@ -317,6 +322,23 @@ export class ChatAppInteractionMethods {
     this.desktopSecondaryUserSearchLoading = false;
     this.desktopSecondaryUserSearchError = '';
     this.desktopSecondaryUserSearchRequestId = 0;
+  }
+
+  startDesktopSecondarySearchRevealAnimation(listEl) {
+    if (!(listEl instanceof HTMLElement)) return;
+
+    listEl.classList.remove('is-search-revealing');
+    void listEl.offsetWidth;
+    listEl.classList.add('is-search-revealing');
+
+    if (this.desktopSecondarySearchRevealTimer) {
+      clearTimeout(this.desktopSecondarySearchRevealTimer);
+    }
+
+    this.desktopSecondarySearchRevealTimer = window.setTimeout(() => {
+      this.desktopSecondarySearchRevealTimer = null;
+      listEl.classList.remove('is-search-revealing');
+    }, 340);
   }
 
   collectDesktopSecondaryRecentUsers(limit = 6) {
@@ -590,6 +612,7 @@ export class ChatAppInteractionMethods {
     input.addEventListener('focus', () => {
       if (!this.desktopSecondaryChatSearchMode) {
         this.desktopSecondaryChatSearchMode = true;
+        this.startDesktopSecondarySearchRevealAnimation(listEl);
         this.renderDesktopSecondaryChatsList(listEl, targetNavId);
       }
       this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId);
@@ -828,6 +851,7 @@ export class ChatAppInteractionMethods {
     listEl.innerHTML = '';
     listEl.classList.remove('desktop-secondary-menu-list--chats');
     listEl.dataset.menuMode = 'default';
+    this.closeDesktopSecondaryCreateMenu();
     if (targetNavId !== 'navChats') {
       this.resetDesktopSecondaryChatSearchState();
     }
@@ -920,6 +944,7 @@ export class ChatAppInteractionMethods {
       listEl.dataset.menuMode = 'default';
       listEl.innerHTML = '';
     }
+    this.closeDesktopSecondaryCreateMenu();
     this.resetDesktopSecondaryChatSearchState();
     if (sidebar) {
       sidebar.classList.remove('compact');
@@ -932,6 +957,40 @@ export class ChatAppInteractionMethods {
     if (!menu || !button) return;
     menu.classList.remove('active');
     button.setAttribute('aria-expanded', 'false');
+  }
+
+  closeDesktopSecondaryCreateMenu() {
+    const menu = document.getElementById('desktopSecondaryCreateMenu');
+    const button = document.getElementById('desktopSecondaryMenuNewChat');
+    if (!menu || !button) return;
+    menu.classList.remove('active');
+    button.setAttribute('aria-expanded', 'false');
+  }
+
+  toggleDesktopSecondaryCreateMenu(forceOpen = null) {
+    const menu = document.getElementById('desktopSecondaryCreateMenu');
+    const button = document.getElementById('desktopSecondaryMenuNewChat');
+    if (!menu || !button) return;
+    const shouldOpen = typeof forceOpen === 'boolean'
+      ? forceOpen
+      : !menu.classList.contains('active');
+    menu.classList.toggle('active', shouldOpen);
+    button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  }
+
+  async handleDesktopSecondaryCreateMenuAction(action = '') {
+    if (!action) return;
+
+    if (action === 'group') {
+      if (typeof this.openNewChatModal === 'function') {
+        this.openNewChatModal({ mode: 'group' });
+      }
+      return;
+    }
+
+    if (action === 'channel') {
+      await this.showNotice('Створення каналів буде додано в одному з наступних оновлень.', 'Чати');
+    }
   }
 
   toggleDesktopRailAccountMenu(forceOpen = null) {
@@ -993,8 +1052,29 @@ export class ChatAppInteractionMethods {
     const desktopSecondaryMenuNewChat = document.getElementById('desktopSecondaryMenuNewChat');
     const desktopSecondaryMenuBack = document.getElementById('desktopSecondaryMenuBack');
     const desktopSecondaryMenuSearch = document.getElementById('desktopSecondaryMenuSearch');
+    const desktopSecondaryCreateMenu = document.getElementById('desktopSecondaryCreateMenu');
+    const desktopSecondaryCreateActions = desktopSecondaryCreateMenu
+      ? desktopSecondaryCreateMenu.querySelectorAll('[data-secondary-create-action]')
+      : [];
     if (desktopSecondaryMenuNewChat) {
-      desktopSecondaryMenuNewChat.addEventListener('click', () => this.openNewChatModal());
+      desktopSecondaryMenuNewChat.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.toggleDesktopSecondaryCreateMenu();
+      });
+    }
+    if (desktopSecondaryCreateMenu) {
+      desktopSecondaryCreateMenu.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+    }
+    if (desktopSecondaryCreateActions.length) {
+      desktopSecondaryCreateActions.forEach((item) => {
+        item.addEventListener('click', async () => {
+          const action = item.getAttribute('data-secondary-create-action') || '';
+          this.closeDesktopSecondaryCreateMenu();
+          await this.handleDesktopSecondaryCreateMenuAction(action);
+        });
+      });
     }
     if (desktopSecondaryMenuSearch) {
       desktopSecondaryMenuSearch.addEventListener('click', () => {
@@ -1002,7 +1082,9 @@ export class ChatAppInteractionMethods {
         const menuRoot = document.getElementById('desktopSecondaryMenu');
         const listEl = document.getElementById('desktopSecondaryMenuList');
         if (!menuRoot || !listEl || menuRoot.dataset.menuRoot !== 'navChats') return;
+        this.closeDesktopSecondaryCreateMenu();
         this.desktopSecondaryChatSearchMode = true;
+        this.startDesktopSecondarySearchRevealAnimation(listEl);
         this.renderDesktopSecondaryChatsList(listEl, 'navChats');
         this.ensureDesktopSecondaryAllUsersLoaded(listEl, 'navChats');
         const input = listEl.querySelector('.desktop-secondary-chat-search-input');
@@ -1017,6 +1099,7 @@ export class ChatAppInteractionMethods {
     if (desktopSecondaryMenuBack) {
       desktopSecondaryMenuBack.addEventListener('click', () => {
         if (window.innerWidth <= 768) return;
+        this.closeDesktopSecondaryCreateMenu();
         const sidebar = document.querySelector('.sidebar');
         if (!sidebar) return;
         sidebar.classList.toggle('compact');
@@ -1113,6 +1196,21 @@ export class ChatAppInteractionMethods {
         if (!desktopRailAccountMenu.classList.contains('active')) return;
         if (desktopRailAccountBtn.contains(target) || desktopRailAccountMenu.contains(target)) return;
         this.closeDesktopRailAccountMenu();
+      });
+    }
+
+    if (desktopSecondaryMenuNewChat && desktopSecondaryCreateMenu) {
+      document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (!desktopSecondaryCreateMenu.classList.contains('active')) return;
+        if (desktopSecondaryMenuNewChat.contains(target) || desktopSecondaryCreateMenu.contains(target)) return;
+        this.closeDesktopSecondaryCreateMenu();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        if (!desktopSecondaryCreateMenu.classList.contains('active')) return;
+        this.closeDesktopSecondaryCreateMenu();
       });
     }
     

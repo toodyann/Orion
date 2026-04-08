@@ -1709,6 +1709,181 @@ export class ChatAppMessagingMethods {
     return newChat;
   }
 
+  renderNewChatGroupSelectedUsers() {
+    const selectedWrap = document.getElementById('newChatGroupSelectedUsers');
+    const countEl = document.getElementById('newChatGroupCount');
+    const membersInput = document.getElementById('groupMembersInput');
+    const selectedUsers = Array.isArray(this.newChatGroupSelectedUsers)
+      ? this.newChatGroupSelectedUsers
+      : [];
+
+    if (countEl) {
+      countEl.textContent = String(selectedUsers.length);
+    }
+
+    if (membersInput) {
+      membersInput.value = selectedUsers.map((user) => String(user?.name || '').trim()).filter(Boolean).join(', ');
+    }
+
+    if (!selectedWrap) return;
+    if (!selectedUsers.length) {
+      selectedWrap.innerHTML = '<span class="new-chat-group-selected-empty">Ще нікого не вибрано.</span>';
+      return;
+    }
+
+    selectedWrap.innerHTML = selectedUsers.map((user) => {
+      const avatarHtml = this.getChatAvatarHtml({
+        name: user?.name || 'Користувач',
+        avatarImage: user?.avatarImage || '',
+        avatarColor: user?.avatarColor || ''
+      }, 'new-chat-group-chip-avatar');
+      return `
+        <button type="button" class="new-chat-group-chip" data-group-user-id="${this.escapeHtml(String(user?.id || ''))}">
+          ${avatarHtml}
+          <span class="new-chat-group-chip-name">${this.escapeHtml(user?.name || 'Користувач')}</span>
+          <span class="new-chat-group-chip-remove" aria-hidden="true">×</span>
+        </button>
+      `;
+    }).join('');
+
+    selectedWrap.querySelectorAll('.new-chat-group-chip').forEach((button) => {
+      button.addEventListener('click', () => {
+        const userId = String(button.getAttribute('data-group-user-id') || '').trim();
+        if (!userId) return;
+        this.toggleNewChatGroupUser(userId);
+      });
+    });
+  }
+
+  renderNewChatGroupUserList(users = []) {
+    const listEl = document.getElementById('newChatGroupUsersList');
+    if (!listEl) return;
+
+    const sourceUsers = Array.isArray(users) ? users : [];
+    if (!sourceUsers.length) {
+      listEl.innerHTML = '<div class="new-chat-group-users-empty">Немає доступних користувачів для групи.</div>';
+      return;
+    }
+
+    const selectedIds = new Set(
+      (Array.isArray(this.newChatGroupSelectedUsers) ? this.newChatGroupSelectedUsers : [])
+        .map((user) => String(user?.id || '').trim())
+        .filter(Boolean)
+    );
+
+    listEl.innerHTML = sourceUsers.map((user) => {
+      const safeId = String(user?.id || '').trim();
+      const isActive = selectedIds.has(safeId);
+      const avatarHtml = this.getChatAvatarHtml({
+        name: user?.name || 'Користувач',
+        avatarImage: user?.avatarImage || '',
+        avatarColor: user?.avatarColor || ''
+      }, 'new-chat-user-result-avatar');
+      const secondary = [
+        user?.tag ? `@${user.tag}` : '',
+        user?.mobile || user?.email || ''
+      ].filter(Boolean).join(' · ');
+
+      return `
+        <button type="button" class="new-chat-user-result new-chat-group-user${isActive ? ' active' : ''}" data-group-user-id="${this.escapeHtml(safeId)}">
+          ${avatarHtml}
+          <span class="new-chat-user-result-copy">
+            <span class="new-chat-user-result-main">${this.escapeHtml(user?.name || 'Користувач')}</span>
+            <span class="new-chat-user-result-secondary">${this.escapeHtml(secondary || 'Додати до групи')}</span>
+          </span>
+          <span class="new-chat-group-user-indicator" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>
+          </span>
+        </button>
+      `;
+    }).join('');
+
+    listEl.querySelectorAll('[data-group-user-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const userId = String(button.getAttribute('data-group-user-id') || '').trim();
+        if (!userId) return;
+        this.toggleNewChatGroupUser(userId);
+      });
+    });
+  }
+
+  toggleNewChatGroupUser(userId) {
+    const safeId = String(userId || '').trim();
+    if (!safeId) return;
+
+    const candidates = Array.isArray(this.newChatGroupCandidateUsers)
+      ? this.newChatGroupCandidateUsers
+      : [];
+    const targetUser = candidates.find((user) => String(user?.id || '').trim() === safeId);
+    if (!targetUser) return;
+
+    const selectedUsers = Array.isArray(this.newChatGroupSelectedUsers)
+      ? [...this.newChatGroupSelectedUsers]
+      : [];
+    const existingIndex = selectedUsers.findIndex((user) => String(user?.id || '').trim() === safeId);
+
+    if (existingIndex >= 0) {
+      selectedUsers.splice(existingIndex, 1);
+    } else {
+      selectedUsers.push(targetUser);
+    }
+
+    this.newChatGroupSelectedUsers = selectedUsers;
+    this.renderNewChatGroupSelectedUsers();
+    this.renderNewChatGroupUserList(candidates);
+  }
+
+  async ensureNewChatGroupCandidatesLoaded() {
+    const listEl = document.getElementById('newChatGroupUsersList');
+    if (listEl) {
+      listEl.innerHTML = '<div class="new-chat-group-users-empty">Завантажуємо користувачів...</div>';
+    }
+
+    const users = typeof this.fetchAllRegisteredUsers === 'function'
+      ? await this.fetchAllRegisteredUsers()
+      : [];
+    this.newChatGroupCandidateUsers = Array.isArray(users) ? users : [];
+    this.renderNewChatGroupUserList(this.newChatGroupCandidateUsers);
+  }
+
+  setNewChatGroupMode(isGroup = false) {
+    const nextIsGroup = Boolean(isGroup);
+    const toggle = document.getElementById('isGroupToggle');
+    const groupFields = document.getElementById('groupFields');
+    const userSearchWrap = document.getElementById('newChatUserSearch');
+    const modeBtn = document.getElementById('newChatGroupModeBtn');
+    const input = document.getElementById('newContactInput');
+    const fieldLabel = document.querySelector('#newChatModal .new-chat-field-label');
+    const titleEl = document.querySelector('#newChatModal .new-chat-heading-copy h3');
+    const kickerEl = document.querySelector('#newChatModal .new-chat-kicker');
+    const confirmCopy = document.querySelector('#confirmBtn span');
+
+    this.newChatGroupMode = nextIsGroup;
+    if (toggle) toggle.checked = nextIsGroup;
+    if (groupFields) groupFields.classList.toggle('active', nextIsGroup);
+    if (userSearchWrap) userSearchWrap.classList.toggle('hidden', nextIsGroup);
+    if (modeBtn) {
+      modeBtn.classList.toggle('active', nextIsGroup);
+      modeBtn.setAttribute('aria-expanded', nextIsGroup ? 'true' : 'false');
+    }
+    if (fieldLabel) fieldLabel.textContent = nextIsGroup ? 'Назва групи' : 'Назва чату';
+    if (input) input.placeholder = nextIsGroup ? 'Назва групи' : "Тег, ім'я або номер користувача";
+    if (titleEl) titleEl.textContent = nextIsGroup ? 'Створити групу' : 'Створити новий чат';
+    if (kickerEl) kickerEl.textContent = nextIsGroup ? 'Групова розмова' : 'Швидкий старт';
+    if (confirmCopy) confirmCopy.textContent = nextIsGroup ? 'Створити групу' : 'Створити чат';
+
+    if (nextIsGroup) {
+      this.renderNewChatGroupSelectedUsers();
+      this.ensureNewChatGroupCandidatesLoaded().catch(() => {
+        this.renderNewChatGroupUserList([]);
+      });
+    }
+  }
+
+  toggleNewChatGroupMode() {
+    this.setNewChatGroupMode(!this.newChatGroupMode);
+  }
+
   renderNewChatSearchState({
     loading = false,
     message = '',
@@ -6130,15 +6305,18 @@ export class ChatAppMessagingMethods {
     });
   }
 
-  openNewChatModal() {
+  openNewChatModal({ mode = 'direct' } = {}) {
     document.getElementById('newChatModal').classList.add('active');
     document.getElementById('modalOverlay').classList.add('active');
+    document.getElementById('newContactInput').value = '';
     this.newChatUserResults = [];
     this.newChatSelectedUser = null;
     this.newChatUserSearchRequestId = 0;
+    this.newChatGroupSelectedUsers = [];
     this.renderNewChatSearchState({
       message: "Почніть вводити тег користувача (або ім'я/номер)."
     });
+    this.setNewChatGroupMode(mode === 'group');
     document.getElementById('newContactInput').focus();
   }
 
@@ -6160,10 +6338,15 @@ export class ChatAppMessagingMethods {
     }
     this.newChatUserResults = [];
     this.newChatSelectedUser = null;
+    this.newChatGroupSelectedUsers = [];
+    this.newChatGroupCandidateUsers = [];
     this.newChatUserSearchRequestId = 0;
     this.renderNewChatSearchState({
       message: "Почніть вводити тег користувача (або ім'я/номер)."
     });
+    this.renderNewChatGroupSelectedUsers();
+    this.renderNewChatGroupUserList([]);
+    this.setNewChatGroupMode(false);
   }
 
   async createNewChat() {

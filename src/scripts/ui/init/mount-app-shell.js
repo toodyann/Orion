@@ -132,9 +132,23 @@ export function mountAppShell() {
           <h3 id="desktopSecondaryMenuTitle">Налаштування</h3>
         </div>
         <div class="desktop-secondary-menu-header-actions">
-          <button class="desktop-secondary-menu-header-btn desktop-secondary-menu-header-btn--new-chat" id="desktopSecondaryMenuNewChat" type="button" aria-label="Створити чат" title="Створити чат">
+          <button class="desktop-secondary-menu-header-btn desktop-secondary-menu-header-btn--new-chat" id="desktopSecondaryMenuNewChat" type="button" aria-label="Створити чат" title="Створити чат" aria-haspopup="menu" aria-expanded="false">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M229.66,58.34l-32-32a8,8,0,0,0-11.32,0l-96,96A8,8,0,0,0,88,128v32a8,8,0,0,0,8,8h32a8,8,0,0,0,5.66-2.34l96-96A8,8,0,0,0,229.66,58.34ZM124.69,152H104V131.31l64-64L188.69,88ZM200,76.69,179.31,56,192,43.31,212.69,64ZM224,128v80a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h80a8,8,0,0,1,0,16H48V208H208V128a8,8,0,0,1,16,0Z"></path></svg>
           </button>
+          <div class="desktop-nav-rail-account-menu desktop-secondary-header-menu" id="desktopSecondaryCreateMenu" role="menu" aria-label="Створення чату">
+            <button class="desktop-nav-rail-account-menu-item" type="button" role="menuitem" data-secondary-create-action="group">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+                <path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92ZM40,108a44,44,0,1,1,44,44A44.05,44.05,0,0,1,40,108Zm210.14,98.7a8,8,0,0,1-11.07-2.33A79.83,79.83,0,0,0,172,168a8,8,0,0,1,0-16,44,44,0,1,0-16.34-84.87,8,8,0,1,1-5.94-14.85,60,60,0,0,1,55.53,105.64,95.83,95.83,0,0,1,47.22,37.71A8,8,0,0,1,250.14,206.7Z"></path>
+              </svg>
+              <span>Створити групу</span>
+            </button>
+            <button class="desktop-nav-rail-account-menu-item" type="button" role="menuitem" data-secondary-create-action="channel">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
+                <path d="M240,128a15.74,15.74,0,0,1-5,11.62l-80,72A16,16,0,0,1,128,199.73V152H56A16,16,0,0,1,40,136V120a16,16,0,0,1,16-16h72V56.27A16,16,0,0,1,155,44.38l80,72A15.74,15.74,0,0,1,240,128ZM24,56A16,16,0,0,0,8,72v112a16,16,0,0,0,16,16H88a8,8,0,0,0,0-16H24V72H88a8,8,0,0,0,0-16Z"></path>
+              </svg>
+              <span>Створити канал</span>
+            </button>
+          </div>
           <button class="desktop-secondary-menu-header-btn" id="desktopSecondaryMenuSearch" type="button" aria-label="Пошук" title="Пошук">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path></svg>
           </button>
@@ -568,6 +582,7 @@ export function mountAppShell() {
     </div>
     <div class="modal-body new-chat-body">
       <div class="new-chat-panel">
+        <input type="checkbox" id="isGroupToggle" hidden />
         <label class="new-chat-field">
           <span class="new-chat-field-label">Назва чату</span>
           <input 
