@@ -6,6 +6,145 @@
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  #settingsContainerMobile .settings-header,
+  #settingsContainerMobile #messenger-settings .shop-header,
+  #settingsContainerMobile #calls .calls-header,
+  #settingsContainerMobile #notifications-center .calls-header,
+  #settingsContainerMobile #wallet .calls-header,
+  #settingsContainerMobile #profile-items .profile-items-header {
+    min-height: 54px !important;
+    padding: calc(env(safe-area-inset-top) + 6px) 14px 10px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  #settingsContainerMobile .coin-tapper-content {
+    padding: 14px 14px calc(var(--bottom-nav-height, 64px) + 26px) !important;
+  }
+
+  #settingsContainerMobile .settings-menu-list {
+    margin: 0 !important;
+    gap: 10px !important;
+  }
+
+  #settingsContainerMobile .settings-menu-item,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item {
+    padding: 16px !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  #settingsContainerMobile .coin-tapper-content {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #settingsContainerMobile .settings-section {
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile .settings-header,
+  #settingsContainerMobile #messenger-settings .shop-header,
+  #settingsContainerMobile #calls .calls-header,
+  #settingsContainerMobile #notifications-center .calls-header,
+  #settingsContainerMobile #wallet .calls-header,
+  #settingsContainerMobile #profile-items .profile-items-header {
+    min-height: 54px !important;
+    padding: calc(env(safe-area-inset-top) + 6px) 14px 10px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  #settingsContainerMobile .coin-tapper-content {
+    padding: 14px 14px calc(var(--bottom-nav-height, 66px) + 28px) !important;
+    background: transparent !important;
+  }
+
+  #settingsContainerMobile .settings-menu-list {
+    margin: 0 !important;
+    gap: 10px !important;
+  }
+
+  #settingsContainerMobile .settings-menu-item,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item {
+    padding: 16px 16px !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+  }
+
+  #settingsContainerMobile .settings-menu-item:hover,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+  }
+
+  #mobile-sections .mobile-sections-content {
+    padding-top: 10px !important;
+  }
+
+  #mobile-sections .mobile-sections-intro {
+    margin: 0 0 12px !important;
+  }
+
+  #mobile-sections .mobile-sections-list {
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  #settingsContainerMobile .coin-tapper-content {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+
+  #settingsContainerMobile .settings-menu-item,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item {
+    padding: 15px 14px !important;
+  }
+}
+
 .settings-container.active {
   display: flex;
 }
@@ -1902,6 +2041,14 @@ html.dark-theme .settings-menu-icon {
   background: linear-gradient(135deg, #5ac8fa, #2aa0d8);
 }
 
+.settings-icon-store {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
+.settings-icon-games {
+  background: linear-gradient(135deg, #2563eb, #0f766e);
+}
+
 .settings-icon-logout {
   background: linear-gradient(135deg, #ff5f57, #e11d48);
 }
@@ -1931,6 +2078,225 @@ html.dark-theme .settings-menu-icon {
 .settings-menu-item:hover .settings-menu-arrow {
   opacity: 0.6;
   transform: translateX(2px);
+}
+
+#mobile-sections .mobile-sections-content {
+  padding-top: 18px;
+}
+
+#mobile-sections .mobile-sections-intro {
+  margin: 0 30px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#mobile-sections .mobile-sections-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary-color);
+}
+
+#mobile-sections .mobile-sections-intro h3 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+}
+
+#mobile-sections .mobile-sections-intro p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+#mobile-sections .mobile-sections-list {
+  margin-top: 18px;
+}
+
+#mobile-sections .mobile-sections-item {
+  align-items: flex-start;
+}
+
+#mobile-sections .mobile-sections-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#mobile-sections .mobile-sections-label strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+#mobile-sections .mobile-sections-label small {
+  display: block;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  #mobile-sections .settings-header {
+    min-height: 54px;
+    padding: calc(env(safe-area-inset-top) + 2px) 10px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  #mobile-sections .settings-header h2 {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  #mobile-sections .settings-header button {
+    left: 6px !important;
+    padding: 7px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+  }
+
+  #mobile-sections .mobile-sections-content {
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 6px 0 0 !important;
+  }
+
+  #mobile-sections .mobile-sections-intro {
+    margin: 0 8px 8px;
+    gap: 4px;
+  }
+
+  #mobile-sections .mobile-sections-kicker {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
+
+  #mobile-sections .mobile-sections-intro h3 {
+    font-size: 20px;
+    line-height: 1.02;
+    max-width: none;
+  }
+
+  #mobile-sections .mobile-sections-intro p {
+    font-size: 13px;
+    line-height: 1.42;
+    max-width: none;
+  }
+
+  #mobile-sections .mobile-sections-list {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    margin: 8px 8px 0;
+    gap: 8px;
+  }
+
+  #mobile-sections .mobile-sections-item {
+    align-items: center;
+    gap: 14px;
+    padding: 14px 14px;
+    min-height: 96px;
+    border-radius: 16px;
+  }
+
+  #mobile-sections .mobile-sections-item .settings-menu-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    flex: 0 0 44px;
+  }
+
+  #mobile-sections .mobile-sections-item .settings-menu-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  #mobile-sections .mobile-sections-label {
+    gap: 2px;
+    text-align: left;
+  }
+
+  #mobile-sections .mobile-sections-label strong {
+    font-size: 17px;
+    line-height: 1.15;
+  }
+
+  #mobile-sections .mobile-sections-label small {
+    font-size: 13px;
+    line-height: 1.35;
+    max-width: none;
+  }
+
+  #mobile-sections .mobile-sections-item .settings-menu-arrow {
+    align-self: center;
+    font-size: 20px;
+    opacity: 0.52;
+  }
+}
+
+@media (max-width: 480px) {
+  #mobile-sections .settings-header {
+    min-height: 50px;
+    padding-right: 6px;
+    padding-left: 6px;
+  }
+
+  #mobile-sections .settings-header h2 {
+    font-size: 16px;
+  }
+
+  #mobile-sections .settings-header button {
+    left: 2px !important;
+  }
+
+  #mobile-sections .mobile-sections-content {
+    padding-top: 4px !important;
+  }
+
+  #mobile-sections .mobile-sections-intro {
+    margin-right: 6px;
+    margin-left: 6px;
+  }
+
+  #mobile-sections .mobile-sections-list {
+    margin-right: 6px;
+    margin-left: 6px;
+    gap: 6px;
+  }
+
+  #mobile-sections .mobile-sections-item {
+    min-height: 88px;
+    padding: 13px 12px;
+    gap: 12px;
+  }
+
+  #mobile-sections .mobile-sections-item .settings-menu-icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+  }
+
+  #mobile-sections .mobile-sections-label strong {
+    font-size: 16px;
+  }
+
+  #mobile-sections .mobile-sections-label small {
+    font-size: 12px;
+    max-width: none;
+  }
 }
 
 .btn-back-subsection {
@@ -6597,5 +6963,59 @@ html.dark-theme #profile-settings .profile-settings-card {
 
   #profile-settings .profile-settings-buttons {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  #settingsContainerMobile .settings-header,
+  #settingsContainerMobile #messenger-settings .shop-header,
+  #settingsContainerMobile #calls .calls-header,
+  #settingsContainerMobile #notifications-center .calls-header,
+  #settingsContainerMobile #wallet .calls-header,
+  #settingsContainerMobile #profile-items .profile-items-header {
+    min-height: 54px !important;
+    padding: calc(env(safe-area-inset-top) + 6px) 14px 10px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  #settingsContainerMobile .coin-tapper-content {
+    padding: 14px 14px calc(var(--bottom-nav-height, 64px) + 26px) !important;
+  }
+
+  #settingsContainerMobile .settings-menu-list {
+    margin: 0 !important;
+    gap: 10px !important;
+  }
+
+  #settingsContainerMobile .settings-menu-item,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item {
+    padding: 16px !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  #settingsContainerMobile .coin-tapper-content {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
   }
 }

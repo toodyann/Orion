@@ -386,14 +386,64 @@ export class ChatAppInteractionMethods {
       : [...recentUsers, ...knownUsers, ...allUsers];
   }
 
-  async ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId = 'navChats') {
+  getDesktopSecondaryUserIdentityTokens(user) {
+    if (!user || typeof user !== 'object') return [];
+    const tokens = [];
+    const safeId = String(user.id || '').trim();
+    const safeTag = String(user.tag || '').trim().replace(/^@+/, '').toLowerCase();
+    const safeMobile = String(user.mobile || '').replace(/\D/g, '').trim();
+    const safeEmail = String(user.email || '').trim().toLowerCase();
+    const safeName = String(user.name || '').trim().toLowerCase();
+
+    if (safeId) tokens.push(`id:${safeId}`);
+    if (safeTag) tokens.push(`tag:${safeTag}`);
+    if (safeMobile) tokens.push(`mobile:${safeMobile}`);
+    if (safeEmail) tokens.push(`email:${safeEmail}`);
+    if (!tokens.length && safeName) tokens.push(`name:${safeName}`);
+    return tokens;
+  }
+
+  isDesktopSecondaryUserInList(user, users = []) {
+    const userTokens = this.getDesktopSecondaryUserIdentityTokens(user);
+    if (!userTokens.length || !Array.isArray(users) || !users.length) return false;
+    const userTokenSet = new Set(userTokens);
+    return users.some((candidate) => {
+      const candidateTokens = this.getDesktopSecondaryUserIdentityTokens(candidate);
+      return candidateTokens.some((token) => userTokenSet.has(token));
+    });
+  }
+
+  dedupeDesktopSecondaryUsers(users = []) {
+    if (!Array.isArray(users) || !users.length) return [];
+    const seenTokens = new Set();
+    const uniqueUsers = [];
+
+    users.forEach((user) => {
+      const tokens = this.getDesktopSecondaryUserIdentityTokens(user);
+      if (!tokens.length) {
+        uniqueUsers.push(user);
+        return;
+      }
+      if (tokens.some((token) => seenTokens.has(token))) return;
+      uniqueUsers.push(user);
+      tokens.forEach((token) => seenTokens.add(token));
+    });
+
+    return uniqueUsers;
+  }
+
+  async ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId = 'navChats', options = {}) {
     if (!listEl || this.desktopSecondaryAllUsersLoading) return;
     if (this.desktopSecondaryAllUsersFetched === true) return;
     if (Array.isArray(this.desktopSecondaryAllUsers) && this.desktopSecondaryAllUsers.length) return;
 
+    const rerender = typeof options?.onStateChange === 'function'
+      ? options.onStateChange
+      : () => this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+
     this.desktopSecondaryAllUsersLoading = true;
     this.desktopSecondaryUserSearchError = '';
-    this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+    rerender();
 
     try {
       const users = typeof this.fetchAllRegisteredUsers === 'function'
@@ -406,19 +456,27 @@ export class ChatAppInteractionMethods {
     } finally {
       this.desktopSecondaryAllUsersLoading = false;
       this.desktopSecondaryAllUsersFetched = true;
+      if (typeof options?.onStateChange === 'function') {
+        rerender();
+        return;
+      }
       const activeList = document.getElementById('desktopSecondaryMenuList');
       const menuRoot = document.getElementById('desktopSecondaryMenu');
       if (activeList === listEl && menuRoot?.dataset.menuRoot === targetNavId) {
-        this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+        rerender();
       }
     }
   }
 
-  scheduleDesktopSecondaryUserSearch(query, listEl, targetNavId = 'navChats') {
+  scheduleDesktopSecondaryUserSearch(query, listEl, targetNavId = 'navChats', options = {}) {
     if (this.desktopSecondaryUserSearchTimer) {
       clearTimeout(this.desktopSecondaryUserSearchTimer);
       this.desktopSecondaryUserSearchTimer = null;
     }
+
+    const rerender = typeof options?.onStateChange === 'function'
+      ? options.onStateChange
+      : () => this.renderDesktopSecondaryChatsList(listEl, targetNavId);
 
     const value = String(query || '').trim();
     const previousQuery = String(this.desktopSecondaryChatSearchQuery || '').trim();
@@ -430,8 +488,8 @@ export class ChatAppInteractionMethods {
       this.desktopSecondaryUserSearchLastRemoteQuery = '';
       this.desktopSecondaryUserSearchResults = [];
       this.desktopSecondaryUserSearchLoading = false;
-      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
-      this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId);
+      rerender();
+      this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId, options);
       return;
     }
 
@@ -440,17 +498,17 @@ export class ChatAppInteractionMethods {
       ? this.rankUsersByQuery(localUsers, value)
       : localUsers;
     this.desktopSecondaryUserSearchLoading = value.length >= 2;
-    this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+    rerender();
 
     if (value.length < 2 || typeof this.fetchRegisteredUsers !== 'function') {
       this.desktopSecondaryUserSearchLoading = false;
-      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      rerender();
       return;
     }
 
     if (value === previousQuery && value === String(this.desktopSecondaryUserSearchLastRemoteQuery || '').trim()) {
       this.desktopSecondaryUserSearchLoading = false;
-      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      rerender();
       return;
     }
 
@@ -478,9 +536,13 @@ export class ChatAppInteractionMethods {
       } finally {
         if (this.desktopSecondaryUserSearchRequestId === requestId) {
           this.desktopSecondaryUserSearchLoading = false;
+          if (typeof options?.onStateChange === 'function') {
+            rerender();
+            return;
+          }
           const menuRoot = document.getElementById('desktopSecondaryMenu');
           if (menuRoot?.dataset.menuRoot === targetNavId) {
-            this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+            rerender();
           }
         }
       }
@@ -496,7 +558,14 @@ export class ChatAppInteractionMethods {
     return false;
   }
 
-  renderDesktopSecondaryUserSection(title, users, contentEl, listEl, targetNavId = 'navChats') {
+  renderDesktopSecondaryUserSection(
+    title,
+    users,
+    contentEl,
+    listEl,
+    targetNavId = 'navChats',
+    options = {}
+  ) {
     if (!contentEl || !Array.isArray(users) || !users.length) return;
 
     const sectionEl = document.createElement('section');
@@ -535,8 +604,12 @@ export class ChatAppInteractionMethods {
           if (typeof this.openOrCreateDirectChatByUser === 'function') {
             await this.openOrCreateDirectChatByUser(user);
           }
-          this.resetDesktopSecondaryChatSearchState();
-          this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+          if (typeof options?.onUserSelected === 'function') {
+            options.onUserSelected(user);
+          } else {
+            this.resetDesktopSecondaryChatSearchState();
+            this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+          }
         } catch (error) {
           await this.showAlert(error?.message || 'Не вдалося відкрити чат.');
         }
@@ -548,19 +621,36 @@ export class ChatAppInteractionMethods {
     contentEl.appendChild(sectionEl);
   }
 
-  renderDesktopSecondaryChatSearchContent(contentEl, listEl, targetNavId = 'navChats') {
+  renderDesktopSecondaryChatSearchContent(contentEl, listEl, targetNavId = 'navChats', options = {}) {
     const query = String(this.desktopSecondaryChatSearchQuery || '').trim();
     const allUsers = Array.isArray(this.desktopSecondaryAllUsers)
       ? [...this.desktopSecondaryAllUsers].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || ''), 'uk'))
       : [];
-    const recentUsers = this.collectDesktopSecondaryRecentUsers();
+    const recentUsers = this.dedupeDesktopSecondaryUsers(this.collectDesktopSecondaryRecentUsers());
+    const filteredAllUsers = this.dedupeDesktopSecondaryUsers(allUsers).filter(
+      (user) => !this.isDesktopSecondaryUserInList(user, recentUsers)
+    );
 
     if (!query) {
       if (recentUsers.length) {
-        this.renderDesktopSecondaryUserSection('Недавні користувачі', recentUsers, contentEl, listEl, targetNavId);
+        this.renderDesktopSecondaryUserSection(
+          'Недавні користувачі',
+          recentUsers,
+          contentEl,
+          listEl,
+          targetNavId,
+          options
+        );
       }
-      if (allUsers.length) {
-        this.renderDesktopSecondaryUserSection('Усі користувачі', allUsers, contentEl, listEl, targetNavId);
+      if (filteredAllUsers.length) {
+        this.renderDesktopSecondaryUserSection(
+          'Усі користувачі',
+          filteredAllUsers,
+          contentEl,
+          listEl,
+          targetNavId,
+          options
+        );
       }
 
       if (this.desktopSecondaryAllUsersLoading) {
@@ -571,7 +661,7 @@ export class ChatAppInteractionMethods {
         return;
       }
 
-      if (!recentUsers.length && !allUsers.length) {
+      if (!recentUsers.length && !filteredAllUsers.length) {
         const emptyEl = document.createElement('div');
         emptyEl.className = 'desktop-secondary-search-state';
         emptyEl.textContent = this.desktopSecondaryUserSearchError || 'Користувачів поки не знайдено.';
@@ -587,12 +677,20 @@ export class ChatAppInteractionMethods {
     const combinedResults = typeof this.mergeNormalizedUsers === 'function'
       ? this.mergeNormalizedUsers(baseResults, this.desktopSecondaryUserSearchResults || [])
       : [...baseResults, ...(this.desktopSecondaryUserSearchResults || [])];
-    const rankedResults = typeof this.rankUsersByQuery === 'function'
+    const rankedResultsRaw = typeof this.rankUsersByQuery === 'function'
       ? this.rankUsersByQuery(combinedResults, query)
       : combinedResults;
+    const rankedResults = this.dedupeDesktopSecondaryUsers(rankedResultsRaw);
 
     if (rankedResults.length) {
-      this.renderDesktopSecondaryUserSection('Результати пошуку', rankedResults, contentEl, listEl, targetNavId);
+      this.renderDesktopSecondaryUserSection(
+        'Результати пошуку',
+        rankedResults,
+        contentEl,
+        listEl,
+        targetNavId,
+        options
+      );
     } else {
       const emptyEl = document.createElement('div');
       emptyEl.className = 'desktop-secondary-search-state';
@@ -785,6 +883,7 @@ export class ChatAppInteractionMethods {
     const sidebar = document.querySelector('.sidebar');
     const profileMenu = document.querySelector('.profile-menu-wrapper');
     const appEl = document.querySelector('.orion-app');
+    const isMobile = window.innerWidth <= 768;
 
     if (settingsContainer) {
       settingsContainer.classList.remove('active');
@@ -819,6 +918,9 @@ export class ChatAppInteractionMethods {
       this.leaveRealtimeChatRoom();
     }
     this.currentChat = null;
+    if (isMobile && this.mobileNewChatModeActive) {
+      this.exitMobileNewChatMode({ clearQuery: true, render: false });
+    }
     this.updateChatHeader();
     if (appEl) {
       appEl.classList.remove('chat-open');
@@ -1003,6 +1105,11 @@ export class ChatAppInteractionMethods {
     const button = document.getElementById('desktopRailAccountBtn');
     if (!menu || !button) return;
     menu.classList.remove('active');
+    menu.classList.remove('mobile-anchor');
+    menu.style.left = '';
+    menu.style.right = '';
+    menu.style.top = '';
+    menu.style.bottom = '';
     button.setAttribute('aria-expanded', 'false');
   }
 
@@ -1041,13 +1148,185 @@ export class ChatAppInteractionMethods {
     }
   }
 
-  toggleDesktopRailAccountMenu(forceOpen = null) {
+  isMobileNewChatModeActive() {
+    return window.innerWidth <= 768 && this.mobileNewChatModeActive === true;
+  }
+
+  closeMobileNewChatCreateMenu() {
+    const menu = document.getElementById('mobileNewChatCreateMenu');
+    const button = document.getElementById('newChatBtn');
+    if (!menu || !button) return;
+    menu.classList.remove('active', 'mobile-anchor');
+    menu.style.left = '';
+    menu.style.right = '';
+    menu.style.top = '';
+    menu.style.bottom = '';
+    button.setAttribute('aria-expanded', 'false');
+  }
+
+  positionMobileNewChatCreateMenu(anchorEl) {
+    const menu = document.getElementById('mobileNewChatCreateMenu');
+    if (!menu || !(anchorEl instanceof HTMLElement) || window.innerWidth > 768) return;
+
+    const rect = anchorEl.getBoundingClientRect();
+    const estimatedWidth = 212;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const horizontalPadding = 12;
+    const top = rect.bottom + 8;
+    const rightAlignedLeft = rect.right - estimatedWidth;
+    const left = Math.min(
+      Math.max(horizontalPadding, rightAlignedLeft),
+      Math.max(horizontalPadding, viewportWidth - estimatedWidth - horizontalPadding)
+    );
+
+    menu.classList.add('mobile-anchor');
+    menu.style.left = `${Math.round(left)}px`;
+    menu.style.right = 'auto';
+    menu.style.top = `${Math.round(top)}px`;
+    menu.style.bottom = 'auto';
+  }
+
+  toggleMobileNewChatCreateMenu(forceOpen = null, anchorEl = null) {
+    const menu = document.getElementById('mobileNewChatCreateMenu');
+    const button = document.getElementById('newChatBtn');
+    if (!menu || !button || window.innerWidth > 768) return;
+
+    const shouldOpen = typeof forceOpen === 'boolean'
+      ? forceOpen
+      : !menu.classList.contains('active');
+    if (shouldOpen && anchorEl instanceof HTMLElement) {
+      this.positionMobileNewChatCreateMenu(anchorEl);
+    } else if (!shouldOpen) {
+      menu.classList.remove('mobile-anchor');
+      menu.style.left = '';
+      menu.style.right = '';
+      menu.style.top = '';
+      menu.style.bottom = '';
+    }
+
+    menu.classList.toggle('active', shouldOpen);
+    button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  }
+
+  enterMobileNewChatMode({ focusInput = true } = {}) {
+    if (window.innerWidth > 768) return;
+
+    this.mobileNewChatModeActive = true;
+    this.mobileNewChatSearchRevealPending = true;
+    this.desktopSecondaryChatSearchMode = true;
+    this.desktopSecondaryUserSearchError = '';
+    this.closeMobileNewChatCreateMenu();
+
+    const searchBox = document.querySelector('.search-box');
+    const searchInput = document.getElementById('searchInput');
+    if (searchBox) searchBox.classList.add('is-mobile-new-chat-mode');
+    if (searchInput instanceof HTMLInputElement) {
+      searchInput.placeholder = 'Пошук або новий чат';
+      searchInput.value = String(this.desktopSecondaryChatSearchQuery || '');
+    }
+
+    this.renderChatsList();
+    const chatsList = document.getElementById('chatsList');
+    this.ensureDesktopSecondaryAllUsersLoaded(chatsList, 'navChats', {
+      onStateChange: () => this.renderChatsList()
+    });
+
+    if (focusInput && searchInput instanceof HTMLInputElement) {
+      window.requestAnimationFrame(() => {
+        searchInput.focus({ preventScroll: true });
+        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+      });
+    }
+  }
+
+  exitMobileNewChatMode({ clearQuery = true, render = true } = {}) {
+    this.closeMobileNewChatCreateMenu();
+    this.mobileNewChatModeActive = false;
+    this.mobileNewChatSearchRevealPending = false;
+
+    if (clearQuery) {
+      this.resetDesktopSecondaryChatSearchState();
+    } else {
+      this.desktopSecondaryChatSearchMode = false;
+    }
+
+    const searchBox = document.querySelector('.search-box');
+    const searchInput = document.getElementById('searchInput');
+    if (searchBox) searchBox.classList.remove('is-mobile-new-chat-mode');
+    if (searchInput instanceof HTMLInputElement) {
+      searchInput.value = '';
+      searchInput.placeholder = 'Пошук чатів...';
+    }
+
+    if (render) {
+      this.renderChatsList();
+    }
+  }
+
+  renderMobileNewChatSearchResults(chatsList) {
+    if (!(chatsList instanceof HTMLElement)) return;
+
+    const listWrap = document.createElement('div');
+    listWrap.className = 'desktop-secondary-menu-list desktop-secondary-menu-list--chats mobile-new-chat-results';
+    listWrap.dataset.menuMode = 'chat-search';
+
+    const contentEl = document.createElement('div');
+    contentEl.className = 'desktop-secondary-chat-content';
+    this.renderDesktopSecondaryChatSearchContent(contentEl, chatsList, 'navChats', {
+      onUserSelected: () => {
+        this.exitMobileNewChatMode({ clearQuery: true, render: false });
+      }
+    });
+
+    listWrap.appendChild(contentEl);
+    chatsList.appendChild(listWrap);
+
+    if (this.mobileNewChatSearchRevealPending === true) {
+      this.mobileNewChatSearchRevealPending = false;
+      this.startDesktopSecondarySearchRevealAnimation(listWrap);
+    }
+  }
+
+  positionDesktopRailAccountMenuForMobile(anchorEl) {
+    const menu = document.getElementById('desktopRailAccountMenu');
+    if (!menu || !(anchorEl instanceof HTMLElement) || window.innerWidth > 768) return;
+
+    const rect = anchorEl.getBoundingClientRect();
+    const estimatedWidth = 196;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const horizontalPadding = 12;
+    const left = Math.min(
+      Math.max(horizontalPadding, rect.right - estimatedWidth),
+      Math.max(horizontalPadding, viewportWidth - estimatedWidth - horizontalPadding)
+    );
+    const top = Math.max(12, rect.top - 148);
+
+    menu.classList.add('mobile-anchor');
+    menu.style.left = `${Math.round(left)}px`;
+    menu.style.right = 'auto';
+    menu.style.top = `${Math.round(top)}px`;
+    menu.style.bottom = 'auto';
+  }
+
+  toggleDesktopRailAccountMenu(forceOpen = null, options = {}) {
     const menu = document.getElementById('desktopRailAccountMenu');
     const button = document.getElementById('desktopRailAccountBtn');
     if (!menu || !button) return;
     const shouldOpen = typeof forceOpen === 'boolean'
       ? forceOpen
       : !menu.classList.contains('active');
+    const triggerButton = options?.triggerButton instanceof HTMLElement
+      ? options.triggerButton
+      : null;
+    if (shouldOpen && window.innerWidth <= 768 && triggerButton) {
+      this.positionDesktopRailAccountMenuForMobile(triggerButton);
+    } else if (!shouldOpen || window.innerWidth > 768) {
+      menu.classList.remove('mobile-anchor');
+      menu.style.left = '';
+      menu.style.right = '';
+      menu.style.top = '';
+      menu.style.bottom = '';
+    }
     menu.classList.toggle('active', shouldOpen);
     button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
   }
@@ -1096,14 +1375,32 @@ export class ChatAppInteractionMethods {
     if (this.eventListenersBound) return;
     this.eventListenersBound = true;
 
-    document.getElementById('newChatBtn').addEventListener('click', () => this.openNewChatModal());
+    const newChatBtn = document.getElementById('newChatBtn');
     const desktopSecondaryMenuNewChat = document.getElementById('desktopSecondaryMenuNewChat');
     const desktopSecondaryMenuBack = document.getElementById('desktopSecondaryMenuBack');
     const desktopSecondaryMenuSearch = document.getElementById('desktopSecondaryMenuSearch');
     const desktopSecondaryCreateMenu = document.getElementById('desktopSecondaryCreateMenu');
+    const mobileNewChatCreateMenu = document.getElementById('mobileNewChatCreateMenu');
     const desktopSecondaryCreateActions = desktopSecondaryCreateMenu
       ? desktopSecondaryCreateMenu.querySelectorAll('[data-secondary-create-action]')
       : [];
+    const mobileNewChatCreateActions = mobileNewChatCreateMenu
+      ? mobileNewChatCreateMenu.querySelectorAll('[data-secondary-create-action]')
+      : [];
+    if (newChatBtn) {
+      newChatBtn.addEventListener('click', (event) => {
+        if (window.innerWidth > 768) {
+          this.openNewChatModal();
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.mobileNewChatModeActive) {
+          this.enterMobileNewChatMode({ focusInput: false });
+        }
+        this.toggleMobileNewChatCreateMenu(null, newChatBtn);
+      });
+    }
     if (desktopSecondaryMenuNewChat) {
       desktopSecondaryMenuNewChat.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -1115,11 +1412,25 @@ export class ChatAppInteractionMethods {
         event.stopPropagation();
       });
     }
+    if (mobileNewChatCreateMenu) {
+      mobileNewChatCreateMenu.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+    }
     if (desktopSecondaryCreateActions.length) {
       desktopSecondaryCreateActions.forEach((item) => {
         item.addEventListener('click', async () => {
           const action = item.getAttribute('data-secondary-create-action') || '';
           this.closeDesktopSecondaryCreateMenu();
+          await this.handleDesktopSecondaryCreateMenuAction(action);
+        });
+      });
+    }
+    if (mobileNewChatCreateActions.length) {
+      mobileNewChatCreateActions.forEach((item) => {
+        item.addEventListener('click', async () => {
+          const action = item.getAttribute('data-secondary-create-action') || '';
+          this.closeMobileNewChatCreateMenu();
           await this.handleDesktopSecondaryCreateMenuAction(action);
         });
       });
@@ -1178,6 +1489,7 @@ export class ChatAppInteractionMethods {
     
     const navProfile = document.getElementById('navProfile');
     const navSettings = document.getElementById('navSettings');
+    const navExplore = document.getElementById('navExplore');
     const navShop = document.getElementById('navShop');
     const navWallet = document.getElementById('navWallet');
     const navCalls = document.getElementById('navCalls');
@@ -1243,7 +1555,11 @@ export class ChatAppInteractionMethods {
         const target = event.target;
         if (!(target instanceof Element)) return;
         if (!desktopRailAccountMenu.classList.contains('active')) return;
-        if (desktopRailAccountBtn.contains(target) || desktopRailAccountMenu.contains(target)) return;
+        if (
+          desktopRailAccountBtn.contains(target)
+          || desktopRailAccountMenu.contains(target)
+          || navProfile?.contains(target)
+        ) return;
         this.closeDesktopRailAccountMenu();
       });
     }
@@ -1262,17 +1578,76 @@ export class ChatAppInteractionMethods {
         this.closeDesktopSecondaryCreateMenu();
       });
     }
+    if (newChatBtn && mobileNewChatCreateMenu) {
+      document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (!mobileNewChatCreateMenu.classList.contains('active')) return;
+        if (newChatBtn.contains(target) || mobileNewChatCreateMenu.contains(target)) return;
+        this.closeMobileNewChatCreateMenu();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        if (!mobileNewChatCreateMenu.classList.contains('active')) return;
+        this.closeMobileNewChatCreateMenu();
+      });
+    }
     
     if (navProfile) {
-      navProfile.addEventListener('click', () => {
+      navProfile.addEventListener('click', (event) => {
+        if (this.mobileNavProfileLongPressTriggered) {
+          this.mobileNavProfileLongPressTriggered = false;
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        if (window.innerWidth <= 768 && this.mobileNewChatModeActive) {
+          this.exitMobileNewChatMode({ clearQuery: true, render: false });
+        }
         if (navProfile.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navProfile);
         this.showSettings('profile');
       });
+
+      let navProfileLongPressTimer = null;
+      const clearNavProfileLongPressTimer = () => {
+        if (!navProfileLongPressTimer) return;
+        clearTimeout(navProfileLongPressTimer);
+        navProfileLongPressTimer = null;
+      };
+      const startNavProfileLongPress = () => {
+        if (window.innerWidth > 768) return;
+        clearNavProfileLongPressTimer();
+        navProfileLongPressTimer = window.setTimeout(() => {
+          navProfileLongPressTimer = null;
+          this.mobileNavProfileLongPressTriggered = true;
+          this.toggleDesktopRailAccountMenu(true, { triggerButton: navProfile });
+        }, 420);
+      };
+      navProfile.addEventListener('pointerdown', startNavProfileLongPress);
+      navProfile.addEventListener('pointerup', clearNavProfileLongPressTimer);
+      navProfile.addEventListener('pointercancel', clearNavProfileLongPressTimer);
+      navProfile.addEventListener('pointermove', clearNavProfileLongPressTimer);
+      navProfile.addEventListener('pointerleave', clearNavProfileLongPressTimer);
     }
     
+    if (navExplore) {
+      navExplore.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && this.mobileNewChatModeActive) {
+          this.exitMobileNewChatMode({ clearQuery: true, render: false });
+        }
+        if (navExplore.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
+        this.setActiveNavButton(navExplore);
+        this.settingsParentSection = 'mobile-sections';
+        this.showSettings('mobile-sections');
+      });
+    }
+
     if (navShop) {
       navShop.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && this.mobileNewChatModeActive) {
+          this.exitMobileNewChatMode({ clearQuery: true, render: false });
+        }
         if (navShop.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navShop);
         this.settingsParentSection = 'messenger-settings';
@@ -1282,6 +1657,9 @@ export class ChatAppInteractionMethods {
 
     if (navWallet) {
       navWallet.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && this.mobileNewChatModeActive) {
+          this.exitMobileNewChatMode({ clearQuery: true, render: false });
+        }
         if (navWallet.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navWallet);
         this.showSettings('wallet');
@@ -1290,6 +1668,9 @@ export class ChatAppInteractionMethods {
 
     if (navSettings) {
       navSettings.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && this.mobileNewChatModeActive) {
+          this.exitMobileNewChatMode({ clearQuery: true, render: false });
+        }
         if (navSettings.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navSettings);
         this.settingsParentSection = 'settings-home';
@@ -1299,6 +1680,9 @@ export class ChatAppInteractionMethods {
 
     if (navGames) {
       navGames.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && this.mobileNewChatModeActive) {
+          this.exitMobileNewChatMode({ clearQuery: true, render: false });
+        }
         if (navGames.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navGames);
         this.pendingMiniGameView = 'tapper';
@@ -1308,6 +1692,9 @@ export class ChatAppInteractionMethods {
     
     if (navCalls) {
       navCalls.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && this.mobileNewChatModeActive) {
+          this.exitMobileNewChatMode({ clearQuery: true, render: false });
+        }
         if (navCalls.classList.contains('active') && this.currentChat === null && isSettingsScreenActive()) return;
         this.setActiveNavButton(navCalls);
         this.showSettings('calls');
@@ -1316,7 +1703,13 @@ export class ChatAppInteractionMethods {
     
     if (navChats) {
       navChats.addEventListener('click', () => {
-        if (navChats.classList.contains('active') && this.currentChat === null && !isSettingsScreenActive()) return;
+        this.closeMobileNewChatCreateMenu();
+        if (
+          navChats.classList.contains('active')
+          && this.currentChat === null
+          && !isSettingsScreenActive()
+          && !this.mobileNewChatModeActive
+        ) return;
         this.setActiveNavButton(navChats);
         this.openChatsHomeView({ syncNav: false });
       });
@@ -1328,11 +1721,15 @@ export class ChatAppInteractionMethods {
     
     const sendBtn = document.getElementById('sendBtn');
     if (sendBtn) {
-      const keepComposerFocus = (e) => {
-        e.preventDefault();
+      const keepComposerFocusMouse = (e) => {
+        // Keep textarea focus on desktop click, but do not block touch events on mobile.
+        if (window.innerWidth > 900) {
+          e.preventDefault();
+        }
       };
       const triggerPrimaryAction = (e) => {
-        e.preventDefault();
+        if (e?.cancelable) e.preventDefault();
+        if (typeof e?.stopPropagation === 'function') e.stopPropagation();
         const now = Date.now();
         const source = String(e?.type || 'click');
         if (now - this.lastSendTriggerAt < 220) return;
@@ -1340,8 +1737,8 @@ export class ChatAppInteractionMethods {
         this.lastSendTriggerSource = source;
         this.handleSendButtonAction();
       };
-      sendBtn.addEventListener('mousedown', keepComposerFocus);
-      sendBtn.addEventListener('touchstart', keepComposerFocus, { passive: false });
+      sendBtn.addEventListener('mousedown', keepComposerFocusMouse);
+      sendBtn.addEventListener('touchend', triggerPrimaryAction, { passive: false });
       sendBtn.addEventListener('click', triggerPrimaryAction);
     }
     const messageInput = document.getElementById('messageInput');
@@ -1409,9 +1806,13 @@ export class ChatAppInteractionMethods {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         this.closeDesktopRailAccountMenu();
+        this.closeMobileNewChatCreateMenu();
         this.closeAttachSheet();
         this.closeCameraCapture();
         this.closeContactProfileActionsMenu();
+        if (window.innerWidth <= 768 && this.mobileNewChatModeActive && !this.currentChat) {
+          this.exitMobileNewChatMode({ clearQuery: true, render: true });
+        }
         if (this.isContactProfileSectionActive()) {
           this.closeContactProfileSection();
         }
@@ -1421,7 +1822,55 @@ export class ChatAppInteractionMethods {
     this.setupMessageMediaRetryEvents();
     this.setupVoiceMessageEvents();
 
-    document.getElementById('searchInput').addEventListener('input', (e) => this.filterChats(e.target.value));
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('focus', () => {
+        if (window.innerWidth <= 768 && !this.isMobileNewChatModeActive()) {
+          this.enterMobileNewChatMode({ focusInput: false });
+        }
+        if (!this.isMobileNewChatModeActive()) return;
+        this.closeMobileNewChatCreateMenu();
+        const chatsList = document.getElementById('chatsList');
+        this.ensureDesktopSecondaryAllUsersLoaded(chatsList, 'navChats', {
+          onStateChange: () => this.renderChatsList()
+        });
+      });
+      searchInput.addEventListener('keydown', (event) => {
+        if (!this.isMobileNewChatModeActive()) return;
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          this.exitMobileNewChatMode({ clearQuery: true, render: true });
+          return;
+        }
+        if (this.isDesktopSecondarySearchEditingKey(event)) {
+          this.desktopSecondaryChatSearchPendingKeyboardEdit = true;
+        }
+      });
+      searchInput.addEventListener('input', (event) => {
+        const value = event?.target?.value || '';
+        if (this.isMobileNewChatModeActive()) {
+          if (!event.isTrusted) return;
+          const inputType = String(event.inputType || '').trim();
+          const wasKeyboardEdit = this.desktopSecondaryChatSearchPendingKeyboardEdit === true;
+          const isDirectUserEdit = Boolean(
+            wasKeyboardEdit
+            || inputType.startsWith('insert')
+            || inputType.startsWith('delete')
+            || inputType === 'historyUndo'
+            || inputType === 'historyRedo'
+            || inputType === ''
+          );
+          this.desktopSecondaryChatSearchPendingKeyboardEdit = false;
+          if (!isDirectUserEdit) return;
+          const chatsList = document.getElementById('chatsList');
+          this.scheduleDesktopSecondaryUserSearch(value, chatsList, 'navChats', {
+            onStateChange: () => this.renderChatsList()
+          });
+          return;
+        }
+        this.filterChats(value);
+      });
+    }
 
     document.getElementById('newContactInput').addEventListener('input', (e) => {
       if (this.newChatGroupMode) return;
@@ -2040,6 +2489,167 @@ export class ChatAppInteractionMethods {
     input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }
 
+  getMobileViewportMetrics(inputEl = null) {
+    const viewport = window.visualViewport;
+    const rawVisibleTop = viewport ? Math.max(0, Number(viewport.offsetTop || 0)) : 0;
+    const visibleHeight = viewport
+      ? Math.max(0, Number(viewport.height || 0))
+      : Math.max(0, Number(window.innerHeight || 0));
+    const visibleTop = rawVisibleTop;
+    const visibleBottom = visibleTop + visibleHeight;
+    const layoutHeight = Math.max(Number(window.innerHeight || 0), visibleBottom);
+    const innerHeight = Math.max(0, Number(window.innerHeight || 0));
+    const input = inputEl || document.getElementById('messageInput');
+    const isInputFocused = Boolean(input && document.activeElement === input);
+    const keyboardByInnerHeightRaw = innerHeight - visibleHeight - visibleTop;
+    const keyboardByInnerHeight = Math.max(0, keyboardByInnerHeightRaw);
+    const keyboardLikelyClosed = keyboardByInnerHeight < 18;
+
+    if (!this.mobileViewportBaseHeight) {
+      this.mobileViewportBaseHeight = Math.max(layoutHeight, innerHeight, visibleBottom);
+    }
+
+    // Do not overwrite baseline while keyboard is still animating/visible.
+    if (!isInputFocused && keyboardLikelyClosed) {
+      this.mobileViewportBaseHeight = Math.max(layoutHeight, innerHeight, visibleBottom);
+    }
+
+    const baselineHeight = Math.max(
+      this.mobileViewportBaseHeight || 0,
+      layoutHeight,
+      innerHeight,
+      visibleBottom
+    );
+    this.mobileViewportBaseHeight = baselineHeight;
+    const keyboardByBaseline = baselineHeight - visibleBottom;
+    const keyboardHeight = Math.min(
+      460,
+      Math.max(0, keyboardByBaseline, keyboardByInnerHeight)
+    );
+
+    return {
+      hasVisualViewport: Boolean(viewport),
+      rawVisibleTop,
+      visibleTop,
+      visibleHeight,
+      visibleBottom,
+      keyboardHeight,
+      isInputFocused
+    };
+  }
+
+  stickMobileMessagesToBottom(force = false) {
+    if (window.innerWidth > 900) return;
+    if (!force && !this.mobileKeyboardStickToBottom) return;
+    const messages = document.getElementById('messagesContainer');
+    if (!messages) return;
+    const maxTop = Math.max(0, messages.scrollHeight - messages.clientHeight);
+    messages.scrollTop = maxTop;
+  }
+
+  ensureMobileMessagesAnchoredToBottom() {
+    if (window.innerWidth > 900) return;
+    const messages = document.getElementById('messagesContainer');
+    if (!messages) return;
+    const hasMessageNodes = Boolean(messages.querySelector('.message'));
+    const existingSpacer = messages.querySelector('.messages-bottom-spacer');
+
+    if (!hasMessageNodes) {
+      if (existingSpacer) existingSpacer.remove();
+      return;
+    }
+
+    if (!messages.classList.contains('has-content')) {
+      messages.classList.add('has-content');
+      messages.classList.remove('no-content');
+    }
+
+    if (!existingSpacer) {
+      const spacer = document.createElement('div');
+      spacer.className = 'messages-bottom-spacer';
+      spacer.setAttribute('aria-hidden', 'true');
+      messages.prepend(spacer);
+    }
+  }
+
+  stopMobileKeyboardSettleLoop() {
+    if (this.mobileKeyboardSettleRaf) {
+      window.cancelAnimationFrame(this.mobileKeyboardSettleRaf);
+      this.mobileKeyboardSettleRaf = 0;
+    }
+    if (this.mobileKeyboardSettleTimeout) {
+      window.clearTimeout(this.mobileKeyboardSettleTimeout);
+      this.mobileKeyboardSettleTimeout = 0;
+    }
+    this.mobileKeyboardSettleUntil = 0;
+  }
+
+  startMobileKeyboardSettleLoop(inputEl = null, duration = 520) {
+    if (window.innerWidth > 900) return;
+    const input = inputEl || document.getElementById('messageInput');
+    if (!input) return;
+
+    const now = Date.now();
+    this.mobileKeyboardSettleUntil = Math.max(
+      this.mobileKeyboardSettleUntil || 0,
+      now + Math.max(180, duration)
+    );
+
+    if (this.mobileKeyboardSettleRaf) return;
+
+    const step = () => {
+      const activeInput = inputEl || document.getElementById('messageInput');
+      const shouldStop = (
+        window.innerWidth > 900
+        || !activeInput
+        || document.activeElement !== activeInput
+        || Date.now() > (this.mobileKeyboardSettleUntil || 0)
+      );
+
+      if (shouldStop) {
+        this.stopMobileKeyboardSettleLoop();
+        return;
+      }
+
+      this.syncMobileKeyboardState(activeInput);
+      if (this.mobileKeyboardStickToBottom) {
+        this.stickMobileMessagesToBottom(true);
+      }
+      this.mobileKeyboardSettleRaf = window.requestAnimationFrame(step);
+    };
+
+    this.mobileKeyboardSettleRaf = window.requestAnimationFrame(step);
+    if (this.mobileKeyboardSettleTimeout) {
+      window.clearTimeout(this.mobileKeyboardSettleTimeout);
+    }
+    this.mobileKeyboardSettleTimeout = window.setTimeout(() => {
+      this.stopMobileKeyboardSettleLoop();
+    }, Math.max(420, duration + 260));
+  }
+
+  configureComposerInputSuggestions(inputEl = null) {
+    const input = inputEl || document.getElementById('messageInput');
+    if (!(input instanceof HTMLTextAreaElement)) return;
+
+    const isMobile = window.innerWidth <= 900;
+    if (isMobile) {
+      input.setAttribute('autocomplete', 'on');
+      input.setAttribute('autocorrect', 'on');
+      input.setAttribute('autocapitalize', 'sentences');
+      input.setAttribute('spellcheck', 'true');
+      input.autocomplete = 'on';
+      input.spellcheck = true;
+      return;
+    }
+
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('autocapitalize', 'none');
+    input.setAttribute('spellcheck', 'false');
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+  }
+
   syncMobileKeyboardState(inputEl = null) {
     const appEl = document.querySelector('.orion-app');
     const input = inputEl || document.getElementById('messageInput');
@@ -2052,18 +2662,18 @@ export class ChatAppInteractionMethods {
       return;
     }
 
-    const viewport = window.visualViewport;
-    if (!viewport) {
+    const viewportMetrics = this.getMobileViewportMetrics(input);
+    if (!viewportMetrics.hasVisualViewport) {
       appEl.classList.remove('keyboard-open');
       appEl.style.setProperty('--keyboard-inset', '0px');
       this.setMobilePageScrollLock(false);
       return;
     }
 
-    const keyboardHeightRaw = window.innerHeight - viewport.height - viewport.offsetTop;
-    const keyboardHeight = Math.min(420, Math.max(0, keyboardHeightRaw));
-    const isInputFocused = document.activeElement === input;
-    const isOpen = isInputFocused && keyboardHeight > 70;
+    const keyboardHeight = viewportMetrics.keyboardHeight;
+    const wasOpen = appEl.classList.contains('keyboard-open');
+    // Low threshold prevents one-step jump when keyboard animation starts.
+    const isOpen = viewportMetrics.isInputFocused && keyboardHeight > 8;
 
     appEl.classList.toggle('keyboard-open', isOpen);
     appEl.style.setProperty('--keyboard-inset', `${isOpen ? keyboardHeight : 0}px`);
@@ -2074,14 +2684,19 @@ export class ChatAppInteractionMethods {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-
-      const messages = document.getElementById('messagesContainer');
-      if (messages && this.isMessagesNearBottom(messages, 96)) {
-        messages.scrollTop = messages.scrollHeight;
-      }
     }
 
-    this.applyMobileChatViewportLayout();
+    this.applyMobileChatViewportLayout(viewportMetrics);
+    this.ensureMobileMessagesAnchoredToBottom();
+    this.stickMobileMessagesToBottom(true);
+
+    if (this.mobileKeyboardStickToBottom) {
+      if (isOpen || wasOpen) {
+        this.stickMobileMessagesToBottom(true);
+      }
+      window.requestAnimationFrame(() => this.stickMobileMessagesToBottom(true));
+      window.setTimeout(() => this.stickMobileMessagesToBottom(true), 120);
+    }
   }
 
   setMobilePageScrollLock(locked, forceTop = false) {
@@ -2129,7 +2744,7 @@ export class ChatAppInteractionMethods {
     this.mobileScrollLocked = false;
   }
 
-  applyMobileChatViewportLayout() {
+  applyMobileChatViewportLayout(viewportMetrics = null) {
     const appEl = document.querySelector('.orion-app');
     const header = document.querySelector('.app-header');
     const chatArea = document.querySelector('.chat-area');
@@ -2165,41 +2780,63 @@ export class ChatAppInteractionMethods {
       chatContainer.style.removeProperty('padding-bottom');
       chatContainer.style.removeProperty('flex-direction');
       chatContainer.style.removeProperty('height');
+      if (messages) {
+        messages.style.removeProperty('padding-bottom');
+      }
       inputArea.style.removeProperty('position');
       inputArea.style.removeProperty('bottom');
+      inputArea.style.removeProperty('transform');
+      inputArea.style.removeProperty('transition');
       return;
     }
 
-    const viewport = window.visualViewport;
-    const keyboardHeight = viewport
-      ? Math.max(0, Math.min(420, window.innerHeight - viewport.height - viewport.offsetTop))
+    const metrics = viewportMetrics || this.getMobileViewportMetrics();
+    const measuredBottom = Math.max(
+      0,
+      Number(metrics.visibleBottom || 0),
+      Number(metrics.visibleTop || 0) + Number(metrics.visibleHeight || 0)
+    );
+    const viewportBottom = measuredBottom > 0
+      ? measuredBottom
+      : Math.max(0, Number(window.innerHeight || 0));
+    // Keep chat pinned to the top edge and track only viewport bottom.
+    // iOS can change visualViewport.offsetTop while typing, which caused a second "drop" jump.
+    const viewportTop = 0;
+    const viewportHeight = viewportBottom;
+    const keyboardHeight = appEl.classList.contains('keyboard-open')
+      ? metrics.keyboardHeight
       : 0;
 
     chatArea.style.setProperty('position', 'fixed', 'important');
-    chatArea.style.setProperty('top', '0', 'important');
+    chatArea.style.setProperty('top', `${viewportTop}px`, 'important');
     chatArea.style.setProperty('left', '0');
     chatArea.style.setProperty('right', '0');
-    chatArea.style.setProperty('bottom', '0');
-    chatArea.style.setProperty('height', 'auto');
+    chatArea.style.setProperty('bottom', 'auto');
+    chatArea.style.setProperty('height', `${viewportHeight}px`);
 
     chatContainer.style.setProperty('display', 'flex', 'important');
     chatContainer.style.setProperty('flex-direction', 'column', 'important');
     chatContainer.style.setProperty('height', '100%', 'important');
-    chatContainer.style.setProperty('padding-bottom', `${keyboardHeight}px`, 'important');
+    chatContainer.style.setProperty('padding-bottom', '0px', 'important');
     chatContainer.style.setProperty('background-color', 'var(--bg-color)', 'important');
 
     inputArea.style.setProperty('position', 'sticky');
     inputArea.style.setProperty('bottom', '0');
+    inputArea.style.setProperty('transform', 'translateY(0)');
     appEl.style.setProperty('--keyboard-inset', `${keyboardHeight}px`);
 
-    if (keyboardHeight > 0 && messages && this.isMessagesNearBottom(messages, 96)) {
-      messages.scrollTop = messages.scrollHeight;
+    if (messages) {
+      messages.style.setProperty('padding-bottom', '12px');
     }
+
+    this.ensureMobileMessagesAnchoredToBottom();
+
   }
 
   setupMessageComposer(inputEl) {
     if (!inputEl || inputEl.dataset.composerReady === 'true') return;
     inputEl.dataset.composerReady = 'true';
+    this.configureComposerInputSuggestions(inputEl);
 
     const appEl = document.querySelector('.orion-app');
 
@@ -2215,10 +2852,16 @@ export class ChatAppInteractionMethods {
         messages.scrollTop = messages.scrollHeight;
       }
       this.updateMessagesScrollBottomButtonVisibility();
+      if (window.innerWidth <= 900 && this.mobileKeyboardStickToBottom) {
+        this.stickMobileMessagesToBottom(true);
+      }
     };
 
     inputEl.addEventListener('input', () => {
       updateHeight();
+      if (window.innerWidth <= 900 && document.activeElement === inputEl) {
+        this.startMobileKeyboardSettleLoop(inputEl, 300);
+      }
       if (typeof this.handleRealtimeComposerInput === 'function') {
         this.handleRealtimeComposerInput(inputEl.value);
       }
@@ -2245,10 +2888,6 @@ export class ChatAppInteractionMethods {
       if (window.innerWidth > 900) return;
       this.closeAttachSheet();
       this.setMobilePageScrollLock(true, true);
-      const messages = document.getElementById('messagesContainer');
-      if (messages && this.isMessagesNearBottom(messages, 96)) {
-        messages.scrollTop = messages.scrollHeight;
-      }
     };
     inputEl.addEventListener('touchstart', (event) => {
       if (window.innerWidth > 900) return;
@@ -2301,7 +2940,10 @@ export class ChatAppInteractionMethods {
       this.closeImagePickerMenu();
       engageKeyboardGuard();
       if (appEl) appEl.classList.add('composer-focus');
+      this.mobileKeyboardStickToBottom = true;
+      this.stickMobileMessagesToBottom(true);
       this.syncMobileKeyboardState(inputEl);
+      this.startMobileKeyboardSettleLoop(inputEl, 620);
       if (typeof this.handleRealtimeComposerInput === 'function' && inputEl.value.trim().length) {
         this.handleRealtimeComposerInput(inputEl.value);
       }
@@ -2326,7 +2968,11 @@ export class ChatAppInteractionMethods {
           return;
         }
         if (appEl) appEl.classList.remove('composer-focus');
+        this.stopMobileKeyboardSettleLoop();
         this.syncMobileKeyboardState(inputEl);
+        window.setTimeout(() => {
+          this.mobileKeyboardStickToBottom = false;
+        }, 200);
         if (typeof this.stopRealtimeTyping === 'function') {
           this.stopRealtimeTyping({ emit: true });
         }
@@ -2339,7 +2985,10 @@ export class ChatAppInteractionMethods {
       window.visualViewport.addEventListener('scroll', sync);
     }
 
-    window.addEventListener('resize', () => this.syncMobileKeyboardState(inputEl));
+    window.addEventListener('resize', () => {
+      this.configureComposerInputSuggestions(inputEl);
+      this.syncMobileKeyboardState(inputEl);
+    });
     updateHeight();
   }
 
@@ -2362,6 +3011,19 @@ export class ChatAppInteractionMethods {
     chatsList.classList.remove('hidden-on-settings');
     
     chatsList.innerHTML = '';
+    const isMobile = window.innerWidth <= 768;
+    const searchBox = document.querySelector('.search-box');
+    if (searchBox) {
+      searchBox.classList.toggle('is-mobile-new-chat-mode', this.isMobileNewChatModeActive());
+    }
+
+    if (isMobile && this.mobileNewChatModeActive) {
+      chatsList.classList.add('mobile-new-chat-results-mode');
+      this.renderMobileNewChatSearchResults(chatsList);
+      this.renderSidebarAvatarsStrip();
+      return;
+    }
+    chatsList.classList.remove('mobile-new-chat-results-mode');
 
     const sortedChats = this.getSortedChats();
     
@@ -2865,10 +3527,13 @@ export class ChatAppInteractionMethods {
 
   filterChats(query) {
     const chatsList = document.getElementById('chatsList');
+    if (!chatsList) return;
     const items = chatsList.querySelectorAll('.chat-item');
 
     items.forEach(item => {
-      const name = item.querySelector('.chat-name').textContent.toLowerCase();
+      const nameEl = item.querySelector('.chat-name');
+      if (!nameEl) return;
+      const name = nameEl.textContent.toLowerCase();
       if (name.includes(query.toLowerCase())) {
         item.style.display = '';
       } else {
@@ -2879,6 +3544,9 @@ export class ChatAppInteractionMethods {
 
   async selectChat(chatId) {
     this.closeContactProfileSection();
+    if (window.innerWidth <= 768 && this.mobileNewChatModeActive) {
+      this.exitMobileNewChatMode({ clearQuery: true, render: false });
+    }
     if (typeof this.stopRealtimeTyping === 'function') {
       this.stopRealtimeTyping({ emit: true });
     }
@@ -2914,6 +3582,8 @@ export class ChatAppInteractionMethods {
     
     // Show chat container
     const chatContainer = document.getElementById('chatContainer');
+    const inputArea = document.querySelector('.message-input-area');
+    const messages = document.getElementById('messagesContainer');
     if (chatContainer) {
       chatContainer.classList.add('active');
       chatContainer.style.display = 'flex';
@@ -3059,7 +3729,13 @@ export class ChatAppInteractionMethods {
     if (typeof this.stopActiveVoicePlayback === 'function') {
       this.stopActiveVoicePlayback();
     }
+    if (this.mobileBottomStickAnimationFrame) {
+      cancelAnimationFrame(this.mobileBottomStickAnimationFrame);
+      this.mobileBottomStickAnimationFrame = null;
+    }
     const chatContainer = document.getElementById('chatContainer');
+    const inputArea = document.querySelector('.message-input-area');
+    const messages = document.getElementById('messagesContainer');
     if (chatContainer) {
       chatContainer.classList.remove('active', 'swiping');
       chatContainer.style.removeProperty('display');
@@ -3071,6 +3747,13 @@ export class ChatAppInteractionMethods {
       chatContainer.style.removeProperty('height');
       chatContainer.style.removeProperty('padding-bottom');
       chatContainer.style.removeProperty('background-color');
+    }
+    if (inputArea) {
+      inputArea.style.removeProperty('transform');
+      inputArea.style.removeProperty('transition');
+    }
+    if (messages) {
+      messages.style.removeProperty('padding-bottom');
     }
     this.currentChat = null;
     document.getElementById('messageInput').value = '';

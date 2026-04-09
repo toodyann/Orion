@@ -1,204 +1,485 @@
 @media (max-width: 768px) {
   :root {
-    --app-header-height: 40px;
-    --mobile-nav-lift: 10px;
-    --mobile-chat-header-offset: calc(
-      var(--app-header-height) + env(safe-area-inset-top)
+    --mobile-space-2: 8px;
+    --mobile-space-3: 12px;
+    --mobile-space-4: 16px;
+    --mobile-space-5: 20px;
+    --mobile-touch-size: 44px;
+    --mobile-header-height: 50px;
+    --mobile-dock-height: 84px;
+    --mobile-dock-bottom: max(10px, env(safe-area-inset-bottom));
+    --mobile-dock-width: min(420px, calc(100vw - 16px));
+    --mobile-content-bottom: calc(
+      var(--mobile-dock-height) + var(--mobile-dock-bottom) + 24px
     );
+    --bottom-nav-height: var(--mobile-dock-height);
+    --app-header-height: 0px;
   }
 
-  .orion-app.chat-active {
-    --app-header-height: 40px;
-    --mobile-chat-header-offset: calc(
-      var(--app-header-height) + env(safe-area-inset-top)
-    );
-  }
-
-  /* Fallback for cases when JS classes desync: if chat container is active,
-     force chat header layout to be visible. */
-  .orion-app:has(#chatContainer.active) {
-    --app-header-height: 40px;
-    --mobile-chat-header-offset: calc(
-      var(--app-header-height) + env(safe-area-inset-top)
-    );
-  }
-
-  .app-header .chat-brand .app-logo {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    display: block;
-  }
-
-  /* Keep the background header in "chat list" mode at all times on mobile.
-     Contact info/actions must live only inside .chat-modal-header. */
-  .app-header-left .btn-back,
-  .app-header #appChatInfo,
-  .app-header .app-chat-info,
-  .app-header-right {
-    display: none !important;
-  }
-
-  /* Override layout.css chat-open/chat-active header controls on mobile.
-     Keep the background header strictly in list mode (brand only). */
-  .orion-app.chat-open .app-header-left .btn-back,
-  .orion-app.chat-open .app-header #appChatInfo,
-  .orion-app.chat-open .app-header .app-chat-info,
-  .orion-app.chat-open .app-header-right,
-  .orion-app.chat-active .app-header-left .btn-back,
-  .orion-app.chat-active .app-header #appChatInfo,
-  .orion-app.chat-active .app-header .app-chat-info,
-  .orion-app.swipe-peek .app-header #appChatInfo,
-  .orion-app.chat-active .app-header-right {
-    display: none !important;
-  }
-
-  .app-header .chat-brand .app-title {
-    font-size: 10px;
-    letter-spacing: 0.08em;
-  }
-
-  .app-header {
-    position: relative;
-    height: var(--app-header-height) !important;
-    min-height: var(--app-header-height) !important;
-    padding: 0 !important;
-    justify-content: center;
-    background: var(--bg-color) !important;
-    background-color: var(--bg-color) !important;
-    border: none;
-  }
-
-  .app-header-left {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: auto;
-    min-width: 0;
-    flex: 0 0 auto;
-  }
-
-  .app-header .chat-brand {
-    margin: 0;
-    justify-content: center;
-    gap: 0;
-  }
-
-  .app-header .chat-brand .app-title {
-    display: block;
-    margin: 0;
-    font-size: 13px !important;
-    font-weight: 700;
-    line-height: 1;
-    letter-spacing: 0.16em;
-    text-align: center;
-  }
-
-  .app-header .chat-brand .app-logo {
-    display: none;
-  }
-
-  .app-chat-info {
-    gap: 8px;
-  }
-
-  .app-chat-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
-  }
-
-  .app-chat-name {
-    font-size: 16px;
-  }
   html,
-  body {
-    height: 100%;
+  body,
+  #app,
+  .orion-app {
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
     overflow: hidden;
-    overscroll-behavior: none;
-  }
-
-  body {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-    touch-action: none;
-  }
-
-  .chats-list,
-  .messages-container,
-  #settingsContainerMobile,
-  .settings-content,
-  .message-input-area,
-  button {
-    touch-action: pan-y;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-
-  .message-input,
-  input,
-  textarea {
-    touch-action: pan-y;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
-  }
-
-  .messages-container {
-    scrollbar-width: none;
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 12px;
-    background-color: var(--bg-color);
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .chats-list .chat-item:hover {
-    background-color: unset;
-    transform: none;
-  }
-
-  .chats-list .chat-item:hover .chat-item-actions {
-    display: none;
   }
 
   .orion-app {
-    position: relative;
-    flex-direction: column;
-    margin: 0 auto;
-    max-width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    min-height: 100dvh;
+    background: var(--bg-color);
+    --sidebar-panel-width: 100%;
+    --keyboard-inset: 0px;
+  }
+
+  .app-header {
+    display: none !important;
   }
 
   .main-layout {
-    height: 100vh;
-    height: 100dvh;
-    min-height: 100dvh;
+    position: relative;
     width: 100%;
+    height: 100%;
+    min-height: 0;
+    display: block;
     overflow: hidden;
   }
 
-  .orion-app:not(.mobile-chat-open):not(.chat-active) .sidebar {
+  .desktop-nav-rail,
+  .desktop-secondary-menu,
+  .chats-list-header,
+  .desktop-sidebar-top,
+  .welcome-screen,
+  .nav-reveal-handle,
+  .nav-hide-handle {
+    display: none !important;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100%;
+    border-right: 0;
+    background: transparent;
+    backdrop-filter: none;
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
     overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .orion-app.mobile-chat-open .sidebar {
+    display: none;
+  }
+
+  .orion-app.mobile-chat-open .chat-area {
+    display: flex !important;
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: var(--bg-color);
+  }
+
+  .chat-area {
+    display: none;
+    transition:
+      top 220ms cubic-bezier(0.22, 0.8, 0.22, 1),
+      height 220ms cubic-bezier(0.22, 0.8, 0.22, 1);
+  }
+
+  .search-box {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: var(--mobile-space-2);
+    padding: calc(env(safe-area-inset-top) + var(--mobile-space-3))
+      var(--mobile-space-4) var(--mobile-space-3);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-color) 98%, transparent) 0%,
+      color-mix(in srgb, var(--bg-color) 92%, transparent) 70%,
+      color-mix(in srgb, var(--bg-color) 0%, transparent) 100%
+    );
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .search-box.is-mobile-new-chat-mode {
+    border-bottom-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
+  }
+
+  .search-input {
+    height: var(--mobile-touch-size);
+    min-height: var(--mobile-touch-size);
+    width: 100%;
+    margin: 0;
+    padding: 0 14px 0 42px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+    color: var(--text-primary);
+    font-size: 17px;
+    line-height: 1.25;
+  }
+
+  .search-input:focus {
+    border-color: color-mix(in srgb, var(--primary-color) 70%, #ffffff 30%);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 24%, transparent);
+  }
+
+  .search-input::placeholder {
+    color: color-mix(in srgb, var(--text-secondary) 88%, transparent);
+  }
+
+  .search-icon {
+    position: absolute;
+    opacity: 1;
+    left: 28px;
+    top: 50%;
+    width: 17px;
+    height: 17px;
+    color: color-mix(in srgb, var(--text-secondary) 84%, transparent);
+    transform: translateY(-50%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .search-box .btn-new-chat {
+    width: var(--mobile-touch-size);
+    height: var(--mobile-touch-size);
+    min-width: var(--mobile-touch-size);
+    border-radius: 12px;
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--bg-elevated) 86%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .search-box .btn-new-chat svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .search-box .btn-new-chat:active {
+    transform: scale(0.97);
+  }
+
+  .search-box.is-mobile-new-chat-mode .btn-new-chat,
+  .search-box .btn-new-chat[aria-expanded="true"] {
+    border-color: color-mix(in srgb, var(--primary-color) 54%, transparent);
+    background: color-mix(in srgb, var(--primary-color) 26%, var(--bg-elevated) 74%);
+    color: #ffffff;
+  }
+
+  .mobile-new-chat-create-menu {
+    display: none;
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + var(--mobile-space-3) + var(--mobile-touch-size) + 8px);
+    right: var(--mobile-space-4);
+    left: auto;
+    bottom: auto;
+    z-index: 120;
+    min-width: 212px;
+    max-width: calc(100vw - 24px);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: color-mix(in srgb, var(--bg-elevated) 96%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  }
+
+  .mobile-new-chat-create-menu.active {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mobile-new-chat-create-menu .desktop-nav-rail-account-menu-item {
+    width: 100%;
+    min-height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .mobile-new-chat-create-menu .desktop-nav-rail-account-menu-item:hover {
+    background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+  }
+
+  .mobile-new-chat-create-menu .desktop-nav-rail-account-menu-item:active {
+    background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+    transform: scale(0.99);
+  }
+
+  .mobile-new-chat-create-menu .desktop-nav-rail-account-menu-item svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    display: block;
+  }
+
+  html:not(.dark-theme) .mobile-new-chat-create-menu {
+    border-color: rgba(0, 0, 0, 0.14);
+    background: rgba(248, 250, 254, 0.98);
+    box-shadow: 0 10px 28px rgba(19, 26, 44, 0.16);
+  }
+
+  html:not(.dark-theme)
+    .mobile-new-chat-create-menu
+    .desktop-nav-rail-account-menu-item:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  .chats-list {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px var(--mobile-space-3) var(--mobile-content-bottom);
+    scroll-padding-bottom: calc(var(--mobile-content-bottom) + 20px);
+  }
+
+  .chats-list.mobile-new-chat-results-mode {
+    gap: 0;
+    padding: 8px 0 var(--mobile-content-bottom);
+  }
+
+  .chats-list.mobile-new-chat-results-mode .mobile-new-chat-results {
+    width: 100%;
+    gap: 0;
+    padding: 0 !important;
+    overflow: visible;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-chat-content {
+    padding-bottom: 0;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-section {
+    padding-bottom: 4px;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-section-title {
+    padding: 0 var(--mobile-space-4);
+    margin: 0 0 2px;
+    font-size: 11px;
+    line-height: 1.35;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(241, 241, 241, 0.72);
+    opacity: 1;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-item {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    min-height: 64px;
+    padding: 10px var(--mobile-space-4);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-item:active {
+    background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-item:hover {
+    background: color-mix(in srgb, var(--bg-elevated) 62%, transparent);
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-chat-avatar {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    font-size: 17px;
+    border-radius: 50% !important;
+    overflow: hidden;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-chat-avatar.is-image .avatar-activity-indicator {
+    width: 11px;
+    height: 11px;
+    border-width: 2px;
+    right: -1px;
+    bottom: -1px;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-main {
+    font-size: 16px;
+    line-height: 1.16;
+    font-weight: 650;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-secondary {
+    font-size: 13px;
+    line-height: 1.24;
+    color: color-mix(in srgb, var(--text-secondary) 90%, transparent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chats-list.mobile-new-chat-results-mode .desktop-secondary-search-state {
+    padding: 14px var(--mobile-space-4);
+    font-size: 13px;
+  }
+
+  html:not(.dark-theme) .chats-list.mobile-new-chat-results-mode .desktop-secondary-user-section-title {
+    color: rgba(17, 24, 39, 0.62);
+  }
+
+  .chats-list.hidden,
+  .chats-list.hidden-on-settings {
+    display: none !important;
+  }
+
+  .chat-item {
+    width: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 18px;
+    padding: 10px var(--mobile-space-3);
+    min-height: 72px;
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--mobile-space-3);
+    background: color-mix(in srgb, var(--bg-elevated) 50%, transparent);
+    transition:
+      background-color 0.2s ease,
+      transform 0.18s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .chat-item + .chat-item::before {
+    display: none;
+  }
+
+  .chat-item:hover {
+    background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+  }
+
+  .chat-item:active {
+    transform: scale(0.99);
+  }
+
+  .chat-item.active {
+    background: color-mix(in srgb, var(--bg-elevated) 74%, var(--primary-color) 26%);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--primary-color) 46%, transparent),
+      0 8px 22px rgba(0, 0, 0, 0.22);
+  }
+
+  .chat-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 20px;
+  }
+
+  .chat-avatar .avatar-activity-indicator {
+    width: 12px;
+    height: 12px;
+    border-width: 2px;
+    right: -1px;
+    bottom: -1px;
+  }
+
+  .chat-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .chat-name {
+    font-size: 16px;
+    line-height: 1.16;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  .chat-preview {
+    font-size: 14px;
+    line-height: 1.2;
+    margin: 0;
+    color: color-mix(in srgb, var(--text-secondary) 92%, transparent);
+  }
+
+  .chat-meta {
+    align-items: flex-end;
+    gap: 7px;
+    min-width: 34px;
+  }
+
+  .chat-time {
+    font-size: 12px;
+    line-height: 1;
+    color: color-mix(in srgb, var(--text-secondary) 85%, transparent);
+  }
+
+  .chat-unread {
+    min-width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .chat-item-arrow,
+  .chat-item-actions,
+  .chat-pin-badge {
+    display: none !important;
+  }
+
+  .chats-list-empty {
+    padding: 28px 16px var(--mobile-content-bottom);
+  }
+
+  .empty-state-emoji {
+    font-size: 36px;
   }
 
   .profile-menu-wrapper,
@@ -206,2290 +487,259 @@
   .profile-menu-wrapper.in-sidebar-top,
   .sidebar.nav-menu-vertical .profile-menu-wrapper,
   .profile-menu-wrapper[data-nav-mode="sidebar-vertical"] {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    transform: none;
-    z-index: 80;
-    width: 100vw;
-    max-width: 100vw;
-    opacity: 1;
-    pointer-events: auto;
-    transition: none !important;
-  }
-
-  .orion-app.chat-open .profile-menu-wrapper,
-  .orion-app.chat-active .profile-menu-wrapper,
-  .orion-app.mobile-chat-open .profile-menu-wrapper,
-  .orion-app:has(#chatContainer.active) .profile-menu-wrapper {
-    transform: translateY(120%);
-    opacity: 0;
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: var(--mobile-dock-bottom) !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 80 !important;
     pointer-events: none;
   }
 
-  .orion-app.swipe-peek .profile-menu-wrapper,
-  .orion-app.swipe-peek:has(#chatContainer.active) .profile-menu-wrapper,
-  .orion-app.swipe-peek.keyboard-open .profile-menu-wrapper,
-  .orion-app.swipe-peek.keyboard-open:has(#chatContainer.active)
-    .profile-menu-wrapper {
-    bottom: 0 !important;
-    transform: none !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    display: block !important;
-    visibility: visible !important;
-    transition: none !important;
-    z-index: 10 !important;
-  }
-
-  .orion-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper {
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    transform: none !important;
+  .orion-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper,
+  .orion-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper.in-sidebar-slot,
+  .orion-app:not(.chat-open):not(.chat-active) .profile-menu-wrapper.in-sidebar-top,
+  .orion-app:not(.chat-open):not(.chat-active)
+    .sidebar.nav-menu-vertical
+    .profile-menu-wrapper,
+  .orion-app:not(.chat-open):not(.chat-active)
+    .profile-menu-wrapper[data-nav-mode="sidebar-vertical"] {
+    left: 50% !important;
+    right: auto !important;
+    bottom: var(--mobile-dock-bottom) !important;
+    transform: translateX(-50%) !important;
   }
 
   .profile-menu-wrapper .bottom-nav,
   .profile-menu-wrapper.in-sidebar-slot .bottom-nav,
   .profile-menu-wrapper.in-sidebar-top .bottom-nav,
   .sidebar.nav-menu-vertical .profile-menu-wrapper .bottom-nav,
-  .profile-menu-wrapper[data-nav-mode="sidebar-vertical"] .bottom-nav {
-    width: 100% !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-  }
-
-  .orion-app.swipe-peek .app-header .chat-brand .app-title,
-  .orion-app.swipe-peek:has(#chatContainer.active)
-    .app-header
-    .chat-brand
-    .app-title {
-    display: block !important;
-    opacity: 1 !important;
-    transform: none !important;
-    max-width: 140px !important;
-    margin-left: 0 !important;
-    pointer-events: auto !important;
-  }
-
-  .orion-app.swipe-peek .app-header-left,
-  .orion-app.swipe-peek:has(#chatContainer.active) .app-header-left {
-    left: var(--swipe-peek-header-center, 50%) !important;
-  }
-
+  .profile-menu-wrapper[data-nav-mode="sidebar-vertical"] .bottom-nav,
   .bottom-nav {
-    width: 100% !important;
-    gap: 0 !important;
-    padding: 8px 6px
-      calc(8px + env(safe-area-inset-bottom) + var(--mobile-nav-lift, 10px)) !important;
-    border-radius: 0 !important;
-    box-sizing: border-box !important;
-    background: color-mix(in srgb, var(--bg-color) 92%, #0c111a 8%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.04) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    overflow: hidden !important;
-    justify-content: center !important;
+    pointer-events: auto;
+    width: var(--mobile-dock-width) !important;
+    max-width: var(--mobile-dock-width) !important;
+    min-height: var(--mobile-dock-height);
+    margin: 0 auto !important;
+    padding: 10px !important;
+    border-radius: 26px !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px !important;
+    border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-elevated) 88%, transparent) !important;
+    box-shadow:
+      0 14px 36px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 color-mix(in srgb, #ffffff 10%, transparent) !important;
+    backdrop-filter: blur(18px) saturate(1.2) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.2) !important;
   }
 
-  .bottom-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bottom-nav-item {
-    flex: 1 !important;
-    min-width: 0 !important;
-    min-height: 58px !important;
-    padding: 5px 2px 7px !important;
-    gap: 4px !important;
-    box-sizing: border-box !important;
-    border-radius: 12px !important;
-    border: 1px solid transparent !important;
-    background: transparent !important;
-    color: color-mix(
-      in srgb,
-      var(--text-secondary) 88%,
-      #ffffff 12%
-    ) !important;
-    font-weight: 500 !important;
-    transition:
-      background 0.18s ease,
-      color 0.18s ease !important;
-  }
-
-  .bottom-nav-item#navWallet,
-  .bottom-nav-item#navSettings {
+  .bottom-nav-indicator {
     display: none !important;
   }
 
-  .bottom-nav-item:hover {
-    background: rgba(42, 171, 238, 0.08) !important;
-    border-color: transparent !important;
+  #navExplore,
+  #navWallet,
+  #navGames {
+    display: none !important;
   }
 
-  .bottom-nav-item:active {
-    transform: none !important;
+  #navCalls {
+    order: 1;
   }
 
-  .bottom-nav-item.active {
-    color: var(--text-primary) !important;
-    background: rgba(148, 163, 184, 0.24) !important;
-    border-color: transparent !important;
-    font-weight: 500 !important;
-    box-shadow: none !important;
+  #navShop {
+    order: 2;
   }
 
-  html.dark-theme .bottom-nav {
-    background: #080808 !important;
-    border-color: rgba(148, 148, 148, 0.34) !important;
+  #navChats {
+    order: 3;
   }
 
-  html.dark-theme .bottom-nav-item {
-    background: #0d0d0d !important;
-    border-color: rgba(122, 122, 122, 0.26) !important;
-    color: rgba(241, 241, 241, 0.76) !important;
+  #navSettings {
+    order: 4;
   }
 
-  html.dark-theme .bottom-nav-item.active {
-    background: #191919 !important;
-    border-color: rgba(198, 198, 198, 0.56) !important;
-    color: #ffffff !important;
-    box-shadow: inset 0 0 0 1px rgba(210, 210, 210, 0.2) !important;
+  #navProfile {
+    order: 5;
+  }
+
+  .bottom-nav-item {
+    min-height: 70px;
+    border-radius: 18px;
+    border: 0;
+    padding: 10px 4px 8px;
+    gap: 4px;
+    color: color-mix(in srgb, var(--text-secondary) 88%, transparent);
+    background: transparent;
+    transition:
+      background-color 0.18s ease,
+      color 0.18s ease,
+      transform 0.16s ease;
   }
 
   .bottom-nav-item > svg,
   .bottom-nav-item > .nav-avatar {
-    width: 30px !important;
-    height: 30px !important;
-    flex: 0 0 30px !important;
+    width: 26px;
+    height: 26px;
   }
 
   .bottom-nav-item .nav-avatar {
-    font-size: 12px !important;
-    line-height: 1 !important;
-    margin: 0 !important;
-  }
-
-  .bottom-nav-item > span:not(.nav-avatar) {
-    font-size: 11px !important;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
-  .bottom-nav-indicator {
-    display: none;
-  }
-
-  .sidebar {
-    display: flex;
-    position: relative;
-    width: 100%;
-    max-width: 100%;
-    height: 100%;
-    z-index: 1;
-    border-right: none;
-    flex-direction: column;
-    margin: 0 auto;
-    min-height: 0;
-    overflow: hidden;
-    touch-action: pan-y;
-    overscroll-behavior: contain;
-  }
-
-  .sidebar.hidden {
-    display: none;
-  }
-
-  .orion-app.mobile-chat-open .sidebar.hidden {
-    display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 82vw;
-    max-width: 320px;
-    height: 100vh;
-    height: 100dvh;
-    transform: translateX(calc(-100% + var(--sidebar-reveal, 0px)));
-    transition: transform 0.25s ease;
-    z-index: 1;
-  }
-
-  .orion-app.mobile-chat-open .sidebar.hidden.revealed {
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
-  }
-
-  .sidebar.mobile-menu {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 280px;
-    height: 100vh;
-    height: 100dvh;
-    z-index: 999;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
-    animation: slideInLeft 0.3s ease-out;
-  }
-
-  @keyframes slideInLeft {
-    from {
-      transform: translateX(-100%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-
-  .sidebar.mobile-menu.active {
-    display: flex;
-  }
-
-  .chat-container {
-    display: none !important;
-  }
-
-  .chat-container.active {
-    display: flex !important;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    height: auto;
-    z-index: 2;
-    background-color: var(--bg-color);
-    overflow: hidden;
-    animation: none;
-    transition: none;
-  }
-
-  .chat-container.active.swiping {
-    transition: none;
-    animation: none;
-  }
-
-  @keyframes slideInChat {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  /* Desktop settings container (in chat-area) - NOT used on mobile */
-  /* Settings container styles moved to desktop-only media queries if needed */
-
-  /* Mobile settings container in sidebar */
-  #settingsContainerMobile {
-    display: none;
-    flex-direction: column;
-    width: 100%;
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: transparent;
-    position: relative;
-    min-height: 0;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    overscroll-behavior: contain;
-  }
-
-  #settingsContainerMobile.active {
-    display: flex !important;
-  }
-
-  #chatsList.hidden {
-    display: none !important;
-  }
-
-  /* Settings header on mobile - show with back button */
-  #settingsContainerMobile .settings-header {
-    display: flex !important;
-    padding: 0 !important;
-    flex-shrink: 0 !important;
-    justify-content: center !important;
-    align-items: center !important;
-    position: relative !important;
-    background: transparent !important;
-    min-height: 56px !important;
-  }
-
-  #settingsContainerMobile .settings-header button {
-    position: absolute !important;
-    left: 16px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    z-index: 10 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 8px 12px !important;
-    font-size: 24px !important;
-    line-height: 1 !important;
-    color: var(--primary-color) !important;
-    background: none !important;
-    border: none !important;
-    cursor: pointer !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-  }
-
-  #settingsContainerMobile .settings-subsection .settings-header {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 3 !important;
-    align-items: flex-start !important;
-    justify-content: center !important;
-    padding: 10px 0 0 !important;
-    min-height: 0 !important;
-    background: transparent !important;
-    pointer-events: none !important;
-  }
-
-  #settingsContainerMobile
-    .settings-subsection
-    .settings-header
-    .settings-subsection-title {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0 !important;
-    min-height: 0 !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    width: auto !important;
-    max-width: calc(100% - 72px) !important;
-    box-sizing: border-box !important;
-    border-radius: 0 !important;
-    position: static !important;
-    transform: none !important;
-    pointer-events: none !important;
-    font-size: 16px !important;
-  }
-
-  #settingsContainerMobile
-    .settings-subsection
-    .settings-header
-    .settings-subsection-back {
-    position: absolute !important;
-    left: 12px !important;
-    top: 10px !important;
-    transform: none !important;
-    z-index: 10 !important;
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    padding: 0 !important;
-    pointer-events: auto !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  #settingsContainerMobile .settings-subsection .settings-content {
-    padding-top: 68px !important;
-    padding-right: 12px !important;
-    padding-left: 12px !important;
-    padding-bottom: calc(var(--bottom-nav-height, 72px) + 96px) !important;
-  }
-
-  #settingsContainerMobile .settings-subsection .settings-buttons {
-    padding-top: 12px !important;
-  }
-
-  /* Hide back button in messenger-settings (main menu), show only in subsections */
-  #settingsContainerMobile #messenger-settings .btn-back-settings {
-    display: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-header {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 3 !important;
-    align-items: flex-start !important;
-    background: transparent !important;
-    min-height: 0 !important;
-    padding: 10px 0 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    pointer-events: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings {
-    position: relative !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-content {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    padding: 10px !important;
-    padding-bottom: calc(
-      var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom) + 18px
-    ) !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-viewer-card {
-    min-height: 320px !important;
-    padding: 8px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-stage,
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-canvas {
-    min-height: 286px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-state {
-    top: 8px !important;
-    left: 8px !important;
-    min-height: 28px !important;
-    padding: 0 10px !important;
-    font-size: 11px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-rotate-btn {
-    width: 34px !important;
-    height: 34px !important;
-    margin-top: -17px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-hint {
-    left: 10px !important;
-    right: 10px !important;
-    transform: none !important;
-    font-size: 11px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-info-card,
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-specs-card {
-    padding: 12px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-info-card h3 {
-    font-size: 24px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-meta {
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-meta-row {
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile #orion-drive-garage .orion-drive-garage-meta-item {
-    min-height: 56px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-balance-island {
-    top: 10px !important;
-    right: 12px !important;
-    gap: 8px !important;
-    min-height: 36px !important;
-    padding: 0 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-balance-island-label {
-    font-size: 11px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-balance-island-value {
-    font-size: 13px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-content {
-    background: transparent !important;
-    padding: 62px 10px calc(var(--bottom-nav-height, 72px) + 72px) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-toolbar {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
-    align-items: stretch !important;
-    margin-top: 4px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger {
-    width: 100% !important;
-    min-height: 48px !important;
-    padding: 0 14px !important;
-    border-radius: 14px !important;
-    border-color: color-mix(
-      in srgb,
-      var(--border-color) 84%,
-      transparent
-    ) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 94%,
-      transparent
-    ) !important;
-    display: grid !important;
-    grid-template-columns: 18px 1fr 18px !important;
-    align-items: center !important;
-    column-gap: 10px !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    justify-items: center !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger span {
-    grid-column: 2 !important;
-    text-align: center !important;
-    width: 100% !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger::after {
-    content: "" !important;
-    grid-column: 3 !important;
-    width: 18px !important;
-    height: 18px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger svg {
-    width: 18px !important;
-    height: 18px !important;
-    flex: 0 0 18px !important;
-    grid-column: 1 !important;
-    position: static !important;
-    transform: none !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-trigger.is-open
-    svg {
-    transform: rotate(180deg) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger.is-open {
-    color: #ffffff !important;
-    border-color: color-mix(
-      in srgb,
-      #9ca3af 52%,
-      var(--border-color)
-    ) !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, #6b7280 86%, #9ca3af 14%),
-      color-mix(in srgb, #4b5563 92%, #374151 8%)
-    ) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-summary {
-    width: 100% !important;
-    min-height: 48px !important;
-    padding: 0 14px !important;
-    border-radius: 14px !important;
-    box-sizing: border-box !important;
-    border-color: color-mix(
-      in srgb,
-      var(--border-color) 84%,
-      transparent
-    ) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 88%,
-      transparent
-    ) !important;
-    font-size: 13px !important;
-    line-height: 1.2 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-item-card,
-  #settingsContainerMobile #messenger-settings .shop-item-card.equipped {
-    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 88%,
-      transparent
-    ) !important;
-    box-shadow:
-      0 10px 24px rgba(15, 19, 32, 0.07),
-      inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel {
-    padding: 0 !important;
-    border-color: transparent !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
-    position: fixed !important;
-    top: calc(var(--app-header-height, 56px) + 10px) !important;
-    left: 8px !important;
-    right: 8px !important;
-    bottom: calc(
-      var(--bottom-nav-height, 72px) + 72px + env(safe-area-inset-bottom)
-    ) !important;
-    z-index: 90 !important;
-    max-height: none !important;
-    overflow: hidden !important;
-    overflow-x: hidden !important;
-    padding: 0 !important;
-    border-radius: 22px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent) !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-color) 92%, #111824 8%),
-      color-mix(in srgb, var(--bg-color) 96%, #0d1320 4%)
-    ) !important;
-    box-shadow:
-      0 24px 48px rgba(6, 10, 18, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open::before {
-    content: "";
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    width: 44px;
-    height: 4px;
-    border-radius: 999px;
-    transform: translateX(-50%);
-    background: color-mix(in srgb, var(--text-secondary) 64%, transparent);
-    opacity: 0.9;
-    pointer-events: none;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll {
-    height: 100% !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 18px 12px calc(14px + env(safe-area-inset-bottom)) !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-gutter: stable !important;
-    scrollbar-width: thin !important;
-    scrollbar-color: color-mix(
-        in srgb,
-        var(--primary-color) 56%,
-        var(--border-color)
-      )
-      transparent !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll::-webkit-scrollbar-track {
-    margin: 10px 0;
-    background: transparent;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: color-mix(
-      in srgb,
-      var(--primary-color) 56%,
-      var(--border-color)
-    );
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: color-mix(
-      in srgb,
-      var(--primary-color) 56%,
-      var(--border-color)
-    );
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 2 !important;
-    margin: -6px 0 2px !important;
-    padding: 8px 2px 10px !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-color) 94%, #111824 6%) 0%,
-      color-mix(in srgb, var(--bg-color) 94%, transparent) 100%
-    ) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-title {
-    font-size: 14px !important;
-    letter-spacing: 0.06em !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-close {
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 12px !important;
-    border-color: color-mix(
-      in srgb,
-      var(--border-color) 84%,
-      transparent
-    ) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 90%,
-      transparent
-    ) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section {
-    gap: 10px !important;
-    padding: 10px !important;
-    border-radius: 14px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 88%,
-      transparent
-    ) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section-title {
-    font-size: 11px !important;
-    letter-spacing: 0.08em !important;
-    text-align: center !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-options {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn {
-    width: 100% !important;
-    min-height: 40px !important;
-    padding: 7px 8px !important;
-    border-radius: 10px !important;
-    font-size: 12px !important;
-    line-height: 1.2 !important;
-    text-align: center !important;
-    white-space: normal !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn.active {
-    color: #ffffff !important;
-    border-color: color-mix(
-      in srgb,
-      #9ca3af 54%,
-      var(--border-color)
-    ) !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, #6b7280 88%, #9ca3af 12%),
-      color-mix(in srgb, #4b5563 92%, #374151 8%)
-    ) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-price-range {
-    gap: 10px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-price-row {
-    font-size: 12px !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-price-range
-    input[type="range"] {
-    height: 20px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-actions {
-    position: sticky !important;
-    bottom: 0 !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-    padding-top: 12px !important;
-    margin-top: 2px !important;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      color-mix(in srgb, var(--bg-color) 94%, #111824 6%) 26%
-    ) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-reset,
-  #settingsContainerMobile #messenger-settings .shop-filter-apply {
-    width: 100% !important;
-    min-height: 42px !important;
-    border-radius: 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-apply {
-    color: #ffffff !important;
-    border-color: color-mix(
-      in srgb,
-      #9ca3af 54%,
-      var(--border-color)
-    ) !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, #6b7280 88%, #9ca3af 12%),
-      color-mix(in srgb, #4b5563 92%, #374151 8%)
-    ) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-  }
-
-  /* Final mobile behavior: full-screen filter overlay */
-  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 140 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: color-mix(in srgb, var(--bg-color) 96%, #0c121d 4%) !important;
-    box-shadow: none !important;
-    transform: none !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll {
-    height: 100% !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: calc(env(safe-area-inset-top) + 14px) 14px
-      calc(env(safe-area-inset-bottom) + 14px) !important;
-    gap: 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 3 !important;
-    padding: 2px 0 10px !important;
-    margin: 0 !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-color) 96%, #0c121d 4%) 0%,
-      color-mix(in srgb, var(--bg-color) 96%, transparent) 100%
-    ) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section {
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 90%,
-      transparent
-    ) !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-options {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn {
-    min-height: 42px !important;
-    border-radius: 11px !important;
-    border-color: color-mix(
-      in srgb,
-      var(--border-color) 80%,
-      transparent
-    ) !important;
-    background: color-mix(in srgb, var(--bg-color) 86%, transparent) !important;
-    color: color-mix(in srgb, var(--text-primary) 86%, #ffffff 14%) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn.active {
-    color: #ffffff !important;
-    border-color: color-mix(
-      in srgb,
-      #a7b1bf 64%,
-      var(--border-color)
-    ) !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, #6b7280 72%, #9ca3af 28%) 0%,
-      color-mix(in srgb, #4b5563 84%, #374151 16%) 100%
-    ) !important;
-    box-shadow:
-      0 8px 16px rgba(15, 23, 42, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-actions {
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 2 !important;
-    padding-top: 10px !important;
-    margin-top: 2px !important;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      color-mix(in srgb, var(--bg-color) 96%, #0c121d 4%) 30%
-    ) !important;
-  }
-
-  /* Shop filter mobile redesign v2: compact inline card */
-  #settingsContainerMobile #messenger-settings .shop-filter-toolbar {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 8px !important;
-    margin-top: 2px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger {
-    min-height: 44px !important;
-    padding: 0 12px !important;
-    border-radius: 12px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    font-size: 13px !important;
-    position: static !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger::after {
-    display: none !important;
-    content: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger span {
-    flex: 0 1 auto !important;
-    width: auto !important;
-    text-align: center !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger svg {
-    width: 16px !important;
-    height: 16px !important;
-    position: static !important;
-    transform: none !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-trigger.is-open
-    svg {
-    transform: rotate(180deg) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-summary {
-    min-height: 44px !important;
-    padding: 0 12px !important;
-    border-radius: 12px !important;
-    font-size: 12px !important;
-    justify-content: flex-start !important;
-    text-align: left !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    margin-top: 6px !important;
-    max-height: none !important;
-    overflow: visible !important;
-    padding: 0 !important;
-    border-radius: 14px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 92%,
-      transparent
-    ) !important;
-    box-shadow:
-      0 10px 24px rgba(15, 19, 32, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open::before {
-    display: none !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll {
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    padding: 12px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
-    position: static !important;
-    margin: 0 !important;
-    padding: 0 0 4px !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-title {
-    font-size: 12px !important;
-    letter-spacing: 0.08em !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-close {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 10px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section {
-    gap: 8px !important;
-    padding: 10px !important;
-    border-radius: 12px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
-    background: color-mix(in srgb, var(--bg-color) 84%, transparent) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section-title {
-    font-size: 11px !important;
-    text-align: left !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-options {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn {
-    min-height: 38px !important;
-    padding: 6px 8px !important;
-    border-radius: 10px !important;
-    font-size: 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-actions {
-    position: static !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-    padding-top: 4px !important;
-    margin-top: 0 !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-reset,
-  #settingsContainerMobile #messenger-settings .shop-filter-apply {
-    min-height: 40px !important;
-    border-radius: 10px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-header h2 {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 0 !important;
-    border-radius: 0 !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    pointer-events: auto !important;
-  }
-
-  #settingsContainerMobile #notifications-center,
-  #settingsContainerMobile #calls,
-  #settingsContainerMobile #wallet {
-    position: relative !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile #profile-settings {
-    position: relative !important;
-    align-items: center !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile #notifications-center .calls-header,
-  #settingsContainerMobile #calls .calls-header,
-  #settingsContainerMobile #wallet .calls-header {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 3 !important;
-    display: flex !important;
-    align-items: flex-start !important;
-    justify-content: center !important;
-    padding: 10px 0 0 !important;
-    background: transparent !important;
-    pointer-events: none !important;
-  }
-
-  #settingsContainerMobile #profile-settings .settings-header {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    width: 100% !important;
-    z-index: 3 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 10px 0 6px !important;
-    min-height: 0 !important;
-    margin: 0 auto !important;
-    transform: none !important;
-    background: transparent !important;
-    pointer-events: none !important;
-  }
-
-  #settingsContainerMobile #notifications-center .calls-header h2,
-  #settingsContainerMobile #calls .calls-header h2,
-  #settingsContainerMobile #wallet .calls-header h2 {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 0 !important;
-    margin: 0 auto !important;
-    border-radius: 0 !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    color: var(--text-primary) !important;
-    pointer-events: auto !important;
-  }
-
-  #settingsContainerMobile #profile-settings .settings-header h2 {
-    position: static !important;
-    left: auto !important;
-    right: auto !important;
-    transform: none !important;
-    display: block !important;
-    text-align: center !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    color: var(--text-primary) !important;
-    pointer-events: auto !important;
-  }
-
-  #settingsContainerMobile
-    #profile-settings
-    .settings-header
-    .profile-settings-title {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 auto !important;
-    text-align: center !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-header h2,
-  #settingsContainerMobile #notifications-center .calls-header h2,
-  #settingsContainerMobile #calls .calls-header h2,
-  #settingsContainerMobile #wallet .calls-header h2,
-  #settingsContainerMobile #profile-settings .settings-header h2 {
-    width: auto !important;
-    max-width: calc(100% - 72px) !important;
-    box-sizing: border-box !important;
-    padding: 0 !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-header h2,
-  #settingsContainerMobile #notifications-center .calls-header h2,
-  #settingsContainerMobile #calls .calls-header h2,
-  #settingsContainerMobile #wallet .calls-header h2,
-  #settingsContainerMobile #profile-items .profile-items-header h2,
-  #settingsContainerMobile
-    .settings-subsection
-    .settings-header
-    .settings-subsection-title,
-  #settingsContainerMobile #profile-settings .settings-header h2 {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    font-size: 16px !important;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-header h2 svg,
-  #settingsContainerMobile #notifications-center .calls-header h2 svg,
-  #settingsContainerMobile #calls .calls-header h2 svg,
-  #settingsContainerMobile #wallet .calls-header h2 svg,
-  #settingsContainerMobile #profile-items .profile-items-header h2 svg,
-  #settingsContainerMobile
-    .settings-subsection
-    .settings-header
-    .settings-subsection-title
-    svg,
-  #settingsContainerMobile #profile-settings .settings-header h2 svg {
-    display: inline-flex !important;
-    width: 18px !important;
-    height: 18px !important;
-    flex-shrink: 0 !important;
-  }
-
-  #settingsContainerMobile #notifications-center .calls-content,
-  #settingsContainerMobile #calls .calls-content,
-  #settingsContainerMobile #wallet .wallet-content {
-    flex: 1 !important;
-    width: 100% !important;
-    overflow-y: auto !important;
-    background: transparent !important;
-    padding-top: 68px !important;
-    box-sizing: border-box !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-games-content {
-    gap: 12px !important;
-    padding-top: 12px !important;
-    padding-right: 12px !important;
-    padding-bottom: calc(var(--bottom-nav-height, 72px) + 24px) !important;
-    padding-left: 12px !important;
-    overflow-y: auto !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-games-list {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-    width: 100% !important;
-    order: 2 !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-games-list [data-mini-game-select="tapper"] {
-    display: none !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-game-select {
-    padding: 11px 12px !important;
-    gap: 10px !important;
-    border-radius: 12px !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-game-icon {
-    width: 30px !important;
-    height: 30px !important;
-    flex: 0 0 30px !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-game-icon svg {
-    width: 18px !important;
-    height: 18px !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-game-title {
-    font-size: 14px !important;
-    line-height: 1.2 !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-game-sub {
-    font-size: 11px !important;
-    line-height: 1.25 !important;
-  }
-
-  #settingsContainerMobile #mini-games .coin-tapper-content {
-    gap: 20px !important;
-    padding-top: 18px !important;
-    padding-right: 14px !important;
-    padding-bottom: 8px !important;
-    padding-left: 14px !important;
-    border-radius: 14px !important;
-    order: 1 !important;
-    min-height: auto !important;
-    height: auto !important;
-  }
-
-  #settingsContainerMobile #mini-games .coin-level-island {
-    position: static !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    transform: none !important;
-    order: 0 !important;
-    margin: 0 auto !important;
-    min-width: 124px !important;
-    padding: 8px 12px !important;
-  }
-
-  #settingsContainerMobile #mini-games .coin-tapper-kicker,
-  #settingsContainerMobile #mini-games .coin-tapper-balance-label,
-  #settingsContainerMobile #mini-games .coin-tapper-balance,
-  #settingsContainerMobile #mini-games .coin-tapper-button,
-  #settingsContainerMobile #mini-games .coin-tapper-rate {
-    order: initial !important;
-  }
-
-  #settingsContainerMobile #mini-games .coin-tapper-balance {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-  }
-
-  #settingsContainerMobile #mini-games .coin-tapper-button {
-    margin-top: 0 !important;
-  }
-
-  #settingsContainerMobile #mini-games .coin-tapper-rate {
-    margin-top: 0 !important;
-    padding: 11px 14px !important;
-  }
-
-  #settingsContainerMobile #mini-games .mini-game-mobile-back {
-    display: none !important;
-  }
-
-  .orion-app.mobile-game-fullscreen .profile-menu-wrapper,
-  .orion-app.mobile-game-fullscreen .nav-reveal-handle,
-  .orion-app.mobile-game-fullscreen .nav-hide-handle {
-    display: none !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 92 !important;
-    width: 100vw !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    display: flex !important;
-    flex-direction: column !important;
-    background: var(--bg-color) !important;
-    overflow: hidden !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-games-content {
-    gap: 0 !important;
-    padding: 0 !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-games-list,
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-panel[data-mini-game-panel="tapper"] {
-    display: none !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-panel.active {
-    display: grid !important;
-    grid-template-rows: auto minmax(0, 1fr) !important;
-    gap: 0 !important;
-    flex: 1 !important;
-    min-height: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    align-self: stretch !important;
-    border-radius: 0 !important;
-    background: var(--bg-color) !important;
-    padding: calc(env(safe-area-inset-top) + 6px) 0
-      calc(env(safe-area-inset-bottom) + 6px) !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-mobile-back {
-    display: inline-flex !important;
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
-    padding: 0 !important;
-    border-radius: 999px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent) !important;
-    background: color-mix(in srgb, var(--surface-soft) 92%, transparent) !important;
-    color: var(--text-primary) !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-mobile-back svg {
-    width: 16px !important;
-    height: 16px !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-view-header {
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    border-radius: 0 !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-top: none !important;
-    box-shadow: none !important;
-    background: color-mix(in srgb, var(--bg-color) 96%, transparent) !important;
-    padding: 6px 12px 10px !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-view-title {
-    font-size: 24px !important;
-    line-height: 1.08 !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.02em !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-view-score {
-    margin-left: auto !important;
-    font-size: 12px !important;
-    padding: 7px 10px !important;
-    border-radius: 12px !important;
-    background: color-mix(in srgb, var(--surface-soft) 90%, transparent) !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent) !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-stage {
-    flex: 1 !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    display: grid !important;
-    grid-template-rows: auto minmax(0, 1fr) auto !important;
-    gap: 10px !important;
-    padding: 0 10px 8px !important;
-    box-sizing: border-box !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-score-current {
-    align-self: stretch !important;
-    justify-content: center !important;
-    text-align: center !important;
-    min-height: 36px !important;
-    padding: 6px 10px !important;
-    font-size: 13px !important;
-    border-radius: 999px !important;
-    background: color-mix(in srgb, var(--surface-soft) 88%, transparent) !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent) !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-canvas {
-    flex: 1 !important;
-    width: 100% !important;
-    min-height: 0 !important;
-    height: 100% !important;
-    border-radius: 14px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
-    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28) !important;
-    overflow: hidden !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-controls {
-    margin-top: 0 !important;
-    border-radius: 14px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent) !important;
-    padding: 8px 10px 10px !important;
-    background: color-mix(in srgb, var(--surface-soft) 90%, transparent) !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-btn {
-    width: 100% !important;
-    min-height: 42px !important;
-    border-radius: 12px !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-hint {
-    font-size: 15px !important;
-    line-height: 1.35 !important;
-    text-align: center !important;
-    color: var(--text-secondary) !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"].active {
-    padding: calc(env(safe-area-inset-top) + 4px) 0
-      calc(env(safe-area-inset-bottom) + 6px) !important;
-    background: var(--bg-color) !important;
-    height: 100% !important;
-    min-height: 0 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-games-content {
-    flex: 1 !important;
-    min-height: 0 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"]
-    .mini-game-stage {
-    position: relative !important;
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 !important;
-    min-height: 0 !important;
-    height: 100% !important;
-    gap: 10px !important;
-    padding: 0 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"]
-    .flappy-orion-canvas-wrap {
-    position: relative !important;
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    border-radius: 0 !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-bottom: none !important;
-    box-shadow: none !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"]
-    .flappy-orion-canvas {
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"]
-    .mini-game-controls {
-    position: absolute !important;
-    inset: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    pointer-events: none !important;
-    z-index: 8 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"]
-    .mini-game-hint {
-    display: none !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"]
-    #flappyOrionStart {
-    position: absolute !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: 72px !important;
-    min-width: 72px !important;
-    height: 72px !important;
-    min-height: 72px !important;
-    padding: 0 !important;
-    border-radius: 999px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
-    color: #111111 !important;
-    background: color-mix(in srgb, #ffffff 92%, transparent) !important;
-    border: 1px solid color-mix(in srgb, #ffffff 88%, #000000 12%) !important;
-    box-shadow:
-      0 12px 26px rgba(0, 0, 0, 0.36),
-      0 0 0 1px rgba(255, 255, 255, 0.26) inset !important;
-    pointer-events: auto !important;
-    z-index: 9 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"]
-    #flappyOrionStart::before {
-    content: '' !important;
-    display: block !important;
-    width: 28px !important;
-    height: 28px !important;
-    background-color: currentColor !important;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M232.4 114.49 88.32 26.35a16 16 0 0 0-16.2-.3A15.86 15.86 0 0 0 64 39.87V216.13A15.94 15.94 0 0 0 80 232a16.07 16.07 0 0 0 8.36-2.35L232.4 141.51a15.81 15.81 0 0 0 0-27ZM80 215.94V40l143.83 88Z'/%3E%3C/svg%3E")
-      center / contain no-repeat !important;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M232.4 114.49 88.32 26.35a16 16 0 0 0-16.2-.3A15.86 15.86 0 0 0 64 39.87V216.13A15.94 15.94 0 0 0 80 232a16.07 16.07 0 0 0 8.36-2.35L232.4 141.51a15.81 15.81 0 0 0 0-27ZM80 215.94V40l143.83 88Z'/%3E%3C/svg%3E")
-      center / contain no-repeat !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"].is-running
-    #flappyOrionStart,
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"].flappy-game-over
-    #flappyOrionStart {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="flappy"]
-    .mini-game-panel[data-mini-game-panel="flappy"].is-running
-    #flappyOrionStart::before {
-    width: 18px !important;
-    height: 18px !important;
-  }
-
-  #settingsContainerMobile #mini-games[data-mobile-mini-game-fullscreen="true"] .mini-game-panel[data-mini-game-panel="drift"].active {
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 !important;
-    min-height: 0 !important;
-    height: 100% !important;
-    padding: 0 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="drift"]
-    .mini-game-stage.orion-drift-stage {
-    flex: 1 !important;
-    min-height: 0 !important;
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="drift"]
-    .orion-drift-canvas-wrap {
-    flex: 1 !important;
-    min-height: 0 !important;
-    height: 100% !important;
-    touch-action: none !important;
-    overscroll-behavior: none !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="drift"]
-    .orion-drift-controls {
-    display: flex !important;
-    left: 10px !important;
-    right: 10px !important;
-    bottom: calc(env(safe-area-inset-bottom) + 10px) !important;
-    z-index: 9 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="drift"]
-    .orion-drift-control-btn {
-    min-height: 48px !important;
-    height: 48px !important;
-    border-radius: 12px !important;
-    font-size: 13px !important;
-    touch-action: none !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="drift"]
-    .orion-drift-control-btn--pedal {
-    min-width: 76px !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="drift"]
-    .orion-drift-speedometer {
-    bottom: calc(env(safe-area-inset-bottom) + 72px) !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="drift"]
-    .mini-game-panel[data-mini-game-panel="drift"].is-running
-    .orion-drift-start-overlay {
-    bottom: calc(env(safe-area-inset-bottom) + 72px) !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"] {
-    background:
-      radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.7), transparent 40%),
-      radial-gradient(circle at 88% 94%, rgba(233, 221, 201, 0.52), transparent 42%),
-      linear-gradient(180deg, #faf8ef 0%, #f3efe6 100%) !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-panel[data-mini-game-panel="grid2048"].active {
-    padding: calc(env(safe-area-inset-top) + 4px) 8px
-      calc(env(safe-area-inset-bottom) + 8px) !important;
-    background: transparent !important;
-    height: 100% !important;
-    min-height: 0 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-games-content {
-    flex: 1 !important;
-    min-height: 0 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-view-header {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 4px 6px 8px !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-mobile-back {
-    border-color: rgba(119, 110, 101, 0.28) !important;
-    background: rgba(238, 228, 218, 0.72) !important;
-    color: #776e65 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-view-title {
-    color: #776e65 !important;
-    text-shadow: none !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-view-score {
-    color: #f9f6f2 !important;
-    background: #bbada0 !important;
-    border: 1px solid rgba(0, 0, 0, 0.05) !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-view-score strong {
-    color: #ffffff !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-stage {
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 !important;
-    min-height: 0 !important;
-    height: 100% !important;
-    gap: 10px !important;
-    padding: 0 0 4px !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-score-current {
-    color: #f9f6f2 !important;
-    background: #8f7a66 !important;
-    border: 1px solid rgba(0, 0, 0, 0.06) !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    #grid2048Canvas {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    max-width: none !important;
-    aspect-ratio: auto !important;
-    height: 100% !important;
-    max-height: none !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    #grid2048Board.grid-2048 {
-    width: min(100%, calc(100vw - 16px)) !important;
-    height: min(100%, calc(100vw - 16px)) !important;
-    max-height: 100% !important;
-    aspect-ratio: 1 / 1 !important;
-    margin: 0 auto !important;
-    flex: 0 0 auto !important;
-    padding: 10px !important;
-    gap: 8px !important;
-    border-radius: 16px !important;
-    background: #bbada0 !important;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      0 16px 28px rgba(119, 110, 101, 0.28) !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .grid-2048
-    .tile {
-    border-radius: 10px !important;
-    font-size: clamp(16px, 5vw, 28px) !important;
-    color: #776e65 !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-controls {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    #grid2048Restart {
-    min-height: 44px !important;
-    border-radius: 12px !important;
-    border: none !important;
-    color: #f9f6f2 !important;
-    background: #8f7a66 !important;
-    box-shadow: 0 8px 18px rgba(119, 110, 101, 0.28) !important;
-  }
-
-  #settingsContainerMobile
-    #mini-games[data-mobile-mini-game-fullscreen="true"][data-active-mini-game="grid2048"]
-    .mini-game-hint {
-    color: #8f7a66 !important;
-    font-size: 13px !important;
-    opacity: 0.94 !important;
-  }
-
-  #settingsContainerMobile .settings-header h2 {
-    margin: 0 !important;
-    font-size: 18px !important;
-    font-weight: 600 !important;
-    text-align: center !important;
-    color: var(--text-primary) !important;
-  }
-
-  .welcome-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
-  }
-
-  .welcome-screen.hidden {
-    display: none !important;
-  }
-
-  .app-title {
-    font-size: 20px;
-    font-weight: 700;
-  }
-
-  .search-input {
-    padding-right: 14px;
-    font-size: 17px;
-  }
-
-  .search-box .btn-new-chat {
-    right: auto;
-    width: 35px;
-    height: 35px;
-    transform: none;
-  }
-
-  .search-box .btn-new-chat svg {
-    width: 35px;
-    height: 35px;
-  }
-
-  .search-box {
-    padding: 8px 12px 12px 12px;
-  }
-
-  .chats-list {
-    flex: 1 1 auto;
-    min-height: 0;
-    height: 100%;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    overscroll-behavior: contain;
-    padding-bottom: calc(130px + env(safe-area-inset-bottom));
-  }
-
-  .chats-list.hidden-on-settings {
-    display: none;
-  }
-
-  .chats-list .chat-item {
-    width: calc(100% - 12px);
-    min-width: auto;
-    padding: 10px 12px 10px 6px;
-    margin: 6px 6px;
-    border-radius: 12px;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    text-align: left;
-  }
-
-  .chats-list .chat-item .chat-avatar {
-    width: 58px;
-    height: 58px;
-    font-size: 22px;
-  }
-
-  .chats-list .chat-item:active {
-    transform: translateY(1px);
-    opacity: 0.98;
-  }
-
-  .chats-list .chat-item .chat-info {
-    display: block;
-  }
-
-  .chats-list .chat-item .chat-time,
-  .chats-list .chat-item .chat-preview {
-    display: block;
-  }
-
-  .chats-list .chat-item .chat-item-arrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 4px;
-    color: var(--text-secondary);
-    font-size: 20px;
-    line-height: 1;
-    flex-shrink: 0;
-    opacity: 0.82;
-  }
-
-  .chats-list .chat-item.active .chat-item-arrow {
-    color: var(--text-primary);
-    opacity: 1;
-  }
-
-  .chat-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    height: 100vh;
-    height: 100dvh;
-    position: relative;
-  }
-
-  .chat-header {
-    padding: 12px 16px;
-    padding-top: calc(12px + env(safe-area-inset-top));
-    background-color: var(--bg-color);
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-shrink: 0;
-    height: 56px;
-  }
-
-  .chat-modal-header {
-    display: none;
-    position: relative;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    height: auto;
-    padding: 6px 10px 4px;
-    background: none;
-    border: none;
-    backdrop-filter: none;
-    flex-shrink: 0;
-    padding-top: env(safe-area-inset-top);
-    min-height: calc(52px + env(safe-area-inset-top));
-  }
-
-  .orion-app.chat-active .chat-modal-header,
-  .orion-app:has(#chatContainer.active) .chat-modal-header {
-    display: flex;
-  }
-
-  .chat-modal-header-left {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    width: 32px;
-    min-width: 32px;
-    flex: 0 0 32px;
-  }
-
-  .chat-modal-header .btn-back {
-    display: flex !important;
-    width: 32px;
-    height: 32px;
-    border-radius: 12px;
-    border: none;
-    background: none;
-    color: var(--text-primary);
-    box-shadow: none;
-  }
-
-  .chat-modal-header .app-chat-info {
-    display: flex !important;
-    position: absolute !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(
-      calc(-50% + var(--app-chat-info-offset-x, 0px)),
-      -50%
-    ) !important;
-    margin: 0 !important;
-    min-width: 0;
-    max-width: calc(100% - 96px);
-    gap: 12px;
-    align-items: center;
-    visibility: visible;
-    opacity: 1;
-    padding: 9px 14px;
-    border-radius: 14px;
-    border: none;
-    background: none;
-    box-shadow: none;
-  }
-
-  .chat-modal-header .app-chat-name {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-
-  html.dark-theme .chat-modal-header .app-chat-name {
-    color: #ffffff;
-  }
-
-  html:not(.dark-theme) .chat-modal-header .app-chat-name {
-    color: #0f1320;
-  }
-
-  .chat-modal-header .app-chat-name {
-    max-width: 140px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
-  .chat-modal-header .app-chat-status {
-    width: 8px;
-    height: 8px;
-  }
-
-  .chat-modal-header .app-chat-avatar {
-    width: 38px;
-    height: 38px;
-    font-size: 14px;
-  }
-
-  .chat-modal-header .app-chat-meta {
-    gap: 3px;
-    align-items: flex-start;
-  }
-
-  .chat-modal-header .app-chat-title-line {
-    justify-content: flex-start;
-  }
-
-  .chat-modal-header .app-chat-typing {
-    max-width: 108px;
+    width: 26px;
+    height: 26px;
     font-size: 11px;
   }
 
+  .bottom-nav-item > span:not(.nav-avatar) {
+    font-size: 12px;
+    line-height: 1.1;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    text-align: center;
+  }
+
+  .bottom-nav-item:hover {
+    background: color-mix(in srgb, var(--bg-elevated) 80%, transparent) !important;
+    color: var(--text-primary);
+  }
+
+  .bottom-nav-item.active {
+    background: color-mix(in srgb, var(--primary-color) 32%, var(--bg-elevated) 68%) !important;
+    color: #ffffff !important;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--primary-color) 52%, transparent),
+      0 8px 20px rgba(0, 0, 0, 0.24);
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.98);
+  }
+
+  .orion-app.mobile-chat-open .profile-menu-wrapper,
+  .orion-app.chat-open .profile-menu-wrapper,
+  .orion-app.chat-active .profile-menu-wrapper {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translate(-50%, 20px) !important;
+  }
+
+  .orion-app.mobile-chat-open .profile-menu-wrapper .bottom-nav,
+  .orion-app.chat-open .profile-menu-wrapper .bottom-nav,
+  .orion-app.chat-active .profile-menu-wrapper .bottom-nav,
+  .orion-app.mobile-chat-open .profile-menu-wrapper .bottom-nav-item,
+  .orion-app.chat-open .profile-menu-wrapper .bottom-nav-item,
+  .orion-app.chat-active .profile-menu-wrapper .bottom-nav-item {
+    pointer-events: none !important;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.42);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 65;
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .chat-container {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    background: var(--bg-color);
+    transition: padding-bottom 220ms cubic-bezier(0.22, 0.8, 0.22, 1);
+  }
+
+  .chat-container.active {
+    display: flex;
+  }
+
+  .chat-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--mobile-header-height);
+    padding: calc(env(safe-area-inset-top) + 4px) var(--mobile-space-3) 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: color-mix(in srgb, var(--bg-color) 95%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 6;
+  }
+
+  .chat-modal-header-left,
   .chat-modal-header-right {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    width: 32px;
-    min-width: 32px;
-    flex: 0 0 32px;
-  }
-
-  .chat-modal-header-right .chat-menu-wrapper {
-    width: 32px;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  #chatModalCallBtn,
-  #chatModalHistoryBtn {
-    display: none !important;
-  }
-
-  .chat-container button {
-    border: none !important;
-  }
-
-  .chat-modal-header-right .btn-icon,
-  .chat-modal-header-right #chatModalMenuBtn {
-    display: flex !important;
-    width: 32px;
-    height: 32px;
-    color: var(--text-primary);
-    border-radius: 12px;
-    border: none;
-    background: none;
-    box-shadow: none;
-  }
-
-  html:not(.dark-theme) .chat-modal-header .btn-back,
-  html:not(.dark-theme) .chat-modal-header-right .btn-icon,
-  html:not(.dark-theme) .chat-modal-header-right #chatModalMenuBtn {
-    border: none;
-    background: none;
-    box-shadow: none;
-  }
-
-  html:not(.dark-theme) .chat-modal-header .app-chat-info {
-    border: none;
-    background: none;
-    box-shadow: none;
-  }
-
-  .orion-app.chat-active .chat-modal-header,
-  .orion-app:has(#chatContainer.active) .chat-modal-header {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  .orion-app.chat-active .chat-modal-header .btn-back,
-  .orion-app.chat-active .chat-modal-header .app-chat-info,
-  .orion-app.chat-active .chat-modal-header-right .btn-icon,
-  .orion-app.chat-active .chat-modal-header-right #chatModalMenuBtn,
-  .orion-app:has(#chatContainer.active) .chat-modal-header .btn-back,
-  .orion-app:has(#chatContainer.active) .chat-modal-header .app-chat-info,
-  .orion-app:has(#chatContainer.active) .chat-modal-header-right .btn-icon,
-  .orion-app:has(#chatContainer.active)
-    .chat-modal-header-right
-    #chatModalMenuBtn {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  .btn-menu-toggle {
-    display: flex;
-  }
-
-  .chat-header-left {
-    gap: 8px;
-    display: flex;
-    align-items: center;
-    flex: 1;
-  }
-
-  .chat-brand {
-    display: flex;
-    align-items: center;
+    min-width: 0;
     gap: 6px;
   }
 
-  .chat-brand .app-logo {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-  }
-
-  .chat-brand .app-title {
-    font-size: 10px;
-    letter-spacing: 0.08em;
-  }
-
-  .chat-header-title {
-    flex: 1;
+  .chat-modal-header .app-chat-info {
+    display: inline-flex !important;
     min-width: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
+    gap: 9px;
   }
 
-  input,
-  textarea {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
-    -webkit-touch-callout: default;
+  .chat-modal-header .app-chat-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .chat-modal-header .app-chat-name {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .chat-modal-header .app-chat-status {
+    width: 7px;
+    height: 7px;
+  }
+
+  .chat-modal-header .app-chat-typing {
+    font-size: 12px;
+  }
+
+  .chat-modal-header-right .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--bg-elevated) 86%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  }
+
+  .chat-modal-header-right .btn-icon svg {
+    width: 18px;
+    height: 18px;
   }
 
   .messages-container {
-    padding: 8px 12px 12px 12px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
-    background-color: var(--bg-color);
-    border-top: none;
-    flex-shrink: 0;
+    padding: 10px var(--mobile-space-3) 12px;
+    gap: 6px;
+    transition: padding-bottom 220ms cubic-bezier(0.22, 0.8, 0.22, 1);
   }
 
   .messages-scroll-bottom-btn {
-    right: 12px;
-    bottom: calc(82px + env(safe-area-inset-bottom));
     width: 40px;
     height: 40px;
-    z-index: 7;
+    right: 12px;
+    bottom: calc(env(safe-area-inset-bottom) + 80px);
+    border-radius: 999px;
   }
 
   .messages-scroll-bottom-btn svg {
@@ -2497,1734 +747,631 @@
     height: 17px;
   }
 
-  .input-wrapper {
-    gap: 8px;
-    position: relative;
-    align-items: center;
-  }
-
-  .orion-app.chat-active .input-wrapper,
-  .orion-app:has(#chatContainer.active) .input-wrapper {
-    margin-bottom: 12px;
-  }
-
   .message-input-area {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
-    transition:
-      padding-bottom 0.24s ease,
-      box-shadow 0.24s ease;
-    background-color: var(--bg-elevated);
-    backdrop-filter: blur(12px);
+    padding: 8px 10px calc(env(safe-area-inset-bottom) + 8px);
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: color-mix(in srgb, var(--bg-color) 94%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: padding-bottom 200ms ease;
   }
 
-  .orion-app.composer-focus .message-input-area {
-    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.12);
+  .input-wrapper {
+    min-height: 48px;
+    border-radius: 24px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
+    background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+    padding: 4px 6px 4px 2px;
+    gap: 4px;
+    align-items: flex-end;
   }
 
-  .orion-app.keyboard-open .message-input-area {
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  .btn-icon.btn-attach,
+  .btn-emoji,
+  .btn-send {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 20px;
   }
 
-  .orion-app.keyboard-open .messages-container {
-    padding-bottom: 4px;
+  .btn-icon.btn-attach,
+  .btn-emoji {
+    color: color-mix(in srgb, var(--text-secondary) 88%, transparent);
   }
 
-  .orion-app.keyboard-open .messages-scroll-bottom-btn {
-    bottom: calc(
-      82px + env(safe-area-inset-bottom) + var(--keyboard-inset, 0px)
+  .btn-emoji svg,
+  .btn-send .send-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .message-input {
+    padding: 10px 10px 8px;
+    min-height: 40px;
+    max-height: 120px;
+    border: 0;
+    background: transparent;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .message-input:focus {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .btn-send.has-text {
+    color: #ffffff;
+    background: linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--primary-color) 84%, #ffffff 16%),
+      color-mix(in srgb, var(--secondary-color) 86%, #ffffff 14%)
     );
   }
 
-  .orion-app.keyboard-open .profile-menu-wrapper {
-    display: none !important;
+  .btn-send.has-text .send-icon-active {
+    color: #ffffff;
   }
 
-  .message-input {
-    min-height: 36px;
-    max-height: 132px;
-    padding: 8px 52px 8px 12px;
-    font-size: 16px;
-    line-height: 1.35;
-    box-sizing: border-box;
-    transform: none !important;
-    will-change: auto;
+  #settingsContainerMobile {
+    width: 100%;
+    min-height: 0;
+    height: 100%;
+    flex: 1;
+    background: transparent;
+    overflow: hidden;
+    display: none;
   }
 
-  .orion-app.composer-locked .message-input {
-    pointer-events: none;
-    opacity: 0.85;
+  #settingsContainerMobile.active {
+    display: flex !important;
   }
 
-  .btn-emoji {
-    display: none !important;
+  #settingsContainerMobile .settings-section {
+    width: 100%;
+    min-height: 0;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    background: var(--bg-color) !important;
   }
 
-  .message-input {
-    padding-right: 12px;
+  #settingsContainerMobile .settings-section.active {
+    display: flex !important;
   }
 
-  .btn-send,
-  .btn-attach,
-  .btn-emoji {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: 1px solid var(--border-color);
-    background: var(--bg-elevated);
-    color: var(--text-secondary);
+  #settingsContainerMobile .settings-header,
+  #settingsContainerMobile #messenger-settings .shop-header,
+  #settingsContainerMobile #calls .calls-header,
+  #settingsContainerMobile #notifications-center .calls-header,
+  #settingsContainerMobile #wallet .calls-header,
+  #settingsContainerMobile #profile-items .profile-items-header {
+    min-height: var(--mobile-header-height) !important;
+    padding: calc(env(safe-area-inset-top) + 4px)
+      var(--mobile-space-4) 4px !important;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-color) 94%, transparent) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  #settingsContainerMobile .settings-header h2,
+  #settingsContainerMobile .shop-header h2,
+  #settingsContainerMobile .calls-header h2,
+  #settingsContainerMobile .profile-items-header h2 {
+    position: static;
+    transform: none;
+    margin: 0 auto;
+    font-size: 19px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    pointer-events: auto;
+  }
+
+  #settingsContainerMobile .settings-header h2 svg,
+  #settingsContainerMobile .shop-header h2 svg,
+  #settingsContainerMobile .calls-header h2 svg,
+  #settingsContainerMobile .profile-items-header h2 svg,
+  #settingsContainerMobile .settings-subsection-title svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  #settingsContainerMobile .settings-header button,
+  #settingsContainerMobile .shop-header button,
+  #settingsContainerMobile .calls-header button,
+  #settingsContainerMobile .profile-items-header button {
+    width: var(--mobile-touch-size);
+    height: var(--mobile-touch-size);
+    padding: 0;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--bg-elevated) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) 64%, transparent);
   }
 
-  .btn-emoji {
-    position: absolute;
-    right: 44px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
+  #settingsContainerMobile .settings-header button svg,
+  #settingsContainerMobile .shop-header button svg,
+  #settingsContainerMobile .calls-header button svg,
+  #settingsContainerMobile .profile-items-header button svg {
+    width: 16px;
+    height: 16px;
   }
 
-  .contact-input {
-    font-size: 16px;
+  #settingsContainerMobile .btn-back-settings {
+    display: none !important;
   }
 
-  .message-bubble {
-    max-width: 94%;
-  }
-
-  .message-content {
-    font-size: 16px;
-    padding: 8px 44px 20px 12px;
-  }
-
-  .message-content.inline-meta {
-    padding: 8px 12px 10px 12px;
-  }
-
-  .message-meta,
-  .message-meta .message-time,
-  .message-meta .message-edited {
-    font-size: 12px;
-  }
-
-  .date-separator {
-    margin: 16px 0;
-  }
-
-  .date-separator-text {
-    padding: 6px 10px;
-    font-size: 13px;
-    max-width: 70%;
-  }
-
-  .btn-back {
-    display: flex;
-    align-content: center;
-    justify-content: center;
-    flex-direction: column;
-  }
-
-  .btn-menu-toggle {
-    display: flex;
-  }
-
-  .modal {
-    min-width: 280px;
-    max-width: 90vw;
-  }
-
-  #newChatModal.modal {
-    top: 50% !important;
-    bottom: auto !important;
-    left: 50% !important;
-    right: auto !important;
-    transform: translate(-50%, -50%) !important;
-    width: min(94vw, 520px);
-    max-width: 520px;
-    max-height: 84vh;
-    border-radius: 22px;
-  }
-
-  #newChatModal .contact-input {
-    padding: 14px 16px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  #newChatModal .new-chat-body {
-    padding: 16px;
+  #settingsContainerMobile .settings-content,
+  #settingsContainerMobile .shop-content,
+  #settingsContainerMobile .calls-content,
+  #settingsContainerMobile .wallet-content,
+  #settingsContainerMobile .profile-content,
+  #settingsContainerMobile .profile-settings-content,
+  #settingsContainerMobile .profile-items-content,
+  #settingsContainerMobile .mini-games-content,
+  #settingsContainerMobile .coin-tapper-content,
+  #settingsContainerMobile .group-create-content {
+    flex: 1;
+    min-height: 0;
     overflow-x: hidden;
+    overflow-y: auto;
+    padding: var(--mobile-space-4) var(--mobile-space-4) var(--mobile-content-bottom) !important;
+    background: var(--bg-color) !important;
   }
 
-  #newChatModal .new-chat-header {
-    padding: 18px 16px 14px;
-    gap: 14px;
+  #settingsContainerMobile .settings-menu-list,
+  #settingsContainerMobile .mobile-sections-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  #newChatModal .new-chat-header h3 {
-    font-size: 22px;
+  #settingsContainerMobile .settings-menu-item,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item {
+    min-height: 62px;
+    border-radius: 12px !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 10px 8px !important;
+    gap: 10px;
+    align-items: center;
   }
 
-  #newChatModal .new-chat-heading-copy p {
+  #settingsContainerMobile .settings-menu-item:hover,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item:hover {
+    background: color-mix(in srgb, var(--bg-elevated) 42%, transparent) !important;
+  }
+
+  #settingsContainerMobile .settings-menu-item:active,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item:active {
+    transform: scale(0.99);
+  }
+
+  #settingsContainerMobile .settings-menu-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+  }
+
+  #settingsContainerMobile .settings-menu-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  #settingsContainerMobile .settings-menu-label {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  #settingsContainerMobile .settings-menu-label > span,
+  #settingsContainerMobile .mobile-sections-label strong {
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 620;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  #settingsContainerMobile .mobile-sections-label small {
+    margin-top: 0;
     font-size: 13px;
+    line-height: 1.28;
+    color: color-mix(in srgb, var(--text-secondary) 90%, transparent);
   }
 
-  #newChatModal .new-chat-panel,
-  #newChatModal .group-fields.active {
-    padding: 14px;
+  #settingsContainerMobile .settings-menu-arrow {
+    margin-left: auto;
+    font-size: 17px;
+    color: color-mix(in srgb, var(--text-secondary) 82%, transparent);
   }
 
-  #newChatModal .new-chat-tips {
-    grid-template-columns: 1fr;
+  #mobile-sections .mobile-sections-content {
+    padding-top: 14px !important;
+  }
+
+  #mobile-sections .mobile-sections-intro {
+    margin: 0 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  #mobile-sections .mobile-sections-kicker {
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--text-secondary) 80%, transparent);
+  }
+
+  #mobile-sections .mobile-sections-intro h3 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.16;
+    letter-spacing: -0.02em;
+  }
+
+  #mobile-sections .mobile-sections-intro p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.35;
+    color: color-mix(in srgb, var(--text-secondary) 90%, transparent);
+  }
+
+  #mobile-sections .settings-icon-store {
+    background: linear-gradient(135deg, #ffa320, #ff8a00);
+    color: #fff;
+  }
+
+  #mobile-sections .settings-icon-wallet {
+    background: linear-gradient(135deg, #ffab2e, #ff8800);
+    color: #fff;
+  }
+
+  #mobile-sections .settings-icon-games {
+    background: linear-gradient(135deg, #2f7bff, #2ab6ff);
+    color: #fff;
+  }
+
+  #group-create {
+    background: var(--bg-color) !important;
+  }
+
+  #group-create .group-create-shell {
+    width: 100%;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    gap: var(--mobile-space-4);
+  }
+
+  #group-create .group-create-stage-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--mobile-space-3);
+  }
+
+  #group-create .group-create-stage-head {
+    margin: 0;
+    padding: 0;
+  }
+
+  #group-create .group-create-stage-head h3 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  #group-create .group-create-section-block,
+  #group-create .group-create-users-panel {
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
     padding: 12px;
   }
 
-  #newChatModal .new-chat-footer {
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    gap: 8px;
-    flex-direction: column-reverse;
-    align-items: stretch;
+  #group-create .group-create-contact-row {
+    min-height: 62px;
+    border-radius: 13px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 62%, transparent);
+    padding: 9px 11px;
+    background: color-mix(in srgb, var(--bg-color) 82%, transparent);
   }
 
-  #newChatModal .new-chat-footer .btn,
-  #newChatModal .new-chat-footer .btn-secondary,
-  #newChatModal .new-chat-footer .btn-primary {
-    width: 100%;
-    min-width: 0;
+  #group-create .group-create-contact-row:active {
+    transform: scale(0.99);
   }
 
-  .chats-list::-webkit-scrollbar,
-  .messages-container::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
-  }
-
-  .welcome-screen {
-    display: none !important;
-  }
-
-  .chat-area {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    max-width: none;
-    height: auto;
-    transform: none;
-    z-index: 2;
-    display: none;
-  }
-
-  .orion-app.mobile-chat-open .chat-area {
-    display: flex;
-  }
-
-  .orion-app.chat-active .chat-area,
-  .orion-app:has(#chatContainer.active) .chat-area {
-    display: flex !important;
-  }
-
-  .orion-app.chat-active .profile-menu-wrapper,
-  .orion-app:has(#chatContainer.active) .profile-menu-wrapper {
-    display: none !important;
-  }
-
-  .orion-app.swipe-peek .profile-menu-wrapper,
-  .orion-app.swipe-peek:has(#chatContainer.active) .profile-menu-wrapper,
-  .orion-app.swipe-peek.keyboard-open .profile-menu-wrapper,
-  .orion-app.swipe-peek.keyboard-open:has(#chatContainer.active)
-    .profile-menu-wrapper {
-    display: block !important;
-    bottom: 0 !important;
-    transform: none !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
-    transition: none !important;
-    z-index: 10 !important;
-  }
-
-  .chat-area .chat-container,
-  .chat-area .chat-container.active {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  .contact-info .avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-
-  .contact-details h2 {
-    font-size: 16px;
-  }
-
-  .contact-details .status {
-    font-size: 12px;
-  }
-
-  .btn-icon {
-    width: 36px;
-    height: 36px;
-  }
-
-  .btn-send,
-  .btn-emoji,
-  .btn-attach {
-    width: 36px;
-    height: 36px;
-  }
-
-  @keyframes slideUpMobile {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
-  }
-
-  .menu-item {
-    padding: 16px;
-  }
-
-  /* Mobile font size increases (except messages) */
-  .chat-name {
-    font-size: 17px !important;
-  }
-
-  .chat-preview {
-    font-size: 15px !important;
-  }
-
-  .chat-time {
-    font-size: 13px !important;
-  }
-
-  .chat-header-title {
-    font-size: 18px !important;
-  }
-
-  .contact-details .status {
-    font-size: 14px !important;
-  }
-
-  .settings-item-label span {
-    font-size: 17px !important;
-  }
-
-  .settings-item-desc {
-    font-size: 14px !important;
-  }
-
-  .settings-menu-label span {
-    font-size: 17px !important;
-  }
-
-  .settings-menu-item .settings-item-desc {
-    font-size: 14px !important;
-  }
-
-  .settings-group h3 {
-    font-size: 14px !important;
-  }
-
-  .btn-save-messenger,
-  .btn-secondary {
-    font-size: 16px !important;
-  }
-
-  .form-select {
-    font-size: 16px !important;
-  }
-
-  .font-size-value span {
-    font-size: 15px !important;
-  }
-
-  /* Stable mobile chat layout:
-     keep header fixed, raise chat content by keyboard inset. */
-  .orion-app.chat-active .chat-area,
-  .orion-app:has(#chatContainer.active) .chat-area {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    height: auto !important;
-    transform: none !important;
-    z-index: 20 !important;
-    overflow: hidden !important;
-    overscroll-behavior: none !important;
-    touch-action: auto !important;
-    background: transparent !important;
-  }
-
-  .orion-app.chat-active .chat-container.active,
-  .orion-app:has(#chatContainer.active) .chat-container.active {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100% !important;
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    padding-bottom: var(--keyboard-inset, 0px) !important;
-    animation: none !important;
-    transition: padding-bottom 0.2s ease-out !important;
-    overflow: hidden !important;
-    overscroll-behavior: none !important;
-    touch-action: auto !important;
-  }
-
-  .orion-app.chat-active .chat-container.active.chat-entering,
-  .orion-app:has(#chatContainer.active) .chat-container.active.chat-entering {
-    animation: chatEnterFromRightMobile 0.72s cubic-bezier(0.2, 0.82, 0.25, 1) !important;
-    will-change: transform, opacity;
-  }
-
-  @keyframes chatEnterFromRightMobile {
-    from {
-      transform: translateX(30px);
-      opacity: 0.88;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  .orion-app.chat-active .message-input-area,
-  .orion-app:has(#chatContainer.active) .message-input-area {
+  #group-create .group-create-footer {
     position: sticky;
     bottom: 0;
-    z-index: 6;
-    overflow: visible !important;
-    touch-action: manipulation;
-    display: block !important;
-  }
-
-  .chat-container.profile-view-active .message-input-area,
-  .chat-container.profile-view-active .input-wrapper {
-    display: none !important;
-  }
-
-  .chat-container.profile-view-active.profile-view-peek .message-input-area {
-    display: block !important;
-  }
-
-  .chat-container.profile-view-active.profile-view-peek .input-wrapper {
-    display: flex !important;
-  }
-
-  .orion-app.chat-active .messages-container,
-  .orion-app:has(#chatContainer.active) .messages-container {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    overscroll-behavior: contain !important;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y !important;
-  }
-
-  .message-input-area .emoji-picker {
-    z-index: 1200 !important;
-    bottom: 56px;
-  }
-
-  /* Final shop filter fallback: clean full-screen mobile modal */
-  .orion-app:has(
-      #settingsContainerMobile #messenger-settings #shopFilterPanel.is-open
-    )
-    .profile-menu-wrapper {
-    display: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-toolbar {
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger,
-  #settingsContainerMobile #messenger-settings .shop-filter-summary {
-    min-height: 44px !important;
-    border-radius: 12px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 92%,
-      transparent
-    ) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    padding: 0 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger::after {
-    display: none !important;
-    content: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger span {
-    width: auto !important;
-    flex: 0 1 auto !important;
-    text-align: center !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger svg {
-    position: static !important;
-    width: 16px !important;
-    height: 16px !important;
-    transform: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-summary {
-    justify-content: flex-start !important;
-    text-align: left !important;
-    padding: 0 12px !important;
-    font-size: 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 150 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: var(--bg-color) !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open::before {
-    display: none !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll {
-    height: 100% !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: calc(env(safe-area-inset-top) + 12px) 12px
-      calc(env(safe-area-inset-bottom) + 12px) !important;
-    gap: 10px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 4 !important;
-    margin: 0 !important;
-    padding: 2px 0 8px !important;
-    background: var(--bg-color) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-close {
-    width: 34px !important;
-    height: 34px !important;
-    border-radius: 10px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section {
-    padding: 10px !important;
-    border-radius: 12px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface-soft) 90%,
-      transparent
-    ) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section-title {
-    text-align: left !important;
-    font-size: 11px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-options {
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn {
-    min-height: 40px !important;
-    border-radius: 10px !important;
-    border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
-    background: color-mix(in srgb, var(--bg-color) 86%, transparent) !important;
-    color: var(--text-primary) !important;
-    font-size: 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn.active {
-    color: #fff !important;
-    border-color: color-mix(
-      in srgb,
-      var(--primary-color) 56%,
-      var(--border-color)
-    ) !important;
+    margin-top: auto;
+    padding: 12px 0 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
     background: linear-gradient(
-      135deg,
-      var(--primary-color),
-      color-mix(in srgb, var(--primary-strong) 76%, #a3a3a3)
-    ) !important;
-    box-shadow:
-      0 8px 16px color-mix(in srgb, var(--primary-color) 20%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+      180deg,
+      color-mix(in srgb, var(--bg-color) 0%, transparent) 0%,
+      color-mix(in srgb, var(--bg-color) 98%, transparent) 30%
+    );
   }
 
-  #settingsContainerMobile #messenger-settings .shop-filter-actions {
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 3 !important;
-    padding-top: 8px !important;
-    margin-top: 0 !important;
-    background: var(--bg-color) !important;
+  #group-create .group-create-action {
+    min-width: 124px;
+    min-height: var(--mobile-touch-size);
+    padding: 0 14px;
+    border-radius: 12px;
   }
 
-  #settingsContainerMobile #messenger-settings .shop-filter-reset,
-  #settingsContainerMobile #messenger-settings .shop-filter-apply {
-    min-height: 42px !important;
-    border-radius: 10px !important;
-  }
-}
-
-@media (min-width: 769px) and (max-width: 900px) {
-  .orion-app {
-    --sidebar-panel-width: 332px;
+  #settingsContainerMobile #profile .profile-settings-menu-card {
+    display: none !important;
   }
 
-  @keyframes desktop-secondary-menu-fade-in {
-    from {
-      opacity: 0.7;
-      transform: translateX(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+  .desktop-nav-rail-account-menu.mobile-anchor {
+    position: fixed !important;
+    z-index: 420;
+    width: min(216px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: color-mix(in srgb, var(--bg-elevated) 96%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
   }
 
-  @keyframes desktop-secondary-menu-item-in {
-    from {
-      opacity: 0;
-      transform: translateX(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+  .desktop-nav-rail-account-menu.mobile-anchor .desktop-nav-rail-account-menu-item {
+    width: 100%;
+    min-height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-primary);
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
   }
 
-  .sidebar,
-  .sidebar.compact {
-    width: var(--sidebar-panel-width, 332px) !important;
-    min-width: var(--sidebar-panel-width, 332px) !important;
-    max-width: var(--sidebar-panel-width, 332px) !important;
+  .desktop-nav-rail-account-menu.mobile-anchor .desktop-nav-rail-account-menu-item:hover {
+    background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
   }
 
-  .desktop-nav-rail {
-    width: 56px !important;
-    min-width: 56px !important;
-    max-width: 56px !important;
+  .desktop-nav-rail-account-menu.mobile-anchor
+    .desktop-nav-rail-account-menu-item:active {
+    background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+    transform: scale(0.99);
   }
 
-  .desktop-nav-rail-item {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 10px !important;
-    transition: transform 140ms ease !important;
+  .desktop-nav-rail-account-menu.mobile-anchor .desktop-nav-rail-account-menu-item svg {
+    width: 16px;
+    height: 16px;
   }
 
-  .desktop-nav-rail-item::before {
-    transition:
-      background-color 180ms ease,
-      border-color 180ms ease,
-      transform 180ms ease !important;
+  html:not(.dark-theme) .desktop-nav-rail-account-menu.mobile-anchor {
+    border-color: rgba(0, 0, 0, 0.14);
+    background: rgba(248, 250, 254, 0.98);
+    box-shadow: 0 10px 28px rgba(19, 26, 44, 0.16);
   }
 
-  .desktop-nav-rail-item.is-activating {
-    transform: scale(0.95);
+  html:not(.dark-theme)
+    .desktop-nav-rail-account-menu.mobile-anchor
+    .desktop-nav-rail-account-menu-item:hover {
+    background: rgba(0, 0, 0, 0.06);
   }
 
-  .desktop-nav-rail-item.is-activating::before {
-    transform: translate(-50%, -50%) scale(0.88);
-  }
-
-  .desktop-secondary-menu.is-opening {
-    animation: desktop-secondary-menu-fade-in 240ms cubic-bezier(0.2, 0.72, 0.2, 1);
-  }
-
-  .desktop-secondary-menu.is-opening .desktop-secondary-menu-item,
-  .desktop-secondary-menu.is-opening .desktop-secondary-chat-item,
-  .desktop-secondary-menu.is-opening .desktop-secondary-chat-empty {
+  .orion-app.keyboard-open .profile-menu-wrapper {
     opacity: 0;
-    transform: translateX(10px);
-    animation: desktop-secondary-menu-item-in 240ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
+    pointer-events: none;
+    transform: translate(-50%, 24px) !important;
   }
 
-  .desktop-secondary-menu.is-opening .desktop-secondary-menu-item:nth-child(1),
-  .desktop-secondary-menu.is-opening .desktop-secondary-chat-item:nth-child(1) {
-    animation-delay: 24ms;
+  .orion-app.keyboard-open .messages-container {
+    padding-bottom: 10px;
   }
 
-  .desktop-secondary-menu.is-opening .desktop-secondary-menu-item:nth-child(2),
-  .desktop-secondary-menu.is-opening .desktop-secondary-chat-item:nth-child(2) {
-    animation-delay: 44ms;
+  .orion-app.keyboard-open .message-input-area {
+    padding-bottom: 6px;
   }
 
-  .desktop-secondary-menu.is-opening .desktop-secondary-menu-item:nth-child(3),
-  .desktop-secondary-menu.is-opening .desktop-secondary-chat-item:nth-child(3) {
-    animation-delay: 64ms;
+  .message-context-menu,
+  .chat-menu {
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
+    background: color-mix(in srgb, var(--bg-elevated) 96%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
   }
 
-  .desktop-secondary-menu.is-opening .desktop-secondary-menu-item:nth-child(4),
-  .desktop-secondary-menu.is-opening .desktop-secondary-chat-item:nth-child(4) {
-    animation-delay: 84ms;
-  }
-
-  .desktop-secondary-menu.is-opening .desktop-secondary-menu-item:nth-child(5),
-  .desktop-secondary-menu.is-opening .desktop-secondary-chat-item:nth-child(5) {
-    animation-delay: 104ms;
-  }
-
-  .desktop-secondary-menu.is-opening .desktop-secondary-menu-item:nth-child(6),
-  .desktop-secondary-menu.is-opening .desktop-secondary-chat-item:nth-child(6) {
-    animation-delay: 124ms;
-  }
-
-  .sidebar > .search-box,
-  .sidebar > .chats-list-header,
-  .sidebar > .desktop-sidebar-top,
-  .sidebar > .chats-list,
-  .sidebar > .settings-container {
-    margin-left: 56px !important;
-    width: calc(100% - 56px) !important;
-  }
-
-  .search-box {
-    padding: 8px 10px 10px !important;
-  }
-
-  .chats-list-header {
-    padding: 6px 10px !important;
-  }
-
-  .chat-item {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 64px !important;
-    padding: 8px 10px !important;
-  }
-
-  .chat-name {
-    font-size: 15px !important;
-  }
-
-  .chat-preview {
-    font-size: 12px !important;
-  }
-
-  .chat-time {
-    font-size: 12px !important;
-  }
-
-  .messages-container {
-    padding: 10px !important;
-  }
-
-  .orion-app.chat-open #appChatInfo,
-  .orion-app.chat-active #appChatInfo,
-  .orion-app.chat-open .app-header-right,
-  .orion-app.chat-active .app-header-right {
-    width: min(168px, calc(100vw - var(--sidebar-panel-width, 332px) - 48px)) !important;
-    min-width: 0 !important;
-  }
-
-  .orion-app.chat-open .app-header-right,
-  .orion-app.chat-active .app-header-right {
-    right: 14px !important;
+  .chat-menu-item,
+  .message-context-menu-item {
+    min-height: 40px;
+    border-radius: 10px;
   }
 }
 
 @media (max-width: 480px) {
-  .profile-menu-wrapper {
-    width: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    transform: none !important;
+  :root {
+    --mobile-space-3: 10px;
+    --mobile-space-4: 14px;
+    --mobile-header-height: 46px;
+    --mobile-dock-height: 76px;
+    --mobile-dock-width: min(380px, calc(100vw - 14px));
   }
 
+  .search-box {
+    padding-right: var(--mobile-space-3);
+    padding-left: var(--mobile-space-3);
+  }
+
+  .search-input {
+    height: 42px;
+    min-height: 42px;
+    font-size: 16px;
+    padding-left: 40px;
+  }
+
+  .search-icon {
+    left: 24px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .search-box .btn-new-chat {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+  }
+
+  .search-box .btn-new-chat svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .chats-list {
+    padding-right: var(--mobile-space-2);
+    padding-left: var(--mobile-space-2);
+  }
+
+  .chat-item {
+    border-radius: 16px;
+    min-height: 68px;
+    padding: 9px 10px;
+    column-gap: 10px;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+  }
+
+  .chat-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .chat-name {
+    font-size: 15px;
+  }
+
+  .chat-preview,
+  .chat-time {
+    font-size: 13px;
+  }
+
+  .profile-menu-wrapper .bottom-nav,
   .bottom-nav {
-    gap: 0 !important;
-    padding: 7px 4px
-      calc(7px + env(safe-area-inset-bottom) + var(--mobile-nav-lift, 10px)) !important;
-    border-radius: 0 !important;
+    padding: 9px !important;
+    gap: 6px !important;
+    border-radius: 24px !important;
   }
 
   .bottom-nav-item {
-    min-height: 56px !important;
-    padding: 5px 2px 7px !important;
+    min-height: 64px;
+    border-radius: 16px;
   }
 
   .bottom-nav-item > svg,
   .bottom-nav-item > .nav-avatar {
-    width: 27px !important;
-    height: 27px !important;
-    flex: 0 0 27px !important;
+    width: 24px;
+    height: 24px;
   }
 
   .bottom-nav-item .nav-avatar {
-    font-size: 11px !important;
-    line-height: 1 !important;
-  }
-
-  .bottom-nav-item > span:not(.nav-avatar) {
-    font-size: 10px !important;
-  }
-
-  .chat-modal-header .app-chat-info {
-    gap: 11px;
-    padding: 8px 12px;
-  }
-
-  .chat-modal-header .app-chat-avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 13px;
-  }
-
-  .chat-modal-header .app-chat-name {
-    font-size: 15px;
-  }
-
-  .chats-list .chat-item {
-    width: calc(100% - 8px);
-    padding: 9px 10px 9px 4px;
-    margin: 6px 4px;
-    gap: 9px;
-  }
-
-  .chats-list .chat-item .chat-avatar {
-    width: 54px;
-    height: 54px;
-    font-size: 20px;
-  }
-
-  .bottom-nav-indicator {
-    display: none;
-  }
-
-  .sidebar {
-    width: 100%;
-  }
-
-  .modal {
-    min-width: 280px;
-    max-width: 90vw;
-  }
-
-  #newChatModal.modal {
-    max-height: 80vh;
-  }
-
-  #newChatModal .new-chat-header h3 {
-    font-size: 19px;
-  }
-
-  #newChatModal .new-chat-mark {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-  }
-
-  #newChatModal .new-chat-kicker {
-    margin-bottom: 6px;
+    width: 24px;
+    height: 24px;
     font-size: 10px;
   }
 
-  .chat-header-actions {
-    gap: 4px;
+  .bottom-nav-item > span:not(.nav-avatar) {
+    font-size: 11px;
   }
 
-  .btn-icon {
+  .chat-modal-header {
+    padding-right: var(--mobile-space-3);
+    padding-left: var(--mobile-space-3);
+    padding-top: calc(env(safe-area-inset-top) + 3px);
+    padding-bottom: 3px;
+  }
+
+  .chat-modal-header .app-chat-avatar {
     width: 32px;
     height: 32px;
   }
 
-  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
-    position: fixed !important;
-    inset: 0 !important;
-    border-radius: 0 !important;
+  .chat-modal-header .app-chat-name {
+    font-size: 14px;
   }
 
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll {
-    padding: calc(env(safe-area-inset-top) + 12px) 10px
-      calc(env(safe-area-inset-bottom) + 12px) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-options {
-    grid-template-columns: 1fr !important;
-  }
-
-  .message-content {
-    max-width: 94%;
-    font-size: 15px;
-  }
-
-  .message-input {
-    min-height: 34px;
-    padding-right: 48px;
-  }
-
-  .btn-emoji {
-    right: 40px;
-  }
-
-  .date-separator {
-    margin: 25px 0;
-  }
-
-  .date-separator-text {
-    max-width: 75%;
-  }
-
-  .app-title {
-    font-size: 20px;
-  }
-
-  .chat-header {
-    padding: 10px 12px;
-    padding-top: calc(10px + env(safe-area-inset-top));
-    height: 52px;
+  .messages-container {
+    padding-right: var(--mobile-space-3);
+    padding-left: var(--mobile-space-3);
   }
 
   .message-input-area {
-    padding: 8px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
-  }
-
-  .btn-send,
-  .btn-emoji,
-  .btn-attach {
-    width: 35px;
-    height: 35px;
-  }
-
-  .btn-menu-toggle {
-    width: 36px;
-    height: 36px;
-  }
-
-  .search-input {
-    padding-right: 14px;
-    font-size: 16px;
-  }
-
-  .search-box .btn-new-chat {
-    right: auto;
-    width: 35px;
-    height: 35px;
-  }
-
-  .search-box .btn-new-chat svg {
-    width: 21px;
-    height: 21px;
-  }
-
-  /* Keep the same clean full-screen shop filter on narrow phones */
-  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
-    position: fixed !important;
-    inset: 0 !important;
-    border-radius: 0 !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll {
-    padding: calc(env(safe-area-inset-top) + 10px) 10px
-      calc(env(safe-area-inset-bottom) + 10px) !important;
-  }
-}
-
-@media (hover: none) and (pointer: coarse) {
-  .btn-new-chat:hover,
-  .btn-icon:hover,
-  .btn-menu-toggle:hover,
-  .btn-new-chat:hover,
-  .menu-item:hover,
-  .chat-item:hover,
-  .btn-close-menu:hover {
-    background-color: unset;
-    color: inherit;
-    box-shadow: none;
-    transform: none;
-  }
-
-  /* Enhanced menu animations for mobile */
-  .chat-list-menu.active {
-    animation: popupAppearMobile 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  @keyframes popupAppearMobile {
-    from {
-      opacity: 0;
-      transform: scale(0.92);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  /* Add item entrance animation */
-  .message-menu-item,
-  .chat-list-menu-item {
-    animation: menuItemSlideIn 0.2s ease-out backwards;
-  }
-
-  .message-menu-item:nth-child(1),
-  .chat-list-menu-item:nth-child(1) {
-    animation-delay: 0.05s;
-  }
-
-  .message-menu-item:nth-child(2),
-  .chat-list-menu-item:nth-child(2) {
-    animation-delay: 0.1s;
-  }
-
-  .message-menu-item:nth-child(3),
-  .chat-list-menu-item:nth-child(3) {
-    animation-delay: 0.15s;
-  }
-
-  .message-menu-item:nth-child(n + 4),
-  .chat-list-menu-item:nth-child(n + 4) {
-    animation-delay: 0.2s;
-  }
-
-  @keyframes menuItemSlideIn {
-    from {
-      opacity: 0;
-      transform: translateX(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  /* Active item effect on tap */
-  .message-menu-item:active,
-  .chat-list-menu-item:active {
-    background-color: var(--bg-secondary);
-    transform: scale(0.95);
-    transition: all 0.1s ease;
-  }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .btn:hover,
-  .btn-icon:hover,
-  .btn-send:hover,
-  .btn-new-chat:hover,
-  .bottom-nav-item:hover,
-  .chat-item:hover,
-  .chat-menu-item:hover,
-  .message-context-menu-item:hover,
-  .menu-item:hover,
-  .reply-bar-close:hover,
-  .settings-menu-item:hover,
-  .settings-item-action:hover {
-    background-color: rgba(140, 140, 140, 0.18) !important;
-    border-color: rgba(170, 170, 170, 0.42) !important;
-    color: var(--text-primary) !important;
-  }
-
-  .btn-send:hover {
-    background-color: transparent !important;
-    border-color: transparent !important;
-    color: var(--primary-color) !important;
-  }
-}
-
-.btn-send.has-text {
-  background: transparent !important;
-  color: var(--primary-color) !important;
-}
-
-@media (max-width: 768px) {
-  /* Authoritative mobile shop filter layout: between app header and bottom nav */
-  #settingsContainerMobile #messenger-settings .shop-filter-panel,
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
-    transition: none !important;
-    animation: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel.is-open {
-    position: fixed !important;
-    top: var(--app-header-height, 40px) !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    z-index: 260 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: var(--bg-color) !important;
-    box-shadow: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-    max-height: none !important;
-    overflow: hidden !important;
-    pointer-events: auto !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll {
-    height: 100% !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 58px 8px calc(env(safe-area-inset-bottom) + 110px) !important;
-    box-sizing: border-box !important;
-    -webkit-overflow-scrolling: touch !important;
-    gap: 12px !important;
-    align-items: center !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll
-    > .shop-filter-section,
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll
-    > .shop-price-range,
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll
-    > .shop-filter-summary {
-    width: min(calc(100% - 4px), 352px) !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-head {
-    position: fixed !important;
-    top: var(--app-header-height, 40px) !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 52px !important;
-    z-index: 8 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
-    display: block !important;
-    background: var(--bg-color) !important;
-    border-bottom: 1px solid
-      color-mix(in srgb, var(--border-color) 70%, transparent) !important;
-    pointer-events: auto !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-title {
-    position: absolute !important;
-    top: 50% !important;
-    left: 0 !important;
-    right: 0 !important;
-    transform: translateY(-50%) !important;
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 56px !important;
-    box-sizing: border-box !important;
-    display: block !important;
-    line-height: 1.1 !important;
-    z-index: 9 !important;
-    pointer-events: none !important;
-    text-align: center !important;
-    font-size: 13px !important;
-    letter-spacing: 0.08em !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section {
-    width: min(calc(100% - 4px), 352px) !important;
-    max-width: min(calc(100% - 4px), 352px) !important;
-    align-self: center !important;
-    margin: 0 auto !important;
-    padding: 0 2px 4px !important;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section-title {
-    width: 100% !important;
-    text-align: center !important;
-    margin-bottom: 8px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-options {
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 10px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-price-range {
-    width: 100% !important;
-    margin: 0 auto !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
-    min-height: 44px !important;
-    border-radius: 12px !important;
-    font-size: 13px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-close {
-    position: fixed !important;
-    top: calc(var(--app-header-height, 40px) + 8px) !important;
-    left: 12px !important;
-    z-index: 10 !important;
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 10px !important;
-    margin: 0 !important;
-    pointer-events: auto !important;
-    cursor: pointer !important;
-    touch-action: manipulation !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-close svg {
-    transform: rotate(-90deg) !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open::after {
-    content: "" !important;
-    position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    height: calc(env(safe-area-inset-bottom) + 72px) !important;
-    z-index: 10 !important;
-    pointer-events: none !important;
-    border-top: 1px solid
-      color-mix(in srgb, var(--border-color) 62%, transparent) !important;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-color) 0%, transparent) 0%,
-      color-mix(in srgb, var(--bg-color) 88%, transparent) 34%,
-      var(--bg-color) 100%
-    ) !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-actions {
-    position: fixed !important;
-    left: 8px !important;
-    right: 8px !important;
-    bottom: calc(env(safe-area-inset-bottom) + 6px) !important;
-    z-index: 12 !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-    padding: 0 !important;
-    margin-top: 0 !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-reset,
-  #settingsContainerMobile #messenger-settings .shop-filter-apply {
-    width: 100% !important;
-    min-height: 42px !important;
-    touch-action: manipulation !important;
-  }
-
-  /* Disable custom scrollbar styling for mobile shop filter */
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll {
-    scrollbar-width: auto !important;
-    scrollbar-color: auto !important;
-  }
-
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll::-webkit-scrollbar,
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll::-webkit-scrollbar-track,
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open
-    .shop-filter-panel-scroll::-webkit-scrollbar-thumb,
-  #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-panel.is-open::-webkit-scrollbar-thumb {
-    width: initial !important;
-    height: initial !important;
-    margin: initial !important;
-    background: initial !important;
-    border-radius: initial !important;
-  }
-}
-
-@media (max-width: 768px) {
-  /* Final hard centering for mobile shop filter content */
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-title {
-    left: 50% !important;
-    right: auto !important;
-    width: calc(100vw - 112px) !important;
-    transform: translate(-50%, -50%) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-panel-content {
-    width: min(calc(100vw - 16px), 352px) !important;
-    max-width: min(calc(100vw - 16px), 352px) !important;
-    margin: 0 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-section {
-    position: static !important;
-    left: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    transform: none !important;
-    margin: 0 !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-price-range,
-  #settingsContainerMobile #messenger-settings .shop-filter-options,
-  #settingsContainerMobile #messenger-settings .shop-filter-btn {
-    width: 100% !important;
-  }
-}
-
-@media (max-width: 768px) {
-  /* Authoritative mobile section layout: consistent headers and content spacing */
-  #settingsContainerMobile {
-    background: var(--bg-color) !important;
-    padding-bottom: calc(
-      var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom)
-    ) !important;
-  }
-
-  #settingsContainerMobile .settings-section,
-  #settingsContainerMobile #messenger-settings,
-  #settingsContainerMobile #calls,
-  #settingsContainerMobile #notifications-center,
-  #settingsContainerMobile #wallet,
-  #settingsContainerMobile #profile-items,
-  #settingsContainerMobile #profile-settings,
-  #settingsContainerMobile #mini-games {
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 100% !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile .settings-header,
-  #settingsContainerMobile .shop-header,
-  #settingsContainerMobile .calls-header,
-  #settingsContainerMobile .profile-items-header {
-    position: sticky !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 24 !important;
-    min-height: 52px !important;
-    margin: 0 !important;
-    padding: 8px 12px !important;
-    box-sizing: border-box !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: color-mix(in srgb, var(--bg-color) 92%, transparent) !important;
-    border-bottom: 1px solid
-      color-mix(in srgb, var(--border-color) 72%, transparent) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-    pointer-events: auto !important;
-  }
-
-  #settingsContainerMobile .settings-header button,
-  #settingsContainerMobile
-    .settings-subsection
-    .settings-header
-    .settings-subsection-back,
-  #settingsContainerMobile #profile-items .profile-items-back-island {
-    position: absolute !important;
-    left: 8px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    border-radius: 10px !important;
-    background: transparent !important;
-  }
-
-  #settingsContainerMobile
-    .settings-subsection
-    .settings-header
-    .settings-subsection-title,
-  #settingsContainerMobile #messenger-settings .shop-header h2,
-  #settingsContainerMobile #calls .calls-header h2,
-  #settingsContainerMobile #notifications-center .calls-header h2,
-  #settingsContainerMobile #wallet .calls-header h2,
-  #settingsContainerMobile #profile-items .profile-items-header h2,
-  #settingsContainerMobile #profile-settings .settings-header h2 {
-    position: static !important;
-    width: auto !important;
-    max-width: calc(100% - 88px) !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    transform: none !important;
-    font-size: 17px !important;
-    line-height: 1.2 !important;
-    text-align: center !important;
-    pointer-events: none !important;
-  }
-
-  #settingsContainerMobile .settings-content,
-  #settingsContainerMobile #messenger-settings .shop-content,
-  #settingsContainerMobile #calls .calls-content,
-  #settingsContainerMobile #notifications-center .calls-content,
-  #settingsContainerMobile #profile-items .profile-items-content {
-    width: 100% !important;
-    box-sizing: border-box !important;
-    padding: 12px !important;
-    padding-bottom: calc(
-      var(--bottom-nav-height, 72px) + env(safe-area-inset-bottom) + 22px
-    ) !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-balance-island {
-    position: static !important;
-    width: fit-content !important;
-    margin: 8px 12px 0 auto !important;
-    top: auto !important;
-    right: auto !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-item-card {
-    padding: 10px !important;
-    border-radius: 12px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-item-preview {
-    min-height: 74px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-item-preview-avatar {
-    width: 56px !important;
-    height: 56px !important;
-    font-size: 18px !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-item-title {
-    font-size: 17px !important;
-    line-height: 1.2 !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-item-description {
-    font-size: 14px !important;
-    line-height: 1.35 !important;
-  }
-
-  #settingsContainerMobile #calls .empty-state,
-  #settingsContainerMobile #notifications-center .empty-state {
-    min-height: calc(100dvh - 210px) !important;
-    justify-content: center !important;
-    padding: 20px 12px !important;
-    box-sizing: border-box !important;
-  }
-}
-
-@media (max-width: 430px) {
-  #settingsContainerMobile #messenger-settings .shop-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-@media (max-width: 768px) {
-  /* Mobile: remove global app header and reclaim top space */
-  :root {
-    --app-header-height: 0px !important;
-    --mobile-chat-header-offset: env(safe-area-inset-top) !important;
-  }
-
-  .orion-app.chat-active,
-  .orion-app:has(#chatContainer.active) {
-    --app-header-height: 0px !important;
-    --mobile-chat-header-offset: env(safe-area-inset-top) !important;
-  }
-
-  .app-header {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: 0 !important;
-    overflow: hidden !important;
-  }
-
-  /* Mobile nav buttons: no borders in any state */
-  .bottom-nav-item,
-  .bottom-nav-item:hover,
-  .bottom-nav-item:active,
-  .bottom-nav-item.active,
-  html.dark-theme .bottom-nav-item,
-  html.dark-theme .bottom-nav-item:hover,
-  html.dark-theme .bottom-nav-item.active,
-  html:not(.dark-theme) .bottom-nav-item,
-  html:not(.dark-theme) .bottom-nav-item:hover,
-  html:not(.dark-theme) .bottom-nav-item.active {
-    border: none !important;
-    border-color: transparent !important;
-    border-left-color: transparent !important;
-    box-shadow: none !important;
-  }
-}
-
-@media (max-width: 768px) {
-  html,
-  body,
-  #app {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden !important;
-  }
-
-  .orion-app,
-  .main-layout,
-  .sidebar,
-  .chat-area,
-  .chat-container,
-  .chat-modal-header,
-  .messages-container,
-  .message-input-area,
-  #settingsContainerMobile,
-  #settingsContainerMobile .settings-section,
-  #settingsContainerMobile .settings-content,
-  #settingsContainerMobile .shop-content,
-  #settingsContainerMobile .calls-content,
-  #settingsContainerMobile .wallet-content,
-  #settingsContainerMobile .profile-content,
-  #settingsContainerMobile .profile-settings-content,
-  #settingsContainerMobile .profile-items-content,
-  #settingsContainerMobile .mini-games-content,
-  #settingsContainerMobile .coin-tapper-content {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .main-layout > *,
-  .sidebar > *,
-  .chat-area > *,
-  .chat-container > *,
-  #settingsContainerMobile > *,
-  #settingsContainerMobile .settings-content > *,
-  #settingsContainerMobile .shop-content > *,
-  #settingsContainerMobile .calls-content > *,
-  #settingsContainerMobile .wallet-content > *,
-  #settingsContainerMobile .profile-content > *,
-  #settingsContainerMobile .profile-settings-content > *,
-  #settingsContainerMobile .profile-items-content > *,
-  #settingsContainerMobile .mini-games-content > * {
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  img,
-  svg,
-  canvas,
-  video {
-    max-width: 100%;
-  }
-
-  .message-bubble {
-    max-width: min(84%, 100%);
-  }
-
-  .message-content.has-file {
-    min-width: 0;
-  }
-
-  .message-content.has-voice {
-    min-width: min(220px, calc(100vw - 112px));
-  }
-
-  .voice-track {
-    margin: 0 8px;
-  }
-
-  .message-input-area {
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    padding-right: 8px;
+    padding-left: 8px;
   }
 
   .input-wrapper {
-    gap: 6px;
+    min-height: 46px;
   }
 
-  .modal,
-  .alert-modal {
-    width: min(calc(100vw - 20px), 520px) !important;
-    max-width: calc(100vw - 20px) !important;
+  .btn-icon.btn-attach,
+  .btn-emoji,
+  .btn-send {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
   }
 
-  .modal-content,
-  .alert-modal-inner,
-  .modal-body,
-  .alert-body,
-  .group-info-modal-body,
-  .group-appearance-modal-body,
-  .contact-profile-view-body {
-    min-width: 0;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-
-  .contact-profile-actions {
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .contact-profile-actions .profile-action-btn,
-  .contact-profile-actions .contact-profile-more,
-  .contact-profile-more {
-    flex: 1 1 calc(50% - 4px);
-    max-width: none;
-  }
-
-  .wallet-history-item,
-  .profile-item-card,
-  .shop-item-card,
-  .mini-game-view,
-  .profile-hero-card,
-  .profile-settings-card {
-    min-width: 0;
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .bottom-nav {
-    padding: 6px 4px
-      calc(8px + env(safe-area-inset-bottom) + var(--mobile-nav-lift, 10px)) !important;
-  }
-
-  .bottom-nav-item {
-    min-height: 54px !important;
-    padding: 4px 1px 6px !important;
-  }
-
-  .bottom-nav-item > svg,
-  .bottom-nav-item > .nav-avatar {
-    width: 26px !important;
-    height: 26px !important;
-    flex: 0 0 26px !important;
-  }
-
-  .bottom-nav-item > span:not(.nav-avatar) {
-    font-size: 10px !important;
-  }
-
-  .chat-modal-header {
-    padding-right: 8px !important;
-    padding-left: 8px !important;
-  }
-
-  .chat-modal-header .app-chat-info {
-    max-width: calc(100% - 84px) !important;
-    gap: 10px !important;
-    padding: 8px 10px !important;
-  }
-
-  .chat-modal-header .app-chat-name {
-    max-width: 112px !important;
-    font-size: 15px !important;
-  }
-
-  .chat-modal-header .app-chat-avatar {
-    width: 34px !important;
-    height: 34px !important;
-    font-size: 13px !important;
-  }
-
-  .message-bubble {
-    max-width: 88%;
-  }
-
-  .message-content.has-voice {
-    width: min(100%, calc(100vw - 72px));
-    min-width: 0;
-  }
-
-  .message-content.has-file,
-  .message-file {
-    width: 100%;
+  #settingsContainerMobile .settings-header,
+  #settingsContainerMobile #messenger-settings .shop-header,
+  #settingsContainerMobile #calls .calls-header,
+  #settingsContainerMobile #notifications-center .calls-header,
+  #settingsContainerMobile #wallet .calls-header,
+  #settingsContainerMobile #profile-items .profile-items-header {
+    padding-right: var(--mobile-space-3) !important;
+    padding-left: var(--mobile-space-3) !important;
+    padding-top: calc(env(safe-area-inset-top) + 3px) !important;
+    padding-bottom: 3px !important;
   }
 
   #settingsContainerMobile .settings-content,
@@ -4235,79 +1382,84 @@
   #settingsContainerMobile .profile-settings-content,
   #settingsContainerMobile .profile-items-content,
   #settingsContainerMobile .mini-games-content,
-  .coin-tapper-content {
-    padding-right: 10px !important;
-    padding-left: 10px !important;
+  #settingsContainerMobile .coin-tapper-content,
+  #settingsContainerMobile .group-create-content {
+    padding-right: var(--mobile-space-3) !important;
+    padding-left: var(--mobile-space-3) !important;
   }
 
-  #settingsContainerMobile #messenger-settings .shop-grid,
-  .profile-items-grid,
-  .mini-games-list {
-    grid-template-columns: 1fr !important;
+  #settingsContainerMobile .settings-menu-item,
+  #settingsContainerMobile #mobile-sections .mobile-sections-item {
+    min-height: 58px;
+    padding: 9px 6px !important;
+    border-radius: 10px !important;
   }
 
-  .profile-items-grid.is-list .profile-item-card {
-    grid-template-columns: 1fr !important;
+  #settingsContainerMobile .settings-menu-list,
+  #settingsContainerMobile .mobile-sections-list {
+    gap: 3px !important;
   }
 
-  .coin-tapper-content {
-    gap: 22px !important;
+  #settingsContainerMobile .settings-menu-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    flex-basis: 32px;
   }
 
-  .coin-tapper-image {
-    width: min(72vw, 220px) !important;
-    height: min(72vw, 220px) !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
+  #settingsContainerMobile .settings-menu-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  #settingsContainerMobile .settings-menu-label > span,
+  #settingsContainerMobile .mobile-sections-label strong {
+    font-size: 15px;
+  }
+
+  #settingsContainerMobile .mobile-sections-label small {
+    font-size: 12px;
+  }
+
+  #mobile-sections .mobile-sections-intro h3 {
+    font-size: 24px;
+  }
+
+  #settingsContainerMobile .settings-header h2,
+  #settingsContainerMobile .shop-header h2,
+  #settingsContainerMobile .calls-header h2,
+  #settingsContainerMobile .profile-items-header h2 {
+    font-size: 17px;
+  }
+
+  #settingsContainerMobile .settings-header h2 svg,
+  #settingsContainerMobile .shop-header h2 svg,
+  #settingsContainerMobile .calls-header h2 svg,
+  #settingsContainerMobile .profile-items-header h2 svg,
+  #settingsContainerMobile .settings-subsection-title svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  #settingsContainerMobile .settings-header button svg,
+  #settingsContainerMobile .shop-header button svg,
+  #settingsContainerMobile .calls-header button svg,
+  #settingsContainerMobile .profile-items-header button svg {
+    width: 15px;
+    height: 15px;
   }
 }
 
-@media (max-width: 768px) {
-  #settingsContainerMobile #messenger-settings .shop-filter-trigger.is-open {
-    border-color: transparent !important;
-    background: rgba(255, 255, 255, 0.14) !important;
-    color: #ffffff !important;
-    box-shadow: none !important;
-    filter: none !important;
-  }
-
-  html:not(.dark-theme)
-    #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-trigger.is-open {
-    background: rgba(15, 15, 15, 0.12) !important;
-    color: #111111 !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn:hover {
-    border-color: transparent !important;
-    background: color-mix(in srgb, #ffffff 8%, transparent) !important;
-    color: #ffffff !important;
-    box-shadow: none !important;
-  }
-
-  #settingsContainerMobile #messenger-settings .shop-filter-btn.active {
-    border-color: transparent !important;
-    background: rgba(255, 255, 255, 0.14) !important;
-    color: #ffffff !important;
-    box-shadow: none !important;
-  }
-
-  html:not(.dark-theme)
-    #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-btn:hover {
-    background: rgba(15, 15, 15, 0.08) !important;
-    color: #111111 !important;
-  }
-
-  html:not(.dark-theme)
-    #settingsContainerMobile
-    #messenger-settings
-    .shop-filter-btn.active {
-    background: rgba(15, 15, 15, 0.12) !important;
-    color: #111111 !important;
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .chat-item,
+  .bottom-nav-item,
+  .profile-menu-wrapper,
+  .settings-menu-item,
+  .mobile-sections-item,
+  .message-input-area,
+  .input-wrapper,
+  .sidebar-overlay {
+    transition: none !important;
+    animation: none !important;
   }
 }

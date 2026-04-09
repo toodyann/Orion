@@ -525,6 +525,10 @@ html.dark-theme .app-chat-typing {
   transform: none;
 }
 
+#navExplore {
+  display: none;
+}
+
 .bottom-nav-indicator {
   position: absolute;
   width: 56px;

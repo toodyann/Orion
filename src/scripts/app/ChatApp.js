@@ -57,6 +57,8 @@ export class ChatApp {
     this.mobileScrollLockY = 0;
     this.mobileScrollLocked = false;
     this.mobileTouchMoveLockHandler = null;
+    this.mobileNewChatModeActive = false;
+    this.mobileNewChatSearchRevealPending = false;
     this.bottomNavHomeAnchor = null;
     this.bottomNavInSidebarTop = false;
     this.settingsParentSection = 'messenger-settings';

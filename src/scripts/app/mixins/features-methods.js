@@ -5654,6 +5654,7 @@ export class ChatAppFeaturesMethods {
         const avatarDiv = settingsContainer.querySelector('.profile-avatar-large');
         const inlineEditBtn = settingsContainer.querySelector('.profile-edit-inline');
         const profileMyItemsBtn = settingsContainer.querySelector('#profileMyItemsBtn');
+        const profileWalletBtn = settingsContainer.querySelector('#profileWalletBtn');
         const menuItems = settingsContainer.querySelectorAll('.settings-menu-item');
 
         this.renderProfileAvatar(avatarDiv);
@@ -5670,6 +5671,12 @@ export class ChatAppFeaturesMethods {
             this.settingsParentSection = 'profile';
             this.pendingProfileItemsScope = 'all';
             this.showSettings('profile-items');
+          });
+        }
+        if (profileWalletBtn) {
+          profileWalletBtn.addEventListener('click', () => {
+            this.settingsParentSection = 'profile';
+            this.showSettings('wallet');
           });
         }
 
@@ -5695,6 +5702,22 @@ export class ChatAppFeaturesMethods {
             if (subsection) {
               this.showSettingsSubsection(subsection, settingsContainerId, 'settings-home');
             }
+          });
+        });
+      }
+
+      if (sectionName === 'mobile-sections') {
+        this.settingsParentSection = 'mobile-sections';
+        const mobileSectionsNav = document.getElementById('navExplore');
+        if (mobileSectionsNav) this.setActiveNavButton(mobileSectionsNav);
+        const menuItems = settingsContainer.querySelectorAll('[data-mobile-sections-target]');
+        menuItems.forEach((item) => {
+          item.addEventListener('click', () => {
+            const nextSection = String(item.getAttribute('data-mobile-sections-target') || '').trim();
+            if (!nextSection) return;
+            if (mobileSectionsNav) this.setActiveNavButton(mobileSectionsNav);
+            this.settingsParentSection = 'mobile-sections';
+            this.showSettings(nextSection);
           });
         });
       }
@@ -5943,6 +5966,7 @@ export class ChatAppFeaturesMethods {
         && sectionName !== 'calls'
         && sectionName !== 'mini-games'
         && sectionName !== 'wallet'
+        && sectionName !== 'mobile-sections'
         && sectionName !== 'group-create'
         && sectionName !== 'settings-home') {
         this.setupSettingsSwipeBack(settingsContainer);
