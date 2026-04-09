@@ -365,6 +365,7 @@ html.dark-theme .auth-submit {
   margin: 4px 0 0;
   font-size: 13px;
   color: var(--text-secondary);
+  text-align: center;
 }
 
 .auth-inline-btn {
@@ -433,10 +434,9 @@ html.dark-theme .auth-submit.is-loading::after {
 
   .auth-page {
     align-items: flex-start;
-    padding: max(12px, env(safe-area-inset-top))
-      12px
+    padding: max(12px, env(safe-area-inset-top)) 12px
       max(16px, env(safe-area-inset-bottom));
-    padding-top: max(152px, calc(env(safe-area-inset-top) + 140px));
+    padding-top: max(170px, calc(env(safe-area-inset-top) + 140px));
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -463,7 +463,7 @@ html.dark-theme .auth-submit.is-loading::after {
   }
 
   .auth-page {
-    padding-top: max(136px, calc(env(safe-area-inset-top) + 124px));
+    padding-top: max(160px, calc(env(safe-area-inset-top) + 124px));
   }
 
   .auth-theme-toggle--floating {
