@@ -5641,7 +5641,13 @@ export class ChatAppFeaturesMethods {
             }
             avatarUpload.disabled = true;
             try {
-              const { payload: profileResponse, localPreviewUrl } = await this.uploadCurrentUserAvatarToServer(file);
+              const uploadResult = await this.uploadCurrentUserAvatarToServer(file);
+              const profileResponse = uploadResult && typeof uploadResult === 'object' && uploadResult.payload && typeof uploadResult.payload === 'object'
+                ? uploadResult.payload
+                : {};
+              const localPreviewUrl = uploadResult && typeof uploadResult === 'object'
+                ? String(uploadResult.localPreviewUrl || '')
+                : '';
               const serverAvatar = this.getAvatarImage(
                 profileResponse?.avatarImage
                 || profileResponse?.avatarUrl
