@@ -26,6 +26,25 @@
     overflow: hidden;
   }
 
+  html.mobile-copy-lock,
+  html.mobile-copy-lock body,
+  html.mobile-copy-lock .orion-app,
+  html.mobile-copy-lock .orion-app * {
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  html.mobile-copy-lock input,
+  html.mobile-copy-lock textarea,
+  html.mobile-copy-lock [contenteditable="true"],
+  html.mobile-copy-lock [contenteditable=""],
+  html.mobile-copy-lock [contenteditable=true] {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+
   .orion-app {
     background: var(--bg-color);
     --sidebar-panel-width: 100%;

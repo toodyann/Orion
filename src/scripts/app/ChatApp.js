@@ -59,6 +59,13 @@ export class ChatApp {
     this.mobileTouchMoveLockHandler = null;
     this.mobileNewChatModeActive = false;
     this.mobileNewChatSearchRevealPending = false;
+    this.mobileCopyProtectionBound = false;
+    this.mobileCopyLockSyncHandler = null;
+    this.mobileCopyContextMenuHandler = null;
+    this.mobileCopySelectStartHandler = null;
+    this.mobileCopySelectionChangeHandler = null;
+    this.mobileCopyEventHandler = null;
+    this.mobileCutEventHandler = null;
     this.bottomNavHomeAnchor = null;
     this.bottomNavInSidebarTop = false;
     this.settingsParentSection = 'messenger-settings';

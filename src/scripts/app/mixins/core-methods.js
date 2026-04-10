@@ -1500,9 +1500,75 @@ export class ChatAppCoreMethods {
     }
   }
 
+  setupMobileCopyProtection() {
+    if (this.mobileCopyProtectionBound) return;
+    this.mobileCopyProtectionBound = true;
+
+    const isMobileViewport = () => (
+      window.innerWidth <= 900
+      || window.matchMedia('(pointer: coarse)').matches
+      || navigator.maxTouchPoints > 0
+    );
+    const isEditableTarget = (target) => {
+      if (!(target instanceof Element)) return false;
+      return Boolean(
+        target.closest(
+          'input, textarea, [contenteditable="true"], [contenteditable=""], [contenteditable=true]'
+        )
+      );
+    };
+
+    const syncClass = () => {
+      document.documentElement.classList.toggle('mobile-copy-lock', isMobileViewport());
+    };
+    this.mobileCopyLockSyncHandler = syncClass;
+    syncClass();
+    window.addEventListener('resize', syncClass, { passive: true });
+
+    this.mobileCopyContextMenuHandler = (event) => {
+      if (!isMobileViewport()) return;
+      const target = event.target;
+      if (isEditableTarget(target)) return;
+      event.preventDefault();
+    };
+
+    this.mobileCopySelectStartHandler = (event) => {
+      if (!isMobileViewport()) return;
+      const target = event.target;
+      if (isEditableTarget(target)) return;
+      event.preventDefault();
+    };
+
+    this.mobileCopySelectionChangeHandler = () => {
+      if (!isMobileViewport()) return;
+      const activeElement = document.activeElement;
+      if (isEditableTarget(activeElement)) return;
+      const selection = window.getSelection?.();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+      selection.removeAllRanges();
+    };
+
+    this.mobileCopyEventHandler = (event) => {
+      if (!isMobileViewport()) return;
+      event.preventDefault();
+    };
+
+    this.mobileCutEventHandler = (event) => {
+      if (!isMobileViewport()) return;
+      event.preventDefault();
+    };
+
+    document.addEventListener('contextmenu', this.mobileCopyContextMenuHandler, { capture: true });
+    document.addEventListener('selectstart', this.mobileCopySelectStartHandler, { capture: true });
+    document.addEventListener('selectionchange', this.mobileCopySelectionChangeHandler, { capture: true });
+    document.addEventListener('copy', this.mobileCopyEventHandler, { capture: true });
+    document.addEventListener('cut', this.mobileCutEventHandler, { capture: true });
+  }
+
   init() {
     this.setupEventListeners();
     this.setupModalEnterHandlers();
+    this.setupMobileCopyProtection();
     this.ensureBottomNavHomeAnchor();
     this.restoreBottomNavToHome({ animate: false });
     this.setupDesktopChatWheelScroll();
