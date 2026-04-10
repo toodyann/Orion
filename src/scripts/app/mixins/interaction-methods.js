@@ -716,6 +716,13 @@ export class ChatAppInteractionMethods {
 
     const shell = document.createElement('div');
     shell.className = 'desktop-secondary-chat-shell';
+    const refreshDesktopSecondarySearchContentOnly = () => {
+      if (!this.desktopSecondaryChatSearchMode) return;
+      const activeContent = listEl.querySelector('.desktop-secondary-chat-content');
+      if (!(activeContent instanceof HTMLElement)) return;
+      activeContent.innerHTML = '';
+      this.renderDesktopSecondaryChatSearchContent(activeContent, listEl, targetNavId);
+    };
 
     const searchWrap = document.createElement('div');
     searchWrap.className = 'desktop-secondary-chat-search';
@@ -731,32 +738,47 @@ export class ChatAppInteractionMethods {
     input.autocomplete = 'off';
     input.spellcheck = false;
     input.value = String(this.desktopSecondaryChatSearchQuery || '');
+    const activateDesktopSecondarySearchMode = () => {
+      if (this.desktopSecondaryChatSearchMode) return;
+      this.desktopSecondaryChatSearchMode = true;
+      this.startDesktopSecondarySearchRevealAnimation(listEl);
+      this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+      this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId, {
+        onStateChange: refreshDesktopSecondarySearchContentOnly
+      });
+      const nextInput = listEl.querySelector('.desktop-secondary-chat-search-input');
+      if (nextInput instanceof HTMLInputElement) {
+        window.requestAnimationFrame(() => {
+          this.desktopSecondaryChatSearchRestoringFocus = true;
+          nextInput.focus({ preventScroll: true });
+          nextInput.setSelectionRange(nextInput.value.length, nextInput.value.length);
+        });
+      }
+    };
+    input.addEventListener('pointerdown', (event) => {
+      if (this.desktopSecondaryChatSearchMode) return;
+      if (typeof event.button === 'number' && event.button !== 0) return;
+      event.preventDefault();
+      activateDesktopSecondarySearchMode();
+    });
     input.addEventListener('focus', () => {
       if (this.desktopSecondaryChatSearchRestoringFocus === true) {
         this.desktopSecondaryChatSearchRestoringFocus = false;
         return;
       }
       if (!this.desktopSecondaryChatSearchMode) {
-        this.desktopSecondaryChatSearchMode = true;
-        this.startDesktopSecondarySearchRevealAnimation(listEl);
-        this.renderDesktopSecondaryChatsList(listEl, targetNavId);
+        activateDesktopSecondarySearchMode();
+        return;
       }
-      this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId);
+      this.ensureDesktopSecondaryAllUsersLoaded(listEl, targetNavId, {
+        onStateChange: refreshDesktopSecondarySearchContentOnly
+      });
     });
     input.addEventListener('input', (event) => {
-      if (!event.isTrusted) return;
-      const inputType = String(event.inputType || '').trim();
-      const wasKeyboardEdit = this.desktopSecondaryChatSearchPendingKeyboardEdit === true;
-      const isDirectUserEdit = Boolean(
-        wasKeyboardEdit
-        || inputType.startsWith('insert')
-        || inputType.startsWith('delete')
-        || inputType === 'historyUndo'
-        || inputType === 'historyRedo'
-      );
       this.desktopSecondaryChatSearchPendingKeyboardEdit = false;
-      if (!isDirectUserEdit) return;
-      this.scheduleDesktopSecondaryUserSearch(event.target.value, listEl, targetNavId);
+      this.scheduleDesktopSecondaryUserSearch(event.target.value, listEl, targetNavId, {
+        onStateChange: refreshDesktopSecondarySearchContentOnly
+      });
     });
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
@@ -764,10 +786,6 @@ export class ChatAppInteractionMethods {
         this.desktopSecondaryChatSearchPendingKeyboardEdit = false;
         this.resetDesktopSecondaryChatSearchState();
         this.renderDesktopSecondaryChatsList(listEl, targetNavId);
-        return;
-      }
-      if (this.isDesktopSecondarySearchEditingKey(event)) {
-        this.desktopSecondaryChatSearchPendingKeyboardEdit = true;
       }
     });
     searchWrap.appendChild(input);
@@ -2276,18 +2294,15 @@ export class ChatAppInteractionMethods {
     }
     const findBackButtonAtPoint = (x, y) => {
       if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-      const buttons = Array.from(document.querySelectorAll('.settings-subsection-back'));
-      for (const button of buttons) {
-        if (!(button instanceof HTMLElement)) continue;
-        const rect = button.getBoundingClientRect();
-        if (!rect.width || !rect.height) continue;
-        const style = window.getComputedStyle(button);
-        if (style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') continue;
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-          return button;
-        }
-      }
-      return null;
+      const topElement = document.elementFromPoint(x, y);
+      if (!(topElement instanceof Element)) return null;
+      const backButton = topElement.closest('.settings-subsection-back');
+      if (!(backButton instanceof HTMLElement)) return null;
+      const rect = backButton.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      const style = window.getComputedStyle(backButton);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') return null;
+      return backButton;
     };
     let isBackCursorForced = false;
     const setBackCursorByPoint = (x, y) => {
@@ -2318,6 +2333,7 @@ export class ChatAppInteractionMethods {
     }, true);
     // Fallback for hit-testing quirks: resolve click by pointer coordinates.
     document.addEventListener('click', (event) => {
+      if (!isSettingsScreenActive()) return;
       const targetEl = event.target instanceof Element ? event.target : null;
       if (targetEl?.closest('.settings-subsection-back')) return;
       if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return;
