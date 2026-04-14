@@ -1904,7 +1904,13 @@ export class ChatAppFeaturesMethods {
       const safeAmount = Number.isFinite(amountCents) ? Math.max(0, Math.floor(amountCents)) : 0;
       if (!safeAmount) return;
       flappyState.earnedCents += safeAmount;
-      this.setTapBalanceCents(this.getTapBalanceCents() + safeAmount);
+      this.setTapBalanceCents(this.getTapBalanceCents() + safeAmount, {
+        transactionMeta: {
+          title: 'Гра: Flappy Orion',
+          category: 'games',
+          amountCents: safeAmount
+        }
+      });
       balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
     };
 
@@ -2162,16 +2168,24 @@ export class ChatAppFeaturesMethods {
         ctx.restore();
 
         const centerX = worldWidth * 0.5;
-        const centerY = worldHeight * 0.5;
-        drawFlappyHudText(ctx, 'GAME OVER', centerX, centerY - gameOverTitleSize * 0.66, {
+        const overlayTop = Math.round(worldHeight * 0.36);
+        const desiredStatsTop = overlayTop + Math.max(58, Math.round(gameOverTitleSize * 2.25));
+        const statLineGap = Math.max(20, Math.round(gameOverStatSize * 2.05));
+        const maxStatsTop = Math.max(
+          overlayTop + Math.round(gameOverTitleSize * 1.9),
+          worldHeight - groundHeight - statLineGap - Math.round(gameOverStatSize * 1.4) - 24
+        );
+        const statsTop = Math.min(desiredStatsTop, maxStatsTop);
+
+        drawFlappyHudText(ctx, 'GAME OVER', centerX, overlayTop, {
           fontSize: gameOverTitleSize,
           align: 'center'
         });
-        drawFlappyHudText(ctx, `SCORE ${flappyState.score}`, centerX, centerY + gameOverTitleSize * 0.08, {
+        drawFlappyHudText(ctx, `SCORE ${flappyState.score}`, centerX, statsTop, {
           fontSize: gameOverStatSize,
           align: 'center'
         });
-        drawFlappyHudText(ctx, `COINS ${flappyState.coins}`, centerX, centerY + gameOverTitleSize * 0.44, {
+        drawFlappyHudText(ctx, `COINS ${flappyState.coins}`, centerX, statsTop + statLineGap, {
           fontSize: gameOverStatSize,
           align: 'center'
         });
@@ -2595,7 +2609,13 @@ export class ChatAppFeaturesMethods {
       const safeAmount = Number.isFinite(amountCents) ? Math.max(0, Math.floor(amountCents)) : 0;
       if (!safeAmount) return;
       driftState.earnedCents += safeAmount;
-      this.setTapBalanceCents(this.getTapBalanceCents() + safeAmount);
+      this.setTapBalanceCents(this.getTapBalanceCents() + safeAmount, {
+        transactionMeta: {
+          title: 'Гра: Orion Drive',
+          category: 'games',
+          amountCents: safeAmount
+        }
+      });
       balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
     };
 
@@ -4360,7 +4380,13 @@ export class ChatAppFeaturesMethods {
       if (gainedTotal > 0) {
         const rewardCents = Math.max(1, Math.floor(gainedTotal / 16));
         grid2048State.earnedCents += rewardCents;
-        this.setTapBalanceCents(this.getTapBalanceCents() + rewardCents);
+        this.setTapBalanceCents(this.getTapBalanceCents() + rewardCents, {
+          transactionMeta: {
+            title: 'Гра: Orion 2048',
+            category: 'games',
+            amountCents: rewardCents
+          }
+        });
         balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
       }
       if (grid2048State.score > grid2048State.best) {
@@ -4823,7 +4849,13 @@ export class ChatAppFeaturesMethods {
       const levelStats = this.getTapLevelStats();
       const rewardCents = levelStats.rewardPerTapCents;
       const currentBalance = this.getTapBalanceCents();
-      this.setTapBalanceCents(currentBalance + rewardCents);
+      this.setTapBalanceCents(currentBalance + rewardCents, {
+        transactionMeta: {
+          title: 'Гра: Клікер',
+          category: 'games',
+          amountCents: rewardCents
+        }
+      });
       this.setTapTotalClicks(levelStats.totalClicks + 1);
       syncTapperStats();
 
@@ -5641,13 +5673,7 @@ export class ChatAppFeaturesMethods {
             }
             avatarUpload.disabled = true;
             try {
-              const uploadResult = await this.uploadCurrentUserAvatarToServer(file);
-              const profileResponse = uploadResult && typeof uploadResult === 'object' && uploadResult.payload && typeof uploadResult.payload === 'object'
-                ? uploadResult.payload
-                : {};
-              const localPreviewUrl = uploadResult && typeof uploadResult === 'object'
-                ? String(uploadResult.localPreviewUrl || '')
-                : '';
+              const { payload: profileResponse, localPreviewUrl } = await this.uploadCurrentUserAvatarToServer(file);
               const serverAvatar = this.getAvatarImage(
                 profileResponse?.avatarImage
                 || profileResponse?.avatarUrl
@@ -5680,6 +5706,11 @@ export class ChatAppFeaturesMethods {
           });
         }
         
+        const changeAvatarBtn = settingsContainer.querySelector('.btn-change-avatar');
+        if (changeAvatarBtn) {
+          changeAvatarBtn.addEventListener('click', () => this.handleAvatarChange(settingsContainer));
+        }
+
         const cancelProfileBtn = settingsContainer.querySelector('.btn-cancel-profile');
         if (cancelProfileBtn) {
           cancelProfileBtn.addEventListener('click', () => {
@@ -5695,7 +5726,6 @@ export class ChatAppFeaturesMethods {
         const inlineEditBtn = settingsContainer.querySelector('.profile-edit-inline');
         const profileMyItemsBtn = settingsContainer.querySelector('#profileMyItemsBtn');
         const profileWalletBtn = settingsContainer.querySelector('#profileWalletBtn');
-        const profileQrBtn = settingsContainer.querySelector('#profileQrBtn');
         const menuItems = settingsContainer.querySelectorAll('.settings-menu-item');
 
         this.renderProfileAvatar(avatarDiv);
@@ -5718,13 +5748,6 @@ export class ChatAppFeaturesMethods {
           profileWalletBtn.addEventListener('click', () => {
             this.settingsParentSection = 'profile';
             this.showSettings('wallet');
-          });
-        }
-        if (profileQrBtn) {
-          profileQrBtn.addEventListener('click', () => {
-            if (typeof this.openProfileQrModal === 'function') {
-              this.openProfileQrModal();
-            }
           });
         }
 
@@ -6020,7 +6043,7 @@ export class ChatAppFeaturesMethods {
         this.setupSettingsSwipeBack(settingsContainer);
       }
       
-      const closeButtons = settingsContainer.querySelectorAll('.btn-secondary:not(.btn-cancel-profile)');
+      const closeButtons = settingsContainer.querySelectorAll('.btn-secondary:not(.btn-change-avatar):not(.btn-cancel-profile)');
       closeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           if ((sectionName === 'profile-settings' || sectionName.endsWith('-settings')) && btn.closest('.settings-buttons')) {
@@ -6347,4 +6370,31 @@ export class ChatAppFeaturesMethods {
     syncLegacyUserProfile(mergedUser);
   }
 
+  handleAvatarChange(settingsContainer) {
+    const colors = [
+      'linear-gradient(135deg, #6b7280, #9ca3af)',
+      'linear-gradient(135deg, #667eea, #764ba2)',
+      'linear-gradient(135deg, #f093fb, #f5576c)',
+      'linear-gradient(135deg, #4facfe, #00f2fe)',
+      'linear-gradient(135deg, #43e97b, #38f9d7)',
+      'linear-gradient(135deg, #fa709a, #a3a3a3)',
+      'linear-gradient(135deg, #30cfd0, #330867)',
+      'linear-gradient(135deg, #a8edea, #fed6e3)'
+    ];
+
+    let colorIndex = colors.findIndex(c => c === this.user.avatarColor);
+    if (colorIndex === -1) colorIndex = 0;
+    
+    colorIndex = (colorIndex + 1) % colors.length;
+    const newColor = colors[colorIndex];
+    
+    const avatarDiv = settingsContainer.querySelector('.profile-avatar-large');
+    this.user.avatarColor = newColor;
+    this.user.avatarImage = ''; 
+    this.user.avatarUrl = '';
+
+    if (avatarDiv) {
+      this.renderProfileAvatar(avatarDiv);
+    }
+  }
 }

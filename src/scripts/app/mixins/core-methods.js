@@ -86,6 +86,55 @@ export class ChatAppCoreMethods {
     return this.formatCoinBalance(value, 1);
   }
 
+  getWalletTransactionTitleHints() {
+    const stored = this.readJsonStorage('orion_wallet_tx_title_hints', []);
+    if (!Array.isArray(stored)) return [];
+    return stored
+      .filter((entry) => entry && typeof entry === 'object')
+      .map((entry) => {
+        const amountCents = Number.parseInt(entry.amountCents, 10);
+        const title = String(entry.title || '').trim();
+        const createdAt = String(entry.createdAt || '').trim();
+        if (!Number.isFinite(amountCents) || amountCents === 0) return null;
+        if (!title || !createdAt) return null;
+        return {
+          id: String(entry.id || `${createdAt}-${Math.random().toString(16).slice(2, 10)}`).trim(),
+          amountCents: Math.trunc(amountCents),
+          title,
+          createdAt
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 500);
+  }
+
+  saveWalletTransactionTitleHints(entries) {
+    const safeEntries = Array.isArray(entries) ? entries.slice(0, 500) : [];
+    try {
+      window.localStorage.setItem('orion_wallet_tx_title_hints', JSON.stringify(safeEntries));
+    } catch {
+      // Ignore storage failures.
+    }
+    return safeEntries;
+  }
+
+  addWalletTransactionTitleHint({ amountCents = 0, title = '', createdAt = '' } = {}) {
+    const safeAmount = Number.isFinite(amountCents) ? Math.trunc(amountCents) : 0;
+    const safeTitle = String(title || '').trim();
+    const safeCreatedAt = String(createdAt || new Date().toISOString()).trim();
+    if (!safeAmount || !safeTitle) return null;
+    const nextEntry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`,
+      amountCents: safeAmount,
+      title: safeTitle,
+      createdAt: safeCreatedAt
+    };
+    const history = this.getWalletTransactionTitleHints();
+    history.unshift(nextEntry);
+    this.saveWalletTransactionTitleHints(history);
+    return nextEntry;
+  }
+
   getWalletCurrencyCode() {
     const dynamic = String(this.walletCurrencyCode || '').trim().toUpperCase();
     if (dynamic) return dynamic;
@@ -225,6 +274,209 @@ export class ChatAppCoreMethods {
       topup: 1,
       transfer_in: 1
     };
+    const typeTitleMap = {
+      earn: 'Дохід',
+      purchase: 'Покупка',
+      transfer_in: 'Вхідний переказ',
+      transfer_out: 'Вихідний переказ',
+      adjustment: ''
+    };
+
+    const normalizeLabel = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+    const normalizeToken = (value) => normalizeLabel(value).toLowerCase().replace(/[_-]+/g, ' ');
+    const genericLabelSet = new Set([
+      'adjustment',
+      'transaction',
+      'transactions',
+      'general',
+      'wallet',
+      'income',
+      'expense',
+      'credit',
+      'debit',
+      'reward',
+      'earn',
+      'purchase',
+      'topup',
+      'transfer',
+      'payment',
+      'транзакція',
+      'коригування',
+      'зарахування',
+      'списання'
+    ]);
+    const ignoredTokenSet = new Set([
+      'null',
+      'undefined',
+      'n a',
+      'na',
+      'ok',
+      'done',
+      'true',
+      'false'
+    ]);
+    const noisePatterns = [
+      /^[0-9]+$/,
+      /^[0-9a-f]{24,64}$/i,
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      /^https?:\/\//i,
+      /^\d{4}-\d{2}-\d{2}t\d{2}:\d{2}/i,
+      /^\+?\d{8,}$/,
+      /^[a-z]{2,6}:[\w-]+$/i
+    ];
+    const isNoiseToken = (token) => {
+      if (!token) return true;
+      if (ignoredTokenSet.has(token)) return true;
+      return noisePatterns.some((pattern) => pattern.test(token));
+    };
+    const isGenericToken = (token) => {
+      if (!token) return true;
+      if (genericLabelSet.has(token)) return true;
+      return (
+        token.endsWith(' adjustment')
+        || token.startsWith('adjustment ')
+        || token.endsWith(' transaction')
+        || token.startsWith('transaction ')
+      );
+    };
+
+    const toReadableTransactionTitle = (value) => {
+      const clean = normalizeLabel(value).replace(/[_-]+/g, ' ');
+      if (!clean) return '';
+      const key = clean.toLowerCase();
+
+      if (/flappy/.test(key)) return 'Гра: Flappy Orion';
+      if (/2048/.test(key)) return 'Гра: Orion 2048';
+      if (/orion\s*drive|drift|race/.test(key)) return 'Гра: Orion Drive';
+      if (/clicker|tapper|tap|клікер/.test(key)) return 'Гра: Клікер';
+      if (/shop|store|purchase|buy|catalog/.test(key)) return 'Магазин';
+      if (/sell|sale/.test(key)) return 'Продаж предмета';
+      if (/referral|invite/.test(key)) return 'Реферальний бонус';
+      if (/daily|bonus|reward|quest/.test(key)) return 'Бонус';
+      if (/deposit|top up|topup|refill/.test(key)) return 'Поповнення балансу';
+      if (/withdraw|cashout|spend|expense|debit/.test(key)) return 'Списання балансу';
+
+      return clean;
+    };
+
+    const maybeParseJsonString = (value) => {
+      if (typeof value !== 'string') return null;
+      const text = value.trim();
+      if (!text || text.length < 2) return null;
+      if (!((text.startsWith('{') && text.endsWith('}')) || (text.startsWith('[') && text.endsWith(']')))) {
+        return null;
+      }
+      try {
+        return JSON.parse(text);
+      } catch {
+        return null;
+      }
+    };
+
+    const collectObjectTitleCandidates = (source, depth = 0, seen = new WeakSet()) => {
+      if (!source || depth > 4) return [];
+      if (typeof source !== 'object') return [];
+      if (seen.has(source)) return [];
+      seen.add(source);
+      const candidates = [];
+      const keys = [
+        'title',
+        'name',
+        'label',
+        'description',
+        'reason',
+        'message',
+        'source',
+        'event',
+        'type',
+        'kind',
+        'category',
+        'action',
+        'operation',
+        'operationType',
+        'sourceType',
+        'source_name',
+        'eventName',
+        'eventType',
+        'code',
+        'slug',
+        'provider',
+        'system',
+        'product',
+        'feature',
+        'module',
+        'game',
+        'app'
+      ];
+
+      keys.forEach((key) => {
+        const value = source[key];
+        if (typeof value === 'string' || typeof value === 'number') {
+          const asString = String(value);
+          candidates.push(asString);
+          const parsed = maybeParseJsonString(asString);
+          if (parsed && typeof parsed === 'object') {
+            candidates.push(...collectObjectTitleCandidates(parsed, depth + 1, seen));
+          }
+          return;
+        }
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            if (typeof item === 'string' || typeof item === 'number') {
+              const asString = String(item);
+              candidates.push(asString);
+              const parsed = maybeParseJsonString(asString);
+              if (parsed && typeof parsed === 'object') {
+                candidates.push(...collectObjectTitleCandidates(parsed, depth + 1, seen));
+              }
+              return;
+            }
+            if (item && typeof item === 'object') {
+              candidates.push(...collectObjectTitleCandidates(item, depth + 1, seen));
+            }
+          });
+          return;
+        }
+        if (value && typeof value === 'object') {
+          candidates.push(...collectObjectTitleCandidates(value, depth + 1, seen));
+        }
+      });
+
+      Object.keys(source).forEach((key) => {
+        const value = source[key];
+        if (typeof value === 'string' || typeof value === 'number') {
+          const asString = String(value);
+          candidates.push(asString);
+          const parsed = maybeParseJsonString(asString);
+          if (parsed && typeof parsed === 'object') {
+            candidates.push(...collectObjectTitleCandidates(parsed, depth + 1, seen));
+          }
+          return;
+        }
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            if (typeof item === 'string' || typeof item === 'number') {
+              const asString = String(item);
+              candidates.push(asString);
+              const parsed = maybeParseJsonString(asString);
+              if (parsed && typeof parsed === 'object') {
+                candidates.push(...collectObjectTitleCandidates(parsed, depth + 1, seen));
+              }
+              return;
+            }
+            if (item && typeof item === 'object') {
+              candidates.push(...collectObjectTitleCandidates(item, depth + 1, seen));
+            }
+          });
+          return;
+        }
+        if (value && typeof value === 'object') {
+          candidates.push(...collectObjectTitleCandidates(value, depth + 1, seen));
+        }
+      });
+
+      return candidates;
+    };
 
     return rawList
       .map((entry, index) => {
@@ -264,7 +516,63 @@ export class ChatAppCoreMethods {
           || new Date().toISOString()
         ).trim();
         const fallbackTitle = typeRaw ? typeRaw.replace(/[_-]+/g, ' ') : 'Транзакція';
-        const title = String(entry.title || entry.description || fallbackTitle || 'Транзакція').trim() || 'Транзакція';
+        const noteRaw = normalizeLabel(entry.note ?? entry.memo ?? '');
+        const noteToken = normalizeToken(noteRaw);
+        const titleFromNote = noteRaw && !isNoiseToken(noteToken) && !isGenericToken(noteToken)
+          ? toReadableTransactionTitle(noteRaw)
+          : '';
+        const directCandidates = [
+          entry.title,
+          entry.description,
+          entry.reason,
+          entry.note,
+          entry.label,
+          entry.message,
+          entry.sourceTitle,
+          entry.sourceName,
+          entry.operationName,
+          entry.operationTitle,
+          entry.activity,
+          entry.eventName,
+          entry.eventType,
+          entry.displayName,
+          entry.purpose,
+          entry.subtype,
+          entry.transactionType,
+          entry.kindLabel
+        ];
+        const nestedCandidates = [
+          ...collectObjectTitleCandidates(entry.source),
+          ...collectObjectTitleCandidates(entry.origin),
+          ...collectObjectTitleCandidates(entry.context),
+          ...collectObjectTitleCandidates(entry.meta),
+          ...collectObjectTitleCandidates(entry.metadata),
+          ...collectObjectTitleCandidates(entry.details),
+          ...collectObjectTitleCandidates(entry.payload),
+          ...collectObjectTitleCandidates(entry.data),
+          ...collectObjectTitleCandidates(entry.reference),
+          ...collectObjectTitleCandidates(entry.event),
+          ...collectObjectTitleCandidates(entry.transaction)
+        ];
+        const allCandidates = [...directCandidates, ...nestedCandidates]
+          .map((value) => toReadableTransactionTitle(value))
+          .map((value) => normalizeLabel(value))
+          .filter(Boolean);
+        const titleFromPayload = allCandidates.find((candidate) => {
+          const token = normalizeToken(candidate);
+          if (!token) return false;
+          if (isNoiseToken(token)) return false;
+          if (isGenericToken(token)) return false;
+          return true;
+        }) || '';
+        const fallbackByType = String(typeTitleMap[typeRaw] || '').trim();
+        const fallbackByDirection = signedAmount > 0 ? 'Поповнення балансу' : 'Списання балансу';
+        const title = titleFromNote
+          || titleFromPayload
+          || fallbackByType
+          || (!isGenericToken(normalizeToken(fallbackTitle)) ? toReadableTransactionTitle(fallbackTitle) : '')
+          || fallbackByDirection
+          || 'Транзакція';
         const category = String(typeRaw || entry.category || 'general').trim() || 'general';
         const id = String(entry.id || entry.txId || entry.transactionId || `${createdAt}-${index}`).trim();
 
@@ -400,7 +708,66 @@ export class ChatAppCoreMethods {
         if (txResponse.ok) {
           const txPayload = await txResponse.json().catch(() => ({}));
           const normalized = this.normalizeWalletTransactionsPayload(txPayload);
-          this.saveCoinTransactionHistory(normalized);
+          const normalizeGenericToken = (value) => String(value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[_-]+/g, ' ')
+            .replace(/\s+/g, ' ');
+          const isGenericTitle = (value) => {
+            const token = normalizeGenericToken(value);
+            return (
+              !token
+              || token === 'adjustment'
+              || token === 'transaction'
+              || token === 'transactions'
+              || token === 'general'
+              || token === 'wallet'
+              || token === 'поповнення балансу'
+              || token === 'списання балансу'
+              || token === 'транзакція'
+              || token === 'коригування'
+              || token === 'дохід'
+            );
+          };
+          const hints = this.getWalletTransactionTitleHints();
+          const consumedHintIds = new Set();
+          const parseTimeMs = (value) => {
+            const ts = new Date(value).getTime();
+            return Number.isFinite(ts) ? ts : 0;
+          };
+          const titlePatched = normalized.map((entry) => {
+            if (!entry || typeof entry !== 'object') return entry;
+            if (!isGenericTitle(entry.title)) return entry;
+            const entryAmount = Number(entry.amountCents) || 0;
+            if (!entryAmount) return entry;
+            const entryTime = parseTimeMs(entry.createdAt);
+            if (!entryTime) return entry;
+
+            let bestHint = null;
+            let bestDistance = Number.POSITIVE_INFINITY;
+            hints.forEach((hint) => {
+              if (!hint || typeof hint !== 'object') return;
+              if (consumedHintIds.has(hint.id)) return;
+              const hintAmount = Number(hint.amountCents) || 0;
+              if (hintAmount !== entryAmount) return;
+              const hintTime = parseTimeMs(hint.createdAt);
+              if (!hintTime) return;
+              const distance = Math.abs(hintTime - entryTime);
+              if (distance > 3 * 60 * 1000) return;
+              if (distance < bestDistance) {
+                bestDistance = distance;
+                bestHint = hint;
+              }
+            });
+
+            if (!bestHint) return entry;
+            consumedHintIds.add(bestHint.id);
+            return {
+              ...entry,
+              title: bestHint.title
+            };
+          });
+          this.saveCoinTransactionHistory(titlePatched);
           this.walletTransactionsRetryAfterTs = 0;
           this.walletLastTransactionsRefreshAt = Date.now();
         } else if (!silent) {
@@ -446,7 +813,7 @@ export class ChatAppCoreMethods {
     });
   }
 
-  async syncCoinBalanceToBackend(balanceCents, { silent = true } = {}) {
+  async syncCoinBalanceToBackend(balanceCents, { silent = true, transactionMeta = null } = {}) {
     const headers = this.getWalletApiHeaders({ json: true });
     if (!String(headers?.['X-User-Id'] || '').trim()) return false;
 
@@ -456,8 +823,12 @@ export class ChatAppCoreMethods {
     const canTrySetBalance = retryAfter <= 0 || now >= retryAfter;
     const knownSynced = Number(this.coinLastSyncedBalanceCents);
     const hasKnownSynced = Number.isFinite(knownSynced);
+    const transactionDeltaRaw = Number(transactionMeta?.amountCents);
+    const positiveTransactionDelta = Number.isFinite(transactionDeltaRaw) && transactionDeltaRaw > 0
+      ? Math.trunc(transactionDeltaRaw)
+      : 0;
     const positiveDelta = hasKnownSynced ? Math.max(0, safeBalance - knownSynced) : 0;
-    const tryEarnFallbackFirst = !canTrySetBalance && positiveDelta > 0;
+    const tryEarnFallbackFirst = false;
 
     if (!this.walletSetBalancePayloadKey) {
       try {
@@ -502,42 +873,7 @@ export class ChatAppCoreMethods {
       return { response, data };
     };
 
-    const tryEarnFallback = async () => {
-      if (!hasKnownSynced) return false;
-      const delta = Math.max(0, safeBalance - knownSynced);
-      if (!delta) return false;
-
-      for (const currency of currencyCandidates) {
-        const earnPayloads = [
-          { currency, amount: delta },
-          { currency, value: delta }
-        ];
-        for (const payload of earnPayloads) {
-          try {
-            const { response, data } = await requestJsonSafe('/wallet/me/earn', payload);
-            if (response.ok) {
-              const responseCurrency = this.extractWalletCurrencyCode(data);
-              if (responseCurrency) this.walletCurrencyCode = responseCurrency;
-              this.coinLastSyncedBalanceCents = safeBalance;
-              return true;
-            }
-            if (![400, 404, 405, 422].includes(response.status)) {
-              if (!silent) {
-                const details = data?.message || data?.error || '';
-                console.warn(`[wallet] POST /wallet/me/earn failed (${response.status})${details ? `: ${details}` : ''}`);
-              }
-              return false;
-            }
-          } catch (error) {
-            if (!silent) {
-              console.warn('[wallet] Failed to sync earn fallback to backend:', error);
-            }
-            return false;
-          }
-        }
-      }
-      return false;
-    };
+    const tryEarnFallback = async () => false;
 
     if (tryEarnFallbackFirst) {
       const earned = await tryEarnFallback();
@@ -582,8 +918,6 @@ export class ChatAppCoreMethods {
 
       if ([400, 404, 405, 422].includes(lastStatus)) {
         this.walletSetBalanceRetryAfterTs = Date.now() + 60_000;
-        const earned = await tryEarnFallback();
-        if (earned) return true;
       }
 
       if (!silent) {
@@ -599,21 +933,72 @@ export class ChatAppCoreMethods {
     }
   }
 
-  scheduleCoinBalanceBackendSync() {
+  scheduleCoinBalanceBackendSync({ deltaCents = null, transactionMeta = null } = {}) {
     const headers = this.getWalletApiHeaders();
     if (!String(headers?.['X-User-Id'] || '').trim()) return;
 
     const nextBalance = this.getTapBalanceCents();
     this.pendingCoinBalanceSyncValue = nextBalance;
+    if (transactionMeta && typeof transactionMeta === 'object') {
+      const safeTitle = String(transactionMeta.title || '').trim();
+      const safeCategory = String(transactionMeta.category || '').trim();
+      const safeAmountFromMeta = Number(transactionMeta.amountCents);
+      const safeAmount = Number.isFinite(deltaCents)
+        ? Math.max(0, Math.trunc(deltaCents))
+        : (Number.isFinite(safeAmountFromMeta) ? Math.max(0, Math.trunc(safeAmountFromMeta)) : 0);
+
+      if (safeTitle && safeAmount > 0) {
+        const prevMeta = this.pendingCoinBalanceSyncMeta && typeof this.pendingCoinBalanceSyncMeta === 'object'
+          ? this.pendingCoinBalanceSyncMeta
+          : null;
+        const prevTitle = String(prevMeta?.title || '').trim();
+        const prevCategory = String(prevMeta?.category || '').trim();
+        const prevAmount = Number(prevMeta?.amountCents || 0);
+        if (prevMeta && Number.isFinite(prevAmount) && prevAmount > 0) {
+          const mergedAmount = Math.max(0, Math.trunc(prevAmount + safeAmount));
+          const mergedTitle = (prevTitle && prevTitle === safeTitle)
+            ? prevTitle
+            : 'Ігрові нагороди';
+          const mergedCategory = (prevCategory && prevCategory === safeCategory)
+            ? prevCategory
+            : (safeCategory || prevCategory || 'games');
+          this.pendingCoinBalanceSyncMeta = {
+            title: mergedTitle,
+            category: mergedCategory,
+            amountCents: mergedAmount
+          };
+        } else {
+          this.pendingCoinBalanceSyncMeta = {
+            title: safeTitle,
+            category: safeCategory || 'general',
+            amountCents: safeAmount
+          };
+        }
+      }
+    }
     if (this.coinBalanceSyncTimer) {
       window.clearTimeout(this.coinBalanceSyncTimer);
     }
     this.coinBalanceSyncTimer = window.setTimeout(() => {
       const valueToSync = Number(this.pendingCoinBalanceSyncValue);
+      const metaToSync = this.pendingCoinBalanceSyncMeta && typeof this.pendingCoinBalanceSyncMeta === 'object'
+        ? { ...this.pendingCoinBalanceSyncMeta }
+        : null;
       this.pendingCoinBalanceSyncValue = null;
+      this.pendingCoinBalanceSyncMeta = null;
       this.coinBalanceSyncTimer = null;
       if (!Number.isFinite(valueToSync)) return;
-      this.syncCoinBalanceToBackend(valueToSync, { silent: true }).catch(() => {});
+      if (metaToSync && Number(metaToSync.amountCents) > 0 && String(metaToSync.title || '').trim()) {
+        this.addWalletTransactionTitleHint({
+          amountCents: Number(metaToSync.amountCents),
+          title: String(metaToSync.title || '').trim(),
+          createdAt: new Date().toISOString()
+        });
+      }
+      this.syncCoinBalanceToBackend(valueToSync, {
+        silent: true,
+        transactionMeta: metaToSync
+      }).catch(() => {});
     }, 450);
   }
 
@@ -680,6 +1065,9 @@ export class ChatAppCoreMethods {
 
   setTapBalanceCents(value, options = {}) {
     const shouldSyncBackend = options?.syncBackend !== false;
+    const transactionMeta = options?.transactionMeta && typeof options.transactionMeta === 'object'
+      ? options.transactionMeta
+      : null;
     const safeValue = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
     const previousValue = Number.isFinite(this.tapBalanceCents)
       ? Math.max(0, Math.floor(this.tapBalanceCents))
@@ -700,13 +1088,33 @@ export class ChatAppCoreMethods {
     });
 
     if (shouldSyncBackend && hasChanged) {
-      this.scheduleCoinBalanceBackendSync();
+      this.scheduleCoinBalanceBackendSync({
+        deltaCents: safeValue - previousValue,
+        transactionMeta
+      });
     }
   }
 
   getCoinTransactionHistory() {
     const stored = this.readJsonStorage('orion_coin_transactions', []);
     if (!Array.isArray(stored)) return [];
+    const normalizeHistoryTitle = (title, amountCents) => {
+      const clean = String(title || '').trim();
+      const token = clean.toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+      if (!clean) return amountCents > 0 ? 'Поповнення балансу' : 'Списання балансу';
+      if (
+        token === 'adjustment'
+        || token === 'transaction'
+        || token === 'transactions'
+        || token === 'general'
+        || token === 'wallet'
+        || token === 'коригування'
+        || token === 'транзакція'
+      ) {
+        return amountCents > 0 ? 'Поповнення балансу' : 'Списання балансу';
+      }
+      return clean;
+    };
     return stored
       .filter((entry) => entry && typeof entry === 'object')
       .map((entry) => {
@@ -715,9 +1123,7 @@ export class ChatAppCoreMethods {
         const createdAt = typeof entry.createdAt === 'string' && entry.createdAt
           ? entry.createdAt
           : new Date().toISOString();
-        const title = typeof entry.title === 'string' && entry.title.trim()
-          ? entry.title.trim()
-          : 'Транзакція';
+        const title = normalizeHistoryTitle(entry.title, amountCents);
         const category = typeof entry.category === 'string' && entry.category.trim()
           ? entry.category.trim()
           : 'general';
@@ -784,7 +1190,19 @@ export class ChatAppCoreMethods {
 
     const headers = this.getWalletApiHeaders();
     if (String(headers?.['X-User-Id'] || '').trim()) {
-      this.syncCoinBalanceToBackend(nextBalance, { silent: true })
+      const safeTitle = typeof title === 'string' && title.trim() ? title.trim() : '';
+      const safeCategory = typeof options.category === 'string' && options.category.trim()
+        ? options.category.trim()
+        : 'general';
+      this.syncCoinBalanceToBackend(nextBalance, {
+        silent: true,
+        transactionMeta: {
+          amountCents: appliedDelta,
+          title: safeTitle,
+          category: safeCategory,
+          direction: appliedDelta > 0 ? 'credit' : 'debit'
+        }
+      })
         .then((ok) => {
           if (!ok) {
             this.scheduleCoinBalanceBackendSync();
