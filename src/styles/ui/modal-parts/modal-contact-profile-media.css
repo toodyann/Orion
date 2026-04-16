@@ -217,6 +217,16 @@ html:not(.dark-theme) #profileQrModal.modal {
   transition: transform 260ms cubic-bezier(0.22, 0.8, 0.22, 1), box-shadow 260ms ease;
 }
 
+html:not(.dark-theme) .profile-qr-card {
+  border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
+  background:
+    radial-gradient(130% 90% at var(--qr-mx) var(--qr-my), rgba(96, 124, 255, 0.14) 0%, rgba(0, 0, 0, 0) 50%),
+    linear-gradient(160deg, #ffffff 0%, #f7f9ff 58%, #f1f5ff 100%);
+  box-shadow:
+    0 18px 40px rgba(15, 19, 32, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
 .profile-qr-card-close {
   position: absolute;
   top: 8px;
@@ -234,15 +244,33 @@ html:not(.dark-theme) #profileQrModal.modal {
   z-index: 2;
 }
 
+html:not(.dark-theme) .profile-qr-card-close {
+  border-color: color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(15, 19, 32, 0.76);
+}
+
 .profile-qr-card-close:hover {
   border-color: rgba(255, 255, 255, 0.22);
   background: rgba(26, 31, 45, 0.9);
+}
+
+html:not(.dark-theme) .profile-qr-card-close:hover {
+  border-color: color-mix(in srgb, var(--border-color) 100%, transparent);
+  background: #ffffff;
+  color: var(--text-primary);
 }
 
 .profile-qr-card.is-active {
   box-shadow:
     0 28px 62px rgba(0, 0, 0, 0.44),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+html:not(.dark-theme) .profile-qr-card.is-active {
+  box-shadow:
+    0 22px 48px rgba(15, 19, 32, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 .profile-qr-card-head {
@@ -255,6 +283,10 @@ html:not(.dark-theme) #profileQrModal.modal {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 10px;
+}
+
+html:not(.dark-theme) .profile-qr-card-head {
+  color: rgba(15, 19, 32, 0.7);
 }
 
 .profile-qr-card-dot {
@@ -273,6 +305,11 @@ html:not(.dark-theme) #profileQrModal.modal {
   border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
   background: rgba(6, 8, 12, 0.88);
+}
+
+html:not(.dark-theme) .profile-qr-canvas-wrap {
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: #ffffff;
 }
 
 #profileQrCanvas {
@@ -300,10 +337,18 @@ html:not(.dark-theme) #profileQrModal.modal {
   letter-spacing: -0.01em;
 }
 
+html:not(.dark-theme) .profile-qr-meta-name {
+  color: var(--text-primary);
+}
+
 .profile-qr-meta-handle {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.68);
   font-weight: 500;
+}
+
+html:not(.dark-theme) .profile-qr-meta-handle {
+  color: var(--text-secondary);
 }
 
 @media (hover: none), (pointer: coarse) {

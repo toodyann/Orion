@@ -376,7 +376,7 @@ html.dark-theme .bottom-nav-indicator {
   }
 
   html:not(.dark-theme) .desktop-secondary-menu.active {
-    background: #f4f7fb !important;
+    background: #fff !important;
   }
 
   .desktop-secondary-menu.active .desktop-secondary-menu-header-btn {
@@ -678,7 +678,11 @@ html.dark-theme .bottom-nav-indicator {
   }
 
   .desktop-secondary-chat-search-input:focus {
-    border-color: color-mix(in srgb, var(--primary-color) 52%, rgba(255, 255, 255, 0.12));
+    border-color: color-mix(
+      in srgb,
+      var(--primary-color) 52%,
+      rgba(255, 255, 255, 0.12)
+    );
     background: rgba(255, 255, 255, 0.09);
   }
 
@@ -810,38 +814,49 @@ html.dark-theme .bottom-nav-indicator {
     color: rgba(10, 18, 32, 0.58);
   }
 
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-section,
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-search-state {
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-user-section,
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-search-state {
     opacity: 0;
-    animation: desktop-secondary-search-reveal 220ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
+    animation: desktop-secondary-search-reveal 220ms
+      cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
   }
 
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item {
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-user-item {
     opacity: 0;
-    animation: desktop-secondary-search-item-reveal 240ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
+    animation: desktop-secondary-search-item-reveal 240ms
+      cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
   }
 
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(1) {
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-user-item:nth-child(1) {
     animation-delay: 20ms;
   }
 
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(2) {
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-user-item:nth-child(2) {
     animation-delay: 45ms;
   }
 
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(3) {
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-user-item:nth-child(3) {
     animation-delay: 70ms;
   }
 
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(4) {
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-user-item:nth-child(4) {
     animation-delay: 95ms;
   }
 
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(5) {
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-user-item:nth-child(5) {
     animation-delay: 120ms;
   }
 
-  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"] .desktop-secondary-user-item:nth-child(n + 6) {
+  .desktop-secondary-menu-list.is-search-revealing[data-menu-mode="chat-search"]
+    .desktop-secondary-user-item:nth-child(n + 6) {
     animation-delay: 145ms;
   }
 
@@ -929,7 +944,9 @@ html.dark-theme .bottom-nav-indicator {
     pointer-events: none;
   }
 
-  html:not(.dark-theme) .desktop-secondary-chat-avatar.is-image .avatar-activity-indicator {
+  html:not(.dark-theme)
+    .desktop-secondary-chat-avatar.is-image
+    .avatar-activity-indicator {
     border-color: rgba(255, 255, 255, 0.96);
     box-shadow: 0 0 0 1px rgba(15, 19, 32, 0.14);
   }
@@ -993,7 +1010,9 @@ html.dark-theme .bottom-nav-indicator {
     fill: currentColor;
   }
 
-  .desktop-secondary-chat-status.read .message-status-check + .message-status-check {
+  .desktop-secondary-chat-status.read
+    .message-status-check
+    + .message-status-check {
     margin-left: -8px;
   }
 
