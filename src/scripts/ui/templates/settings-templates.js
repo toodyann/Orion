@@ -1185,6 +1185,55 @@ export const settingsTemplates = {
         <strong>=</strong>
         <span id="coinTapRewardValue">0,01</span>
       </div>
+
+      <div class="coin-auto-mining-launcher">
+        <button
+          type="button"
+          class="coin-auto-mining-toggle"
+          id="coinTapAutoMenuToggle"
+          aria-expanded="false"
+          aria-controls="coinAutoMining"
+        >
+          <span class="coin-auto-mining-toggle-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 256 256" fill="currentColor">
+              <path d="M32,96a8,8,0,0,1,8-8H136a8,8,0,0,1,0,16H40A8,8,0,0,1,32,96Zm184,56H120a8,8,0,0,0,0,16h96a8,8,0,0,0,0-16Zm8-88a8,8,0,0,0-8-8H200V40a8,8,0,0,0-16,0V56H168a8,8,0,0,0,0,16h16V88a8,8,0,0,0,16,0V72h16A8,8,0,0,0,224,64ZM56.44,208H40a8,8,0,0,1,0-16H56.44A72.08,72.08,0,0,1,128,128h16a8,8,0,0,1,0,16H128A56.06,56.06,0,0,0,72,200,8,8,0,0,1,56.44,208Z"></path>
+            </svg>
+          </span>
+          <span class="coin-auto-mining-toggle-meta">
+            <span class="coin-auto-mining-toggle-kicker">Командний штаб</span>
+            <span class="coin-auto-mining-toggle-label">Розгорнути центр</span>
+          </span>
+          <span class="coin-auto-mining-toggle-chevron" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
+              <path d="M181.66,133.66l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,164.69l42.34-42.35a8,8,0,0,1,11.32,11.32Zm-96-40L128,136,170.34,93.66a8,8,0,0,0-11.32-11.32L128,113.37,96.98,82.34A8,8,0,0,0,85.66,93.66Z"></path>
+            </svg>
+          </span>
+        </button>
+      </div>
+
+      <div class="coin-auto-mining" id="coinAutoMining" hidden>
+        <div class="coin-auto-mining-head">
+          <div class="coin-auto-mining-head-main">
+            <span class="coin-auto-mining-title">Команда повідомлень</span>
+            <span class="coin-auto-mining-subtitle" id="coinTapAutoStatusText">Режим x1 · тік 1с</span>
+          </div>
+          <button type="button" class="coin-auto-mining-close" id="coinTapAutoMenuClose">Закрити</button>
+        </div>
+        <div class="coin-auto-mining-controls">
+          <div class="coin-auto-mining-batch" role="group" aria-label="Кількість покупок">
+            <button type="button" class="coin-auto-batch-btn is-active" data-auto-buy-batch="1" aria-pressed="true">x1</button>
+            <button type="button" class="coin-auto-batch-btn" data-auto-buy-batch="5" aria-pressed="false">x5</button>
+            <button type="button" class="coin-auto-batch-btn" data-auto-buy-batch="10" aria-pressed="false">x10</button>
+          </div>
+          <div class="coin-auto-mining-pulse" aria-hidden="true">
+            <span class="coin-auto-mining-pulse-track">
+              <span class="coin-auto-mining-pulse-fill" id="coinTapAutoPulseFill"></span>
+            </span>
+          </div>
+          <span class="coin-auto-mining-last-gain" id="coinTapAutoLastGain">+0,00</span>
+        </div>
+        <div class="coin-auto-miners" id="coinTapAutoMiners"></div>
+      </div>
     </section>
 
     <section class="mini-game-panel mini-game-view" data-mini-game-panel="grid2048">

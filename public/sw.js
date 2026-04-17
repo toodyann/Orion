@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'nymo-shell-v6';
-const RUNTIME_CACHE = 'nymo-runtime-v6';
+const SHELL_CACHE = 'nymo-shell-v7';
+const RUNTIME_CACHE = 'nymo-runtime-v7';
 const APP_SHELL_FILES = [
   './',
   './index.html',
@@ -74,8 +74,15 @@ async function handleNavigationRequest(request) {
 }
 
 async function handleStaticRequest(request) {
+  const requestUrl = new URL(request.url);
   const runtimeCache = await caches.open(RUNTIME_CACHE);
   const cachedResponse = await runtimeCache.match(request);
+  const isImmutableAsset = requestUrl.pathname.includes('/assets/')
+    || requestUrl.pathname.includes('/pwa/');
+
+  if (cachedResponse && isImmutableAsset) {
+    return cachedResponse;
+  }
 
   const networkPromise = fetch(request)
     .then(async (response) => {

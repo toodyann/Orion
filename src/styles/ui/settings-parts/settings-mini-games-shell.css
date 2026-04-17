@@ -28,6 +28,7 @@
   background: transparent;
   touch-action: pan-y;
   position: relative;
+  overflow-y: auto;
 }
 
 .coin-level-island {
@@ -98,12 +99,14 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--primary-color);
+  flex: 0 0 auto;
 }
 
 .coin-tapper-balance-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
+  flex: 0 0 auto;
 }
 
 .coin-tapper-balance {
@@ -113,6 +116,7 @@
   letter-spacing: -0.04em;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
 }
 
 .coin-tapper-hint {
@@ -146,6 +150,7 @@
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   margin-top: 4px;
+  flex: 0 0 auto;
 }
 
 .coin-tapper-button:hover {
@@ -171,6 +176,7 @@
   user-select: none;
   -webkit-user-drag: none;
   touch-action: manipulation;
+  flex: 0 0 auto;
 }
 
 .coin-tapper-rate {
@@ -185,11 +191,562 @@
   font-size: 13px;
   font-weight: 600;
   margin-top: 4px;
+  flex: 0 0 auto;
 }
 
 .coin-tapper-rate strong {
   color: var(--primary-color);
   font-size: 14px;
+}
+
+.coin-auto-mining-launcher {
+  position: absolute;
+  top: 92px;
+  right: 24px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0;
+  z-index: 3;
+}
+
+.coin-auto-mining-toggle {
+  min-height: 56px;
+  min-width: 260px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 10px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 48%, transparent);
+  background:
+    radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--primary-color) 32%, transparent) 0%, transparent 58%),
+    linear-gradient(132deg, color-mix(in srgb, var(--surface-soft) 96%, transparent), color-mix(in srgb, var(--bg-color) 94%, transparent));
+  color: var(--text-primary);
+  text-align: left;
+  box-shadow:
+    0 14px 30px rgba(4, 12, 26, 0.28),
+    0 0 0 1px color-mix(in srgb, #ffffff 10%, transparent) inset;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.coin-auto-mining-toggle:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--primary-color) 65%, transparent);
+  filter: brightness(1.05);
+  box-shadow:
+    0 16px 32px rgba(4, 12, 26, 0.32),
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 18%, transparent) inset;
+}
+
+.coin-auto-mining-toggle:active {
+  transform: translateY(0);
+}
+
+.coin-auto-mining-toggle-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+  color: color-mix(in srgb, var(--primary-color) 84%, #d9ecff);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--primary-color) 38%, transparent), color-mix(in srgb, var(--bg-color) 82%, transparent));
+  border: 1px solid color-mix(in srgb, var(--primary-color) 32%, transparent);
+}
+
+.coin-auto-mining-toggle-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coin-auto-mining-toggle-kicker {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text-secondary) 82%, var(--primary-color));
+}
+
+.coin-auto-mining-toggle-label {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.coin-auto-mining-toggle-chevron {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-primary));
+  background: color-mix(in srgb, var(--bg-color) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 86%, transparent);
+  transition: transform 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.coin-auto-mining-toggle.is-open .coin-auto-mining-toggle-chevron {
+  transform: rotate(180deg);
+  color: color-mix(in srgb, var(--primary-color) 82%, #dbe8ff);
+  border-color: color-mix(in srgb, var(--primary-color) 48%, transparent);
+}
+
+.coin-auto-mining[hidden] {
+  display: none !important;
+}
+
+.coin-auto-mining {
+  width: min(100%, 1140px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 24px;
+  padding: 22px;
+  min-height: 440px;
+  max-height: 600px;
+  overflow: auto;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 26%, var(--border-color));
+  background:
+    radial-gradient(145% 120% at 0% 0%, color-mix(in srgb, var(--primary-color) 24%, transparent) 0%, transparent 58%),
+    radial-gradient(110% 90% at 100% 0%, color-mix(in srgb, #57a7ff 12%, transparent) 0%, transparent 66%),
+    linear-gradient(150deg, color-mix(in srgb, var(--surface-soft) 96%, transparent), color-mix(in srgb, var(--bg-color) 92%, transparent));
+  box-shadow:
+    0 20px 40px rgba(4, 12, 26, 0.3),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent);
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+#coinAutoMining {
+  width: min(100%, 1240px);
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  min-height: 520px;
+  max-height: 700px;
+}
+
+.coin-tapper-content.is-auto-menu-open {
+  padding-bottom: 24px;
+}
+
+.coin-auto-mining::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(transparent 31px, color-mix(in srgb, var(--border-color) 26%, transparent) 32px),
+    linear-gradient(90deg, transparent 31px, color-mix(in srgb, var(--border-color) 22%, transparent) 32px);
+  background-size: 32px 32px;
+  opacity: 0.11;
+}
+
+.coin-auto-mining > * {
+  position: relative;
+  z-index: 1;
+}
+
+.coin-auto-mining.is-open {
+  animation: coin-command-center-in 0.22s ease;
+}
+
+@keyframes coin-command-center-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.coin-auto-mining.is-idle {
+  opacity: 0.96;
+}
+
+.coin-auto-mining.is-earning {
+  box-shadow:
+    0 12px 24px rgba(4, 12, 26, 0.22),
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 18%, transparent) inset;
+}
+
+.coin-auto-mining-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 64%, transparent);
+}
+
+.coin-auto-mining-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coin-auto-mining-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.coin-auto-mining-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coin-auto-mining-close {
+  min-height: 34px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 88%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.coin-auto-mining-close:hover {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--primary-color) 38%, transparent);
+}
+
+.coin-auto-mining-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.coin-auto-mining-batch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 80%, transparent);
+}
+
+.coin-auto-batch-btn {
+  min-width: 40px;
+  height: 26px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.coin-auto-batch-btn.is-active {
+  color: #f5f9ff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 82%, #2e5fff), color-mix(in srgb, var(--primary-color) 55%, #6f90ff));
+}
+
+.coin-auto-mining-pulse {
+  min-width: 0;
+}
+
+.coin-auto-mining-pulse-track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-color) 82%, #10192c 18%);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.coin-auto-mining-pulse-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary-color) 45%, #58c7ff), color-mix(in srgb, var(--primary-color) 88%, #80a6ff));
+  transition: width 0.12s linear;
+}
+
+.coin-auto-mining-last-gain {
+  width: 130px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.coin-auto-mining-last-gain.is-live {
+  color: color-mix(in srgb, var(--primary-color) 76%, #ffffff);
+}
+
+.coin-auto-miners {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
+  gap: 14px;
+}
+
+.coin-auto-miner-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 272px;
+  padding: 14px;
+  border-radius: 15px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--surface-soft) 96%, transparent), color-mix(in srgb, var(--bg-color) 96%, transparent));
+  box-shadow: 0 10px 20px rgba(6, 14, 30, 0.14);
+}
+
+.coin-auto-miner-card.is-affordable {
+  box-shadow:
+    0 14px 24px rgba(6, 14, 30, 0.2),
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 18%, transparent) inset;
+}
+
+.coin-auto-miner-headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.coin-auto-miner-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.coin-auto-miner-avatar-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex: 0 0 48px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 24%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 88%, transparent);
+}
+
+.coin-auto-miner-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.coin-auto-miner-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.coin-auto-miner-namebox {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coin-auto-miner-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coin-auto-miner-role {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coin-auto-miner-meta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  text-align: left;
+}
+
+.coin-auto-miner-tier {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.coin-auto-miner-tier-starter {
+  color: #afbdcf;
+  background: rgba(94, 122, 158, 0.16);
+}
+
+.coin-auto-miner-tier-pro {
+  color: #8fd4ff;
+  background: rgba(66, 142, 212, 0.2);
+}
+
+.coin-auto-miner-tier-elite {
+  color: #ffd58a;
+  background: rgba(209, 142, 43, 0.22);
+}
+
+.coin-auto-miner-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-color) 88%, transparent);
+}
+
+.coin-auto-miner-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.coin-auto-miner-metrics strong {
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.coin-auto-miner-metrics-secondary {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-primary));
+}
+
+.coin-auto-miner-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-color) 84%, #0f1726 16%);
+  overflow: hidden;
+}
+
+.coin-auto-miner-progress-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary-color) 56%, #5fc6ff), color-mix(in srgb, var(--primary-color) 92%, #81a6ff));
+  transition: width 0.18s ease;
+}
+
+.coin-auto-miner-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.coin-auto-miner-action {
+  width: 100%;
+  min-height: 38px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.coin-auto-miner-action:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary-color) 52%, transparent);
+}
+
+.coin-auto-miner-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.coin-auto-miner-action-secondary {
+  border-color: var(--border-color);
+  background: color-mix(in srgb, var(--bg-color) 88%, transparent);
+}
+
+@media (max-width: 768px) {
+  .coin-auto-mining-launcher {
+    position: static;
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .coin-auto-mining-toggle {
+    width: 100%;
+    min-width: 0;
+    max-width: 420px;
+  }
+
+  .coin-auto-mining {
+    width: 100%;
+    min-height: 0;
+    max-height: 74vh;
+    margin-top: 10px;
+    padding: 14px;
+  }
+
+  .coin-auto-mining-controls {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .coin-auto-mining-last-gain {
+    text-align: left;
+    width: 100%;
+  }
+
+  .coin-auto-mining-batch {
+    width: fit-content;
+  }
+
+  .coin-auto-miners {
+    grid-template-columns: 1fr;
+  }
 }
 
 .mini-games-list {

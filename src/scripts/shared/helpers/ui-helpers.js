@@ -1,11 +1,15 @@
 // UI допоміжні функції
 
-const ALERT_VARIANT_CLASSES = ['is-error', 'is-notice'];
+const ALERT_VARIANT_CLASSES = ['is-error', 'is-notice', 'is-warning'];
 
 function setAlertVariant(overlay, variant = 'error') {
   overlay.classList.remove(...ALERT_VARIANT_CLASSES);
   if (variant === 'notice') {
     overlay.classList.add('is-notice');
+    return;
+  }
+  if (variant === 'warning') {
+    overlay.classList.add('is-warning');
     return;
   }
   overlay.classList.add('is-error');
@@ -21,7 +25,7 @@ function clearAlertVariant(overlay) {
  * @param {string} title - Заголовок
  * @returns {Promise<void>}
  */
-export function showAlert(message, title = 'Помилка') {
+export function showAlert(message, title = 'Помилка', { okText = 'OK', variant = 'error' } = {}) {
   const overlay = document.getElementById('alertOverlay');
   const titleEl = document.getElementById('alertTitle');
   const messageEl = document.getElementById('alertMessage');
@@ -36,8 +40,11 @@ export function showAlert(message, title = 'Помилка') {
 
   titleEl.textContent = title;
   messageEl.textContent = message;
+  const previousOkText = okBtn.textContent;
+  okBtn.textContent = String(okText || 'OK');
   cancelBtn.style.display = 'none';
-  setAlertVariant(overlay, 'error');
+  const safeVariant = variant === 'notice' || variant === 'warning' ? variant : 'error';
+  setAlertVariant(overlay, safeVariant);
 
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
@@ -47,6 +54,7 @@ export function showAlert(message, title = 'Помилка') {
       overlay.classList.remove('active');
       overlay.setAttribute('aria-hidden', 'true');
       clearAlertVariant(overlay);
+      okBtn.textContent = previousOkText;
       okBtn.removeEventListener('click', onOk);
       closeBtn.removeEventListener('click', onOk);
       overlay.removeEventListener('click', onOverlay);

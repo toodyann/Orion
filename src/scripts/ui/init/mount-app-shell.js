@@ -1,8 +1,33 @@
-const nymoLogoDarkAssetUrl = new URL('../../../Assets/Nymo_logo_white.png', import.meta.url).href;
-const nymoLogoLightAssetUrl = new URL('../../../Assets/Nymo_logo_black.png', import.meta.url).href;
+function getAppBasePath() {
+  const envBase = typeof import.meta.env?.BASE_URL === 'string'
+    ? String(import.meta.env.BASE_URL || '').trim()
+    : '';
+  if (envBase) {
+    return envBase.endsWith('/') ? envBase : `${envBase}/`;
+  }
+  return '/';
+}
+
+function resolvePreferredThemeMode() {
+  if (document.documentElement.classList.contains('dark-theme')) return 'dark';
+  try {
+    const savedTheme = localStorage.getItem('orion_theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme;
+  } catch {
+    // Ignore storage failures.
+  }
+  const prefersDark = window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: dark)').matches
+    : true;
+  return prefersDark ? 'dark' : 'light';
+}
+
+const appBasePath = getAppBasePath();
+const nymoLogoDarkAssetUrl = `${appBasePath}pwa/favicon-dark.png`;
+const nymoLogoLightAssetUrl = `${appBasePath}pwa/favicon-light.png`;
 
 function resolveActiveLogo() {
-  return document.documentElement.classList.contains('dark-theme')
+  return resolvePreferredThemeMode() === 'dark'
     ? nymoLogoDarkAssetUrl
     : nymoLogoLightAssetUrl;
 }

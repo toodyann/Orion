@@ -905,6 +905,9 @@ export class ChatAppInteractionMethods {
     const profileMenu = document.querySelector('.profile-menu-wrapper');
     const appEl = document.querySelector('.orion-app');
     const isMobile = window.innerWidth <= 768;
+    if (typeof this.stopTapAutoMiningRuntime === 'function') {
+      this.stopTapAutoMiningRuntime({ markAway: true });
+    }
 
     if (settingsContainer) {
       settingsContainer.classList.remove('active');
@@ -2407,8 +2410,8 @@ export class ChatAppInteractionMethods {
   }
 
   // Методи-обгортки для імпортованих UI функцій
-  showAlert(message, title = 'Помилка') {
-    return showAlert(message, title);
+  showAlert(message, title = 'Помилка', options = {}) {
+    return showAlert(message, title, options);
   }
 
   showNotice(message, title = 'Повідомлення') {
@@ -3829,6 +3832,9 @@ export class ChatAppInteractionMethods {
       this.emitRealtimeReadReceipts(this.currentChat);
     }
     document.getElementById('newContactInput').value = '';
+    if (typeof this.stopTapAutoMiningRuntime === 'function') {
+      this.stopTapAutoMiningRuntime({ markAway: true });
+    }
     
     // Hide settings sections completely
     const settingsContainer = document.getElementById('settingsContainer');

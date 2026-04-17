@@ -13,6 +13,22 @@ const flappyCoinSoundUrl = new URL('../../../Sounds/coin-sound.mp3', import.meta
 const flappyWingSoundUrl = new URL('../../../Sounds/sfx-wing.mp3', import.meta.url).href;
 const flappyDieSoundUrl = new URL('../../../Sounds/sfx-die.mp3', import.meta.url).href;
 const orionDriveCarColormapUrl = new URL('../../../Assets/NymoDrive/Сar-kit/Models/GLB format/Textures/colormap.png', import.meta.url).href;
+const tapPersonsAvatarModules = import.meta.glob('../../../Assets/Persons/*.{png,jpg,jpeg,webp,avif,svg}', {
+  import: 'default'
+});
+const TAP_PERSONS_AVATAR_POOL = Object.keys(tapPersonsAvatarModules)
+  .map((path) => ({
+    path: String(path || '').trim(),
+    key: String(path || '').split('/').pop()?.replace(/\.[^.]+$/, '') || ''
+  }))
+  .filter((entry) => entry.key && entry.path)
+  .sort((a, b) => a.key.localeCompare(b.key, 'uk-UA'));
+const TAP_PERSONS_AVATAR_IMPORTER_BY_KEY = new Map(
+  TAP_PERSONS_AVATAR_POOL.map((entry) => [entry.key, tapPersonsAvatarModules[entry.path]])
+);
+const TAP_AUTO_AWAY_START_TS_KEY = 'orionTapAutoAwayStartTs';
+const TAP_AUTO_PENDING_REWARD_CENTS_KEY = 'orionTapAutoPendingRewardCents';
+const TAP_AUTO_PENDING_REWARD_SECONDS_KEY = 'orionTapAutoPendingRewardSeconds';
 
 function createOrionDriveGltfLoader() {
   const manager = new THREE.LoadingManager();
@@ -402,6 +418,112 @@ export class ChatAppFeaturesMethods {
     context.renderer?.dispose?.();
     context.renderer?.forceContextLoss?.();
     this.shopGarageViewerContext = null;
+  }
+
+  markTapAutoAwayStart(timestamp = Date.now()) {
+    const safeTs = Number.isFinite(timestamp) ? Math.max(0, Math.floor(timestamp)) : Date.now();
+    try {
+      window.localStorage.setItem(TAP_AUTO_AWAY_START_TS_KEY, String(safeTs));
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  stopTapAutoMiningRuntime({ markAway = false } = {}) {
+    if (this.tapAutoMiningInterval) {
+      window.clearInterval(this.tapAutoMiningInterval);
+      this.tapAutoMiningInterval = null;
+    }
+    if (this.tapAutoMiningPulseInterval) {
+      window.clearInterval(this.tapAutoMiningPulseInterval);
+      this.tapAutoMiningPulseInterval = null;
+    }
+    if (this.tapAutoLastGainBadgeTimer) {
+      window.clearTimeout(this.tapAutoLastGainBadgeTimer);
+      this.tapAutoLastGainBadgeTimer = null;
+    }
+    if (this.tapAutoMiningGainFlashTimer) {
+      window.clearTimeout(this.tapAutoMiningGainFlashTimer);
+      this.tapAutoMiningGainFlashTimer = null;
+    }
+    if (markAway) {
+      this.markTapAutoAwayStart();
+    }
+  }
+
+  async resolveTapPersonAvatarSrc(avatarKey = '') {
+    const safeKey = String(avatarKey || '').trim();
+    if (!safeKey) return '';
+
+    if (!(this.tapPersonAvatarSrcCache instanceof Map)) {
+      this.tapPersonAvatarSrcCache = new Map();
+    }
+    const cached = this.tapPersonAvatarSrcCache.get(safeKey);
+    if (cached) return cached;
+
+    const importer = TAP_PERSONS_AVATAR_IMPORTER_BY_KEY.get(safeKey);
+    if (typeof importer !== 'function') return '';
+    try {
+      const loaded = await importer();
+      const resolved = loaded && typeof loaded === 'object' && 'default' in loaded
+        ? loaded.default
+        : loaded;
+      const src = String(resolved || '').trim();
+      if (src) {
+        const thumbnailSrc = await this.buildTapPersonAvatarThumbnail(src);
+        const finalSrc = String(thumbnailSrc || src).trim();
+        this.tapPersonAvatarSrcCache.set(safeKey, finalSrc || src);
+      }
+      return this.tapPersonAvatarSrcCache.get(safeKey) || src;
+    } catch {
+      return '';
+    }
+  }
+
+  async buildTapPersonAvatarThumbnail(source = '') {
+    const safeSource = String(source || '').trim();
+    if (!safeSource || typeof window === 'undefined' || typeof document === 'undefined') {
+      return safeSource;
+    }
+
+    const image = new Image();
+    image.decoding = 'async';
+    image.loading = 'eager';
+    image.src = safeSource;
+    await new Promise((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('Avatar image load failed'));
+    });
+
+    const canvas = document.createElement('canvas');
+    const targetSize = 64;
+    canvas.width = targetSize;
+    canvas.height = targetSize;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return safeSource;
+
+    const srcW = Math.max(1, image.naturalWidth || image.width || targetSize);
+    const srcH = Math.max(1, image.naturalHeight || image.height || targetSize);
+    const scale = Math.max(targetSize / srcW, targetSize / srcH);
+    const drawW = Math.max(1, Math.round(srcW * scale));
+    const drawH = Math.max(1, Math.round(srcH * scale));
+    const drawX = Math.round((targetSize - drawW) / 2);
+    const drawY = Math.round((targetSize - drawH) / 2);
+
+    ctx.clearRect(0, 0, targetSize, targetSize);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
+    ctx.drawImage(image, drawX, drawY, drawW, drawH);
+
+    const webpDataUrl = canvas.toDataURL('image/webp', 0.45);
+    if (typeof webpDataUrl === 'string' && webpDataUrl.startsWith('data:image/webp')) {
+      return webpDataUrl;
+    }
+    const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.5);
+    if (typeof jpegDataUrl === 'string' && jpegDataUrl.startsWith('data:image/jpeg')) {
+      return jpegDataUrl;
+    }
+    return safeSource;
   }
 
   initOrionDriveGarage(settingsContainer) {
@@ -1474,6 +1596,14 @@ export class ChatAppFeaturesMethods {
     const rateEl = settingsContainer.querySelector('.coin-tapper-rate');
     const levelValueEl = settingsContainer.querySelector('#coinTapLevelValue');
     const rewardValueEl = settingsContainer.querySelector('#coinTapRewardValue');
+    const autoMenuToggleBtn = settingsContainer.querySelector('#coinTapAutoMenuToggle');
+    const autoMenuCloseBtn = settingsContainer.querySelector('#coinTapAutoMenuClose');
+    const autoMiningContainerEl = settingsContainer.querySelector('#coinAutoMining');
+    const autoMinersEl = settingsContainer.querySelector('#coinTapAutoMiners');
+    const autoStatusTextEl = settingsContainer.querySelector('#coinTapAutoStatusText');
+    const autoLastGainEl = settingsContainer.querySelector('#coinTapAutoLastGain');
+    const autoPulseFillEl = settingsContainer.querySelector('#coinTapAutoPulseFill');
+    const autoBuyBatchButtons = settingsContainer.querySelectorAll('[data-auto-buy-batch]');
     if (!miniGamesSection || !balanceEl || !tapBtn) return;
 
     const gameSelectButtons = settingsContainer.querySelectorAll('[data-mini-game-select]');
@@ -1551,6 +1681,121 @@ export class ChatAppFeaturesMethods {
     const FLAPPY_MAX_DT = 1 / 30;
     const DRIFT_SPEED_FACTOR = 0.32;
     const DRIFT_SHIFT_DELAY_SECONDS = 0.5;
+    const AUTO_BUY_BATCH_KEY = 'orionTapAutoBuyBatch';
+    const AUTO_MENU_OPEN_KEY = 'orionTapAutoMenuOpen';
+    const AUTO_SENDERS_CONFIG_KEY = 'orionTapAutoSendersConfigV1';
+    const AUTO_SENDERS_CONFIG_SIZE = 6;
+    const AUTO_BUY_BATCH_VALUES = [1, 5, 10];
+    const TAP_SENDER_NAME_POOL = [
+      'Дамір', 'Мілана', 'Богдан', 'Соломія', 'Тимур', 'Вероніка', 'Лев', 'Поліна', 'Святослав', 'Каріна',
+      'Ростислав', 'Емма', 'Ярослав', 'Ніка', 'Андрій', 'Аміна', 'Давид', 'Олександра', 'Марк', 'Уляна'
+    ];
+    const TAP_SENDER_ROLE_POOL = [
+      'Швидкі відповіді',
+      'Підтримка VIP-чату',
+      'Продажі в direct',
+      'Контент для стрічки',
+      'Нічна зміна',
+      'Оператор груп',
+      'Робота з лідами',
+      'Ведення коментарів',
+      'Преміум діалоги',
+      'Автовідповіді'
+    ];
+    const TAP_SENDER_ECONOMY_PRESETS = [
+      { baseCostCents: 120, costGrowth: 1.14, baseMessagesPerSecond: 0.8, coinsPerMessageCents: 1, upgradeBaseCostCents: 170, upgradeGrowth: 1.20, messageBonusPerLevel: 0.28, tier: 'Starter' },
+      { baseCostCents: 250, costGrowth: 1.15, baseMessagesPerSecond: 1.7, coinsPerMessageCents: 1, upgradeBaseCostCents: 310, upgradeGrowth: 1.20, messageBonusPerLevel: 0.31, tier: 'Starter' },
+      { baseCostCents: 620, costGrowth: 1.18, baseMessagesPerSecond: 3.8, coinsPerMessageCents: 2, upgradeBaseCostCents: 790, upgradeGrowth: 1.22, messageBonusPerLevel: 0.36, tier: 'Pro' },
+      { baseCostCents: 1420, costGrowth: 1.20, baseMessagesPerSecond: 6.9, coinsPerMessageCents: 2, upgradeBaseCostCents: 1860, upgradeGrowth: 1.24, messageBonusPerLevel: 0.40, tier: 'Pro' },
+      { baseCostCents: 3480, costGrowth: 1.23, baseMessagesPerSecond: 11.8, coinsPerMessageCents: 3, upgradeBaseCostCents: 4880, upgradeGrowth: 1.26, messageBonusPerLevel: 0.46, tier: 'Elite' },
+      { baseCostCents: 8200, costGrowth: 1.25, baseMessagesPerSecond: 18.6, coinsPerMessageCents: 4, upgradeBaseCostCents: 11800, upgradeGrowth: 1.29, messageBonusPerLevel: 0.52, tier: 'Elite' }
+    ];
+    const shuffleArray = (value) => {
+      const source = Array.isArray(value) ? [...value] : [];
+      for (let index = source.length - 1; index > 0; index -= 1) {
+        const nextIndex = Math.floor(Math.random() * (index + 1));
+        [source[index], source[nextIndex]] = [source[nextIndex], source[index]];
+      }
+      return source;
+    };
+    const normalizeSenderConfigEntry = (entry, index) => {
+      const preset = TAP_SENDER_ECONOMY_PRESETS[Math.max(0, Math.min(index, TAP_SENDER_ECONOMY_PRESETS.length - 1))];
+      const safeEntry = entry && typeof entry === 'object' ? entry : {};
+      const avatarKey = String(safeEntry.avatarKey || '').trim();
+      return {
+        id: String(safeEntry.id || `sender_slot_${index + 1}`).trim() || `sender_slot_${index + 1}`,
+        title: String(safeEntry.title || TAP_SENDER_NAME_POOL[index % TAP_SENDER_NAME_POOL.length] || `Агент ${index + 1}`).trim(),
+        role: String(safeEntry.role || TAP_SENDER_ROLE_POOL[index % TAP_SENDER_ROLE_POOL.length] || 'Веде діалоги').trim(),
+        tier: String(safeEntry.tier || preset.tier || 'Starter').trim(),
+        avatarKey,
+        avatarSrc: '',
+        baseCostCents: Number.isFinite(Number(safeEntry.baseCostCents)) ? Math.max(1, Math.floor(Number(safeEntry.baseCostCents))) : preset.baseCostCents,
+        costGrowth: Number.isFinite(Number(safeEntry.costGrowth)) ? Math.max(1.01, Number(safeEntry.costGrowth)) : preset.costGrowth,
+        baseMessagesPerSecond: Number.isFinite(Number(safeEntry.baseMessagesPerSecond)) ? Math.max(0.1, Number(safeEntry.baseMessagesPerSecond)) : preset.baseMessagesPerSecond,
+        coinsPerMessageCents: Number.isFinite(Number(safeEntry.coinsPerMessageCents)) ? Math.max(1, Math.floor(Number(safeEntry.coinsPerMessageCents))) : preset.coinsPerMessageCents,
+        upgradeBaseCostCents: Number.isFinite(Number(safeEntry.upgradeBaseCostCents)) ? Math.max(1, Math.floor(Number(safeEntry.upgradeBaseCostCents))) : preset.upgradeBaseCostCents,
+        upgradeGrowth: Number.isFinite(Number(safeEntry.upgradeGrowth)) ? Math.max(1.01, Number(safeEntry.upgradeGrowth)) : preset.upgradeGrowth,
+        messageBonusPerLevel: Number.isFinite(Number(safeEntry.messageBonusPerLevel)) ? Math.max(0.05, Number(safeEntry.messageBonusPerLevel)) : preset.messageBonusPerLevel
+      };
+    };
+    const applyTapSenderNamePalette = (config) => {
+      const safeConfig = Array.isArray(config) ? config : [];
+      return safeConfig.map((entry, index) => {
+        const safeEntry = entry && typeof entry === 'object' ? entry : {};
+        const mappedName = TAP_SENDER_NAME_POOL[index % TAP_SENDER_NAME_POOL.length] || `Агент ${index + 1}`;
+        return {
+          ...safeEntry,
+          title: mappedName
+        };
+      });
+    };
+    const createRandomTapSendersConfig = () => {
+      const shuffledAvatars = shuffleArray(TAP_PERSONS_AVATAR_POOL);
+      const shuffledNames = shuffleArray(TAP_SENDER_NAME_POOL);
+      const shuffledRoles = shuffleArray(TAP_SENDER_ROLE_POOL);
+      return Array.from({ length: AUTO_SENDERS_CONFIG_SIZE }, (_, index) => {
+        const preset = TAP_SENDER_ECONOMY_PRESETS[Math.max(0, Math.min(index, TAP_SENDER_ECONOMY_PRESETS.length - 1))];
+        const avatar = shuffledAvatars[index] || null;
+        const name = shuffledNames[index] || TAP_SENDER_NAME_POOL[index % TAP_SENDER_NAME_POOL.length] || `Агент ${index + 1}`;
+        const role = shuffledRoles[index] || TAP_SENDER_ROLE_POOL[index % TAP_SENDER_ROLE_POOL.length] || 'Веде діалоги';
+        return normalizeSenderConfigEntry({
+          id: `sender_slot_${index + 1}`,
+          title: name,
+          role,
+          tier: preset.tier,
+          avatarKey: avatar?.key || '',
+          baseCostCents: preset.baseCostCents,
+          costGrowth: preset.costGrowth,
+          baseMessagesPerSecond: preset.baseMessagesPerSecond,
+          coinsPerMessageCents: preset.coinsPerMessageCents,
+          upgradeBaseCostCents: preset.upgradeBaseCostCents,
+          upgradeGrowth: preset.upgradeGrowth,
+          messageBonusPerLevel: preset.messageBonusPerLevel
+        }, index);
+      });
+    };
+    const loadTapSendersConfig = () => {
+      try {
+        const parsed = JSON.parse(window.localStorage.getItem(AUTO_SENDERS_CONFIG_KEY) || 'null');
+        if (!Array.isArray(parsed) || parsed.length !== AUTO_SENDERS_CONFIG_SIZE) return null;
+        return applyTapSenderNamePalette(parsed.map((entry, index) => normalizeSenderConfigEntry(entry, index)));
+      } catch {
+        return null;
+      }
+    };
+    const saveTapSendersConfig = (config) => {
+      const safeConfig = Array.isArray(config) ? config.slice(0, AUTO_SENDERS_CONFIG_SIZE) : [];
+      const serializableConfig = applyTapSenderNamePalette(
+        safeConfig.map((entry, index) => normalizeSenderConfigEntry(entry, index))
+      );
+      try {
+        window.localStorage.setItem(AUTO_SENDERS_CONFIG_KEY, JSON.stringify(serializableConfig));
+      } catch {
+        // Ignore storage failures.
+      }
+      return serializableConfig;
+    };
+    const TAP_AUTO_SENDERS = loadTapSendersConfig() || saveTapSendersConfig(createRandomTapSendersConfig());
     const isMobileMiniGameViewport = () => window.matchMedia('(max-width: 768px)').matches;
     const getGridControlHintText = () => (
       isMobileMiniGameViewport()
@@ -4407,8 +4652,12 @@ export class ChatAppFeaturesMethods {
       applyGridMove(direction);
     };
 
+    let handleTapperViewEnter = () => {};
+    let handleTapperViewLeave = () => {};
+
     const setMiniGameView = (view) => {
       const safeView = normalizeMiniGameView(view);
+      const previousView = currentMiniGameView;
       currentMiniGameView = safeView;
       if (miniGamesSection) {
         miniGamesSection.dataset.activeMiniGame = safeView;
@@ -4471,6 +4720,13 @@ export class ChatAppFeaturesMethods {
         window.localStorage.setItem(MINI_GAME_VIEW_KEY, safeView);
       } catch {
         // Ignore storage failures.
+      }
+
+      if (previousView === 'tapper' && safeView !== 'tapper') {
+        handleTapperViewLeave();
+      }
+      if (previousView !== 'tapper' && safeView === 'tapper') {
+        handleTapperViewEnter();
       }
     };
 
@@ -4747,18 +5003,22 @@ export class ChatAppFeaturesMethods {
       }, { passive: true });
     }
 
-    resolveFlappyWorldSize();
-    ensureFlappyAssets();
     updateFlappyHud();
-    renderFlappyFrame();
-    resolveDriftWorldSize();
-    ensureDriftAssets();
     setDriftStatus(getDriftIdleStatusText());
     syncMiniGameControlHints();
     updateDriftHud();
-    renderOrionDriftFrame();
     startGrid2048();
     setMiniGameView(currentMiniGameView);
+    if (currentMiniGameView === 'flappy') {
+      resolveFlappyWorldSize();
+      ensureFlappyAssets();
+      renderFlappyFrame();
+    }
+    if (currentMiniGameView === 'drift') {
+      resolveDriftWorldSize();
+      ensureDriftAssets();
+      renderOrionDriftFrame();
+    }
 
     if (this.flappyOrionResizeHandler) {
       window.removeEventListener('resize', this.flappyOrionResizeHandler);
@@ -4814,8 +5074,439 @@ export class ChatAppFeaturesMethods {
       miniGamesSection.addEventListener('wheel', preventCtrlWheelZoom, { passive: false });
     }
 
+    const autoSenderCatalogById = new Map(TAP_AUTO_SENDERS.map((sender) => [sender.id, sender]));
+    const normalizeAutoSenderProgress = (value) => {
+      const safeValue = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+      const count = Number.parseInt(safeValue.count, 10);
+      const upgradeLevel = Number.parseInt(safeValue.upgradeLevel, 10);
+      return {
+        count: Number.isFinite(count) && count >= 0 ? Math.floor(count) : 0,
+        upgradeLevel: Number.isFinite(upgradeLevel) && upgradeLevel >= 0 ? Math.floor(upgradeLevel) : 0
+      };
+    };
+    const normalizeAutoBuyBatch = (value) => {
+      const parsed = Number.parseInt(value, 10);
+      return AUTO_BUY_BATCH_VALUES.includes(parsed) ? parsed : 1;
+    };
+    const normalizeAutoMenuOpen = (value) => String(value || '').trim() === '1';
+    const formatMessageRate = (value) => {
+      const safeValue = Number.isFinite(value) && value >= 0 ? value : 0;
+      return safeValue.toLocaleString('uk-UA', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+      });
+    };
+    const autoSenderState = this.getTapAutoMinersState();
+    TAP_AUTO_SENDERS.forEach((sender) => {
+      autoSenderState[sender.id] = normalizeAutoSenderProgress(autoSenderState[sender.id]);
+    });
+    this.setTapAutoMinersState(autoSenderState);
+
+    let autoBuyBatch = 1;
+    try {
+      autoBuyBatch = normalizeAutoBuyBatch(window.localStorage.getItem(AUTO_BUY_BATCH_KEY));
+    } catch {
+      autoBuyBatch = 1;
+    }
+
+    let isAutoMenuOpen = false;
+    try {
+      isAutoMenuOpen = normalizeAutoMenuOpen(window.localStorage.getItem(AUTO_MENU_OPEN_KEY));
+    } catch {
+      isAutoMenuOpen = false;
+    }
+    const readStoredInteger = (key, fallback = 0) => {
+      try {
+        const raw = Number.parseInt(window.localStorage.getItem(key) || '', 10);
+        return Number.isFinite(raw) ? raw : fallback;
+      } catch {
+        return fallback;
+      }
+    };
+    const writeStoredInteger = (key, value) => {
+      const safeValue = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+      try {
+        window.localStorage.setItem(key, String(safeValue));
+      } catch {
+        // Ignore storage failures.
+      }
+      return safeValue;
+    };
+    const removeStoredValue = (key) => {
+      try {
+        window.localStorage.removeItem(key);
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+    let pendingOfflineRewardCents = Math.max(0, readStoredInteger(TAP_AUTO_PENDING_REWARD_CENTS_KEY, 0));
+    let pendingOfflineRewardSeconds = Math.max(0, readStoredInteger(TAP_AUTO_PENDING_REWARD_SECONDS_KEY, 0));
+    let lastTapAutoLiveTickTs = Date.now();
+
+    const getAutoSenderProgress = (senderId) => normalizeAutoSenderProgress(autoSenderState[senderId]);
+    const getAutoSenderBuyCostCents = (sender, count) => Math.max(1, Math.floor(sender.baseCostCents * Math.pow(sender.costGrowth, count)));
+    const getAutoSenderBulkBuyCostCents = (sender, count, batchCount) => {
+      let totalCost = 0;
+      for (let index = 0; index < batchCount; index += 1) {
+        totalCost += getAutoSenderBuyCostCents(sender, count + index);
+      }
+      return totalCost;
+    };
+    const getAutoSenderUpgradeCostCents = (sender, upgradeLevel, count) => Math.max(
+      1,
+      Math.floor(sender.upgradeBaseCostCents * Math.pow(sender.upgradeGrowth, upgradeLevel) * Math.max(1, count))
+    );
+    const getAutoSenderUnitMessagesPerSecond = (sender, upgradeLevel) => Math.max(
+      0,
+      sender.baseMessagesPerSecond * (1 + upgradeLevel * sender.messageBonusPerLevel)
+    );
+    const getAutoSenderUnitIncomeCents = (sender, upgradeLevel) => Math.max(
+      0,
+      Math.floor(getAutoSenderUnitMessagesPerSecond(sender, upgradeLevel) * sender.coinsPerMessageCents)
+    );
+    const getAutoSenderTotalIncomeCents = (sender) => {
+      const progress = getAutoSenderProgress(sender.id);
+      return progress.count * getAutoSenderUnitIncomeCents(sender, progress.upgradeLevel);
+    };
+    const getAutoSenderTotalMessagesPerSecond = (sender) => {
+      const progress = getAutoSenderProgress(sender.id);
+      return progress.count * getAutoSenderUnitMessagesPerSecond(sender, progress.upgradeLevel);
+    };
+    const getTapAutoIncomeRateCents = () => TAP_AUTO_SENDERS.reduce(
+      (sum, sender) => sum + getAutoSenderTotalIncomeCents(sender),
+      0
+    );
+    const getTapAutoMessagesRate = () => TAP_AUTO_SENDERS.reduce(
+      (sum, sender) => sum + getAutoSenderTotalMessagesPerSecond(sender),
+      0
+    );
+    const getTierClass = (tier) => {
+      const value = String(tier || '').trim().toLowerCase();
+      if (value === 'elite') return 'elite';
+      if (value === 'pro') return 'pro';
+      return 'starter';
+    };
+    const saveAutoBuyBatch = () => {
+      try {
+        window.localStorage.setItem(AUTO_BUY_BATCH_KEY, String(autoBuyBatch));
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+    const saveAutoMenuOpen = () => {
+      try {
+        window.localStorage.setItem(AUTO_MENU_OPEN_KEY, isAutoMenuOpen ? '1' : '0');
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+    const setAutoMenuOpen = (nextOpen, { persist = true } = {}) => {
+      isAutoMenuOpen = Boolean(nextOpen);
+      if (tapperContentEl) {
+        tapperContentEl.classList.toggle('is-auto-menu-open', isAutoMenuOpen);
+      }
+      if (autoMiningContainerEl) {
+        autoMiningContainerEl.hidden = !isAutoMenuOpen;
+        autoMiningContainerEl.classList.toggle('is-open', isAutoMenuOpen);
+      }
+      if (autoMenuToggleBtn) {
+        autoMenuToggleBtn.setAttribute('aria-expanded', String(isAutoMenuOpen));
+        autoMenuToggleBtn.classList.toggle('is-open', isAutoMenuOpen);
+        const toggleLabelEl = autoMenuToggleBtn.querySelector('.coin-auto-mining-toggle-label');
+        if (toggleLabelEl) {
+          toggleLabelEl.textContent = isAutoMenuOpen ? 'Згорнути центр' : 'Розгорнути центр';
+        } else {
+          autoMenuToggleBtn.textContent = isAutoMenuOpen ? 'Згорнути центр' : 'Розгорнути центр';
+        }
+      }
+      if (persist) saveAutoMenuOpen();
+    };
+    const updateAutoMiningPulse = () => {
+      if (!autoPulseFillEl) return;
+      const elapsedMs = Math.max(0, Date.now() - lastTapAutoLiveTickTs);
+      const progress = Math.max(0, Math.min(1, elapsedMs / 1000));
+      autoPulseFillEl.style.width = `${Math.round(progress * 100)}%`;
+    };
+    const flashAutoMiningGain = (rewardCents) => {
+      if (!Number.isFinite(rewardCents) || rewardCents <= 0) return;
+      if (autoLastGainEl) {
+        autoLastGainEl.textContent = `+${this.formatCoinBalance(rewardCents, 1)}`;
+        autoLastGainEl.classList.add('is-live');
+        if (this.tapAutoLastGainBadgeTimer) window.clearTimeout(this.tapAutoLastGainBadgeTimer);
+        this.tapAutoLastGainBadgeTimer = window.setTimeout(() => {
+          autoLastGainEl.classList.remove('is-live');
+        }, 420);
+      }
+      if (!autoMiningContainerEl) return;
+      autoMiningContainerEl.classList.add('is-earning');
+      if (this.tapAutoMiningGainFlashTimer) window.clearTimeout(this.tapAutoMiningGainFlashTimer);
+      this.tapAutoMiningGainFlashTimer = window.setTimeout(() => {
+        autoMiningContainerEl.classList.remove('is-earning');
+      }, 300);
+    };
+    const persistPendingOfflineReward = () => {
+      pendingOfflineRewardCents = writeStoredInteger(TAP_AUTO_PENDING_REWARD_CENTS_KEY, pendingOfflineRewardCents);
+      pendingOfflineRewardSeconds = writeStoredInteger(TAP_AUTO_PENDING_REWARD_SECONDS_KEY, pendingOfflineRewardSeconds);
+    };
+    const queueOfflineRewardFromAway = () => {
+      const awayStartTs = Math.max(0, readStoredInteger(TAP_AUTO_AWAY_START_TS_KEY, 0));
+      if (!awayStartTs) return;
+      removeStoredValue(TAP_AUTO_AWAY_START_TS_KEY);
+      const elapsedSeconds = Math.max(0, Math.floor((Date.now() - awayStartTs) / 1000));
+      if (elapsedSeconds <= 0) return;
+      const incomeRateCents = getTapAutoIncomeRateCents();
+      if (incomeRateCents <= 0) return;
+      pendingOfflineRewardCents += incomeRateCents * elapsedSeconds;
+      pendingOfflineRewardSeconds += elapsedSeconds;
+      persistPendingOfflineReward();
+    };
+    const runTapperPassiveTick = ({ force = false } = {}) => {
+      const now = Date.now();
+      const elapsedSeconds = force
+        ? Math.max(0, Math.floor((now - lastTapAutoLiveTickTs) / 1000))
+        : Math.max(0, Math.floor((now - lastTapAutoLiveTickTs) / 1000));
+      if (elapsedSeconds <= 0) return 0;
+
+      lastTapAutoLiveTickTs += elapsedSeconds * 1000;
+      const incomeRateCents = getTapAutoIncomeRateCents();
+      if (incomeRateCents <= 0) return 0;
+
+      const rewardCents = incomeRateCents * elapsedSeconds;
+      this.setTapBalanceCents(this.getTapBalanceCents() + rewardCents, { syncBackend: false });
+      flashAutoMiningGain(rewardCents);
+      return rewardCents;
+    };
+    const startTapperPassiveRuntime = () => {
+      this.stopTapAutoMiningRuntime({ markAway: false });
+      lastTapAutoLiveTickTs = Date.now();
+      this.tapAutoMiningInterval = window.setInterval(() => {
+        const rewarded = runTapperPassiveTick();
+        if (rewarded > 0) {
+          syncTapperStats();
+        } else {
+          updateAutoMiningPulse();
+        }
+      }, 1000);
+      this.tapAutoMiningPulseInterval = window.setInterval(updateAutoMiningPulse, 90);
+      updateAutoMiningPulse();
+    };
+    const claimPendingOfflineReward = () => {
+      if (pendingOfflineRewardCents <= 0) return false;
+      const rewardCents = pendingOfflineRewardCents;
+      pendingOfflineRewardCents = 0;
+      pendingOfflineRewardSeconds = 0;
+      persistPendingOfflineReward();
+
+      const applied = this.applyCoinTransaction(rewardCents, 'Клікер: офлайн дохід', {
+        category: 'games'
+      });
+      if (!applied) {
+        pendingOfflineRewardCents = rewardCents;
+        pendingOfflineRewardSeconds = rewardSeconds;
+        persistPendingOfflineReward();
+        return false;
+      }
+
+      flashAutoMiningGain(rewardCents);
+      return true;
+    };
+    handleTapperViewLeave = () => {
+      runTapperPassiveTick({ force: true });
+      this.stopTapAutoMiningRuntime({ markAway: false });
+      this.markTapAutoAwayStart();
+    };
+    handleTapperViewEnter = () => {
+      queueOfflineRewardFromAway();
+      lastTapAutoLiveTickTs = Date.now();
+      startTapperPassiveRuntime();
+      updateAutoMiningPulse();
+      if (pendingOfflineRewardCents <= 0) return;
+      if (claimPendingOfflineReward()) {
+        syncTapperStats();
+      }
+    };
+    const syncAutoBuyBatchControls = () => {
+      autoBuyBatchButtons.forEach((buttonEl) => {
+        const batchValue = normalizeAutoBuyBatch(buttonEl.dataset.autoBuyBatch);
+        const isActive = batchValue === autoBuyBatch;
+        buttonEl.classList.toggle('is-active', isActive);
+        buttonEl.setAttribute('aria-pressed', String(isActive));
+      });
+    };
+
+    const renderTapAutoMiners = () => {
+      if (!autoMinersEl) return;
+      const currentBalance = this.getTapBalanceCents();
+      autoMinersEl.innerHTML = TAP_AUTO_SENDERS.map((sender) => {
+        const safeTitle = escapeHtml(sender.title || 'Агент');
+        const safeRole = escapeHtml(sender.role || 'Веде діалоги');
+        const safeTier = escapeHtml(sender.tier || 'Starter');
+        const tierClass = getTierClass(sender.tier);
+        const fallbackInitial = escapeHtml((sender.title || 'A').trim().charAt(0).toUpperCase() || 'A');
+        const avatarMarkup = sender.avatarSrc
+          ? `<img class="coin-auto-miner-avatar" src="${escapeHtml(sender.avatarSrc)}" alt="${safeTitle}" loading="lazy" decoding="async" />`
+          : `<span class="coin-auto-miner-avatar-fallback">${fallbackInitial}</span>`;
+        const progress = getAutoSenderProgress(sender.id);
+        const unitMessagesPerSecond = getAutoSenderUnitMessagesPerSecond(sender, progress.upgradeLevel);
+        const unitIncomeCents = getAutoSenderUnitIncomeCents(sender, progress.upgradeLevel);
+        const totalMessagesPerSecond = progress.count * unitMessagesPerSecond;
+        const totalIncomeCents = progress.count * unitIncomeCents;
+        const buyCostCents = getAutoSenderBulkBuyCostCents(sender, progress.count, autoBuyBatch);
+        const nextBuyMessagesGain = unitMessagesPerSecond * autoBuyBatch;
+        const nextBuyIncomeGainCents = unitIncomeCents * autoBuyBatch;
+        const upgradeCostCents = getAutoSenderUpgradeCostCents(sender, progress.upgradeLevel, progress.count);
+        const upgradedUnitMessagesPerSecond = getAutoSenderUnitMessagesPerSecond(sender, progress.upgradeLevel + 1);
+        const upgradedUnitIncomeCents = getAutoSenderUnitIncomeCents(sender, progress.upgradeLevel + 1);
+        const upgradeMessagesGain = Math.max(0, (upgradedUnitMessagesPerSecond - unitMessagesPerSecond) * progress.count);
+        const upgradeIncomeGainCents = Math.max(0, (upgradedUnitIncomeCents - unitIncomeCents) * progress.count);
+        const canBuy = currentBalance >= buyCostCents;
+        const canUpgrade = progress.count > 0 && currentBalance >= upgradeCostCents;
+        const affordabilityPercent = buyCostCents > 0
+          ? Math.max(0, Math.min(100, Math.round((currentBalance / buyCostCents) * 100)))
+          : 100;
+        return `
+          <article class="coin-auto-miner-card ${canBuy || canUpgrade ? 'is-affordable' : ''}">
+            <div class="coin-auto-miner-headline">
+              <div class="coin-auto-miner-identity">
+                <span class="coin-auto-miner-avatar-wrap">${avatarMarkup}</span>
+                <div class="coin-auto-miner-namebox">
+                  <strong class="coin-auto-miner-title">${safeTitle}</strong>
+                  <span class="coin-auto-miner-role">${safeRole}</span>
+                </div>
+              </div>
+              <div class="coin-auto-miner-meta">
+                <span class="coin-auto-miner-tier coin-auto-miner-tier-${tierClass}">${safeTier}</span>
+                <span class="coin-auto-miner-count">x${progress.count}</span>
+              </div>
+            </div>
+            <div class="coin-auto-miner-metrics">
+              <span>Рівень ${progress.upgradeLevel}</span>
+              <strong>${formatMessageRate(totalMessagesPerSecond)} пов./с</strong>
+            </div>
+            <div class="coin-auto-miner-metrics">
+              <span>Монетний потік</span>
+              <strong>${this.formatCoinBalance(totalIncomeCents, 1)}/с</strong>
+            </div>
+            <div class="coin-auto-miner-progress" role="presentation">
+              <span class="coin-auto-miner-progress-fill" style="width:${affordabilityPercent}%"></span>
+            </div>
+            <div class="coin-auto-miner-metrics coin-auto-miner-metrics-secondary">
+              <span>Після найму: +${formatMessageRate(nextBuyMessagesGain)} пов./с</span>
+              <span>+${this.formatCoinBalance(nextBuyIncomeGainCents, 1)}/с</span>
+            </div>
+            <div class="coin-auto-miner-actions">
+              <button
+                type="button"
+                class="coin-auto-miner-action"
+                data-auto-action="buy"
+                data-auto-id="${sender.id}"
+                ${canBuy ? '' : 'disabled'}
+              >Найняти x${autoBuyBatch} · ${this.formatCoinBalance(buyCostCents, 1)}</button>
+              <button
+                type="button"
+                class="coin-auto-miner-action coin-auto-miner-action-secondary"
+                data-auto-action="upgrade"
+                data-auto-id="${sender.id}"
+                ${canUpgrade ? '' : 'disabled'}
+              >Прокачати +${formatMessageRate(upgradeMessagesGain)} пов./с · ${this.formatCoinBalance(upgradeCostCents, 1)}</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    };
+    const loadTapSenderAvatars = async () => {
+      await Promise.all(TAP_AUTO_SENDERS.map(async (sender) => {
+        if (!sender || sender.avatarSrc || !sender.avatarKey) return;
+        sender.avatarSrc = await this.resolveTapPersonAvatarSrc(sender.avatarKey);
+      }));
+    };
+
+    const buyAutoSender = (sender) => {
+      if (!sender) return false;
+      const progress = getAutoSenderProgress(sender.id);
+      const batchCount = autoBuyBatch;
+      const costCents = getAutoSenderBulkBuyCostCents(sender, progress.count, batchCount);
+      if (this.getTapBalanceCents() < costCents) return false;
+      const spent = this.applyCoinTransaction(
+        -costCents,
+        `Клікер: найм ${sender.title}${batchCount > 1 ? ` x${batchCount}` : ''}`,
+        { category: 'games' }
+      );
+      if (!spent) return false;
+      autoSenderState[sender.id] = {
+        count: progress.count + batchCount,
+        upgradeLevel: progress.upgradeLevel
+      };
+      this.setTapAutoMinersState(autoSenderState);
+      return true;
+    };
+
+    const upgradeAutoSender = (sender) => {
+      if (!sender) return false;
+      const progress = getAutoSenderProgress(sender.id);
+      if (progress.count < 1) return false;
+      const costCents = getAutoSenderUpgradeCostCents(sender, progress.upgradeLevel, progress.count);
+      if (this.getTapBalanceCents() < costCents) return false;
+      const spent = this.applyCoinTransaction(-costCents, `Клікер: прокачка ${sender.title}`, {
+        category: 'games'
+      });
+      if (!spent) return false;
+      autoSenderState[sender.id] = {
+        count: progress.count,
+        upgradeLevel: progress.upgradeLevel + 1
+      };
+      this.setTapAutoMinersState(autoSenderState);
+      return true;
+    };
+
+    if (autoMinersEl && autoMinersEl.dataset.bound !== 'true') {
+      autoMinersEl.dataset.bound = 'true';
+      autoMinersEl.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return;
+        const buttonEl = event.target.closest('.coin-auto-miner-action');
+        if (!buttonEl || buttonEl.disabled) return;
+        const sender = autoSenderCatalogById.get(buttonEl.dataset.autoId || '');
+        const action = buttonEl.dataset.autoAction || '';
+        if (!sender || !action) return;
+        if (action === 'buy') {
+          buyAutoSender(sender);
+        } else if (action === 'upgrade') {
+          upgradeAutoSender(sender);
+        }
+        syncTapperStats();
+      });
+    }
+
+    autoBuyBatchButtons.forEach((buttonEl) => {
+      if (buttonEl.dataset.bound === 'true') return;
+      buttonEl.dataset.bound = 'true';
+      buttonEl.addEventListener('click', () => {
+        const nextBatch = normalizeAutoBuyBatch(buttonEl.dataset.autoBuyBatch);
+        if (nextBatch === autoBuyBatch) return;
+        autoBuyBatch = nextBatch;
+        saveAutoBuyBatch();
+        syncTapperStats();
+      });
+    });
+
+    if (autoMenuToggleBtn && autoMenuToggleBtn.dataset.bound !== 'true') {
+      autoMenuToggleBtn.dataset.bound = 'true';
+      autoMenuToggleBtn.addEventListener('click', () => {
+        setAutoMenuOpen(!isAutoMenuOpen);
+      });
+    }
+    if (autoMenuCloseBtn && autoMenuCloseBtn.dataset.bound !== 'true') {
+      autoMenuCloseBtn.dataset.bound = 'true';
+      autoMenuCloseBtn.addEventListener('click', () => {
+        setAutoMenuOpen(false);
+      });
+    }
+    setAutoMenuOpen(isAutoMenuOpen, { persist: false });
+
     const syncTapperStats = () => {
       const stats = this.getTapLevelStats();
+      const autoRateCents = getTapAutoIncomeRateCents();
+      const hiredCount = TAP_AUTO_SENDERS.reduce((sum, sender) => sum + getAutoSenderProgress(sender.id).count, 0);
       balanceEl.textContent = this.formatCoinBalance(this.getTapBalanceCents());
 
       if (levelValueEl) {
@@ -4828,11 +5519,29 @@ export class ChatAppFeaturesMethods {
       if (rewardValueEl) {
         rewardValueEl.textContent = this.formatCoinBalance(stats.rewardPerTapCents, 1);
       }
+      if (autoStatusTextEl) {
+        autoStatusTextEl.textContent = `У команді ${hiredCount} · режим x${autoBuyBatch} · пасивно ${formatMessageRate(getTapAutoMessagesRate())} пов./с`;
+      }
+      if (autoMiningContainerEl) {
+        autoMiningContainerEl.classList.toggle('is-idle', autoRateCents <= 0);
+      }
+      syncAutoBuyBatchControls();
+      renderTapAutoMiners();
+      updateAutoMiningPulse();
     };
 
     this.setTapBalanceCents(this.getTapBalanceCents());
     this.setTapTotalClicks(this.getTapTotalClicks());
     syncTapperStats();
+    this.stopTapAutoMiningRuntime({ markAway: false });
+    if (currentMiniGameView === 'tapper') {
+      handleTapperViewEnter();
+    } else {
+      handleTapperViewLeave();
+    }
+    void loadTapSenderAvatars().then(() => {
+      syncTapperStats();
+    });
 
     if (tapBtn.dataset.bound === 'true') return;
     tapBtn.dataset.bound = 'true';
@@ -6349,6 +7058,11 @@ export class ChatAppFeaturesMethods {
 
   async showSettings(sectionName) {
     this.disposeShopGarageViewer();
+    if (sectionName !== 'mini-games') {
+      this.stopTapAutoMiningRuntime({ markAway: true });
+    } else {
+      this.stopTapAutoMiningRuntime({ markAway: false });
+    }
 
     const appRootEl = document.querySelector('.orion-app');
     if (appRootEl && sectionName !== 'mini-games') {

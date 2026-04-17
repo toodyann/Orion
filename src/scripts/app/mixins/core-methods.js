@@ -1028,6 +1028,50 @@ export class ChatAppCoreMethods {
     }
   }
 
+  getTapAutoMinersState() {
+    const rawState = this.readJsonStorage('orionTapAutoMinersState', {});
+    if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) {
+      return {};
+    }
+
+    const safeState = {};
+    Object.entries(rawState).forEach(([minerId, minerState]) => {
+      if (!minerState || typeof minerState !== 'object' || Array.isArray(minerState)) return;
+      const count = Number.parseInt(minerState.count, 10);
+      const upgradeLevel = Number.parseInt(minerState.upgradeLevel, 10);
+      safeState[minerId] = {
+        count: Number.isFinite(count) && count >= 0 ? Math.floor(count) : 0,
+        upgradeLevel: Number.isFinite(upgradeLevel) && upgradeLevel >= 0 ? Math.floor(upgradeLevel) : 0
+      };
+    });
+
+    return safeState;
+  }
+
+  setTapAutoMinersState(value) {
+    const nextState = value && typeof value === 'object' && !Array.isArray(value)
+      ? value
+      : {};
+    const safeState = {};
+    Object.entries(nextState).forEach(([minerId, minerState]) => {
+      if (!minerState || typeof minerState !== 'object' || Array.isArray(minerState)) return;
+      const count = Number.parseInt(minerState.count, 10);
+      const upgradeLevel = Number.parseInt(minerState.upgradeLevel, 10);
+      safeState[minerId] = {
+        count: Number.isFinite(count) && count >= 0 ? Math.floor(count) : 0,
+        upgradeLevel: Number.isFinite(upgradeLevel) && upgradeLevel >= 0 ? Math.floor(upgradeLevel) : 0
+      };
+    });
+
+    this.tapAutoMinersState = safeState;
+    try {
+      window.localStorage.setItem('orionTapAutoMinersState', JSON.stringify(safeState));
+    } catch {
+      // Ignore storage failures and keep in-memory state.
+    }
+    return safeState;
+  }
+
   getTapLevelStats(totalClicks = this.getTapTotalClicks()) {
     const safeClicks = Number.isFinite(totalClicks) && totalClicks >= 0 ? Math.floor(totalClicks) : 0;
     let remainingClicks = safeClicks;
